@@ -1,4 +1,4 @@
-define(['./lib/class','./game', './map', './shadowcaster', './dungeongenerator', './entity', './gamestate', './config','./vendor/PxLoader', './vendor/PxLoaderImage'],
+define(['./lib/class','./game', './map', './shadowcaster', './dungeongenerator', './entity', './gamestate', './config','./vendor/pxloader'],
     function(Class, Game, Map, ShadowCaster, DungeonGenerator, Entity, GameState, config, PxLoader){
 
     var RPGState = GameState.extend({

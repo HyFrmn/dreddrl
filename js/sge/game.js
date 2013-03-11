@@ -1,4 +1,4 @@
-define(['jquery', './lib/class' , './vendor/state-machine','./engine','./gamestate', './input','./renderer', './vendor/PxLoader', './vendor/PxLoaderImage'],
+define(['jquery', './lib/class' , './vendor/state-machine','./engine','./gamestate', './input','./renderer', './vendor/pxloader'],
 function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, PxLoaderImage){
     var LoadState = GameState.extend({
         initState: function(){
