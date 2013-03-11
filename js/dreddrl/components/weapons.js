@@ -35,7 +35,7 @@ define(['sge', './bullet'],function(sge){
 				physics: { width: (4 + Math.abs(vx*48)), height: (4+Math.abs(vy*48))},
 				bullet:{},
 				debug: {},
-				health: {life: 1, alignment: this.entity.get('health.alignment')}
+				health: {life: 1, alignment: this.entity.get('health.alignment'), visible: false}
 			});
 			this.state.addEntity(bullet);
 		},
