@@ -5,6 +5,7 @@ requirejs.config({
           exports: '_'
         }
     },
+    name: "dreddrl",
     packages: ["sge","dreddrl"]
 });
 // Start the main app logic.

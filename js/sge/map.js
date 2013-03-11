@@ -76,7 +76,7 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 			}
 
 			//this.tileset.onload =  this.loadCallback.bind(this);
-			this.tileset.src = config.baseUrl + options.src;
+			this.tileset.src = options.src;
 			this.tileSheet = new SpriteSheet(this.tileset.src, 32, 32);
 		},
 		getIndex : function(x, y){

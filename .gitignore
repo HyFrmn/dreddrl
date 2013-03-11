@@ -2,3 +2,4 @@
 *.xcf
 
 .c9revisions/
+node_modules
