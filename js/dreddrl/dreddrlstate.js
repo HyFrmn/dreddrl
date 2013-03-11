@@ -18,6 +18,7 @@ define(['sge', './blocklevelgenerator', './physics'], function(sge, BlockLevelGe
             this.loader = new sge.vendor.PxLoader();
             this.loader.addCompletionListener(this.game.fsm.finishLoad.bind(this.game.fsm));
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
             
 
             /* Bound Events */
