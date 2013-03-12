@@ -1,4 +1,4 @@
-define(['sge', './components/weapons', './components/physics', './components/judgemovement'], function(sge){
+define(['sge', './components/weapons', './components/physics', './components/judgemovement', './components/deaddrop'], function(sge){
     var FLOORTILE =  { srcX : 0, srcY: 0};
     var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy"}
     var DOOROPENTILE1 = { srcX : 1, srcY: 36}
@@ -109,7 +109,7 @@ define(['sge', './components/weapons', './components/physics', './components/jud
                         map: this.map,
                         speed: 16
                     },
-                    health : {alignment:'good', life: 50},
+                    health : {alignment:'good', life: 8},
                     physics : {},
                     weapons: {},
                     debug: {}
@@ -126,7 +126,7 @@ define(['sge', './components/weapons', './components/physics', './components/jud
             var enemy = null;
             var tx = sge.random.rangeInt(4,28);
             var ty = sge.random.rangeInt(4,28);
-            passable = false
+            var passable = false
             while (!passable){
                 tx = sge.random.rangeInt(4,28);
                 ty = sge.random.rangeInt(4,28);
@@ -161,7 +161,8 @@ define(['sge', './components/weapons', './components/physics', './components/jud
                 health : {alignment:'evil', life: 5},
                 simpleai : {},
                 physics : {},
-                debug: {}
+                debug: {},
+                deaddrop: {}
             });
             enemy.tags.push('enemy');
             this.state.addEntity(enemy);
@@ -175,25 +176,26 @@ define(['sge', './components/weapons', './components/physics', './components/jud
             var halfX = 1;
             var halfY = 2;
 
+            var tile = null;
             for (var y=(cy-halfY);y<=(cy+halfY);y++){
                 for (var x=(cx-halfX);x<=(cx+halfX);x++){
-                    var tile = this.map.getTile(x,(cy+halfY)+1);
+                    tile = this.map.getTile(x,(cy+halfY)+1);
                     tile.layers['layer0'] = FLOORTILE;
                     tile.passable = true;
                 }
             }
             this.buildWall((cx-halfX),(cy-halfY)-2,3);
             this.buildWall((cx-halfX)-1,(cy+halfY)+2,5);
-            for (var x=(cx-halfX-1);x<=(cx+halfX+1);x++){
-                var tile = this.map.getTile(x,(cy+halfY)+1);
+            for (x=(cx-halfX-1);x<=(cx+halfX+1);x++){
+                tile = this.map.getTile(x,(cy+halfY)+1);
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
                 tile = this.map.getTile(x,(cy-halfY)-3);
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
             }
-            for (var y=(cy-halfY-2);y<=(cy+halfY+1);y++){
-                var tile = this.map.getTile((cx+halfX)+1,y);
+            for (y=(cy-halfY-2);y<=(cy+halfY+1);y++){
+                tile = this.map.getTile((cx+halfX)+1,y);
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
                 tile = this.map.getTile((cx-halfX)-1,y);
@@ -203,6 +205,7 @@ define(['sge', './components/weapons', './components/physics', './components/jud
             this.createDoor(cx, cy+halfY+3, sge.random.unit() > 0.5);
         },
         createDoor : function(cx, cy, open){
+            var tile = null;
             if (open){
                 tile = this.map.getTile(cx,cy-1);
                 tile.layers['layer1'] = DOOROPENTILE1;

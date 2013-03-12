@@ -21,7 +21,7 @@ define(function(){
 	        this._image_buffer.height = this.image.height;
 
 	        this.buffer = this.image;
-
+            console.log('Image Ready:', this.image)
 			this.ready = true;
 		}.bind(this);
 		this.spriteWidth = spriteWidth;
