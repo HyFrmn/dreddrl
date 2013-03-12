@@ -6,7 +6,13 @@ define(['sge', './bullet'],function(sge){
 			this.fire = this.fire.bind(this);
 		},
 		fire: function(){
-			console.log('Fire Weapons');
+			var ammo = this.entity.get('inventory.ammo');
+			if (ammo<=0){
+				/*blink ammo red*/
+				return;
+			}
+			this.entity.set('inventory.ammo', ammo-1);
+
 			var speed = 1024;
 			var vx = 0;
 			var vy = 0;
@@ -24,7 +30,6 @@ define(['sge', './bullet'],function(sge){
 					vx = 1;
 					break;
 			}
-			console.log(  { width: (4 + Math.abs(vx*48)), height: (4+Math.abs(vy*48))});
 			var bullet = new sge.Entity({
 				xform: {
 					tx: this.entity.get('xform.tx') + (vx * 24),

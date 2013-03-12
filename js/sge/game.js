@@ -16,9 +16,6 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
             if (this.elem){
                 this.elem.fadeOut();
             }
-        },
-        tick : function(){
-            console.log('Loading...')
         }
     });
 
@@ -26,7 +23,6 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
         initState: function(){
             this.elem = $('.mainmenuscreen') || null;
             this.startGame = function(){
-                console.log('START')
                 this.game._states['game'] = new this.game._gameState(this.game);
                 this.game.fsm.startGame();
             }.bind(this);

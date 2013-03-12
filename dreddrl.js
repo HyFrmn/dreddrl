@@ -11930,12 +11930,32 @@ define('sge/component',['sge/lib/class'], function(Class){
 			}
 			return val;
 		},
-		set : function(path, value){
-			this.data[path] = value;
+		set : function(path, value, method){
+			var newValue = null;
+					
 			if (this['_set_' + path] !== undefined){
-				this['_set_' + path](value);
+				newValue = this['_set_' + path](value, method);
+			} else {
+				newValue = this.__set_value(path, value, method);
 			}
-			return this.data[path];
+			return newValue;
+		},
+		__set_value : function(path, value, method){
+			switch (method){
+				case 'add':
+					var tmp = this.get(path);
+					newValue = this.data[path] = tmp + value;
+					break;
+				case 'subtract':
+					var tmp = this.get(path);
+					newValue = this.data[path] = tmp - value;
+					break;
+				case 'set':
+				default:
+					newValue = this.data[path] = value;
+					break;
+			}
+			return newValue;
 		},
 		render : function(){},
 		tick : function(){},
@@ -11959,37 +11979,52 @@ define('sge/component',['sge/lib/class'], function(Class){
 	return Component;
 });
 define('sge/spritesheet',[],function(){
+
 	var SpriteSheet = function(image, spriteWidth, spriteHeight){
 		if (spriteHeight ===undefined){
 			spriteHeight  = spriteWidth;
 
 		}
 		this.ready = false;
-		this.image = new Image();
-		this.image.onload = function(){
-			this.imageWidth = this.image.width;
-			this.imageHeight = this.image.height;
-			this.horzSprites = this.imageWidth / spriteWidth;
-			this.vertSprites = this.imageHeight / spriteHeight;
-			this._image_tint = document.createElement('canvas');
-	        this._image_tint.width = this.image.width;
-	        this._image_tint.height = this.image.height;
-	        
-	        
-	        this._image_buffer = document.createElement('canvas');
-	        this._image_buffer.width = this.image.width;
-	        this._image_buffer.height = this.image.height;
-
-	        this.buffer = this.image;
-
-			this.ready = true;
-		}.bind(this);
 		this.spriteWidth = spriteWidth;
 		this.spriteHeight = spriteHeight;
 		this.offsetX = this.spriteWidth / -2;
 		this.offsetY = this.spriteHeight / -2;
-		this.image.src = image;
 
+		if (SpriteSheet.SpriteSheetImages[image]===undefined){
+			this.image = new Image();
+			this.buffer = this.image;
+			this.image.onload = this.onLoadImage.bind(this);
+			this.image.src = image;
+			SpriteSheet.SpriteSheetImages[image]=this.image;
+		} else {
+			console.log('FOUND');
+			this.image = SpriteSheet.SpriteSheetImages[image];
+			this.buffer = this.image;
+			this.onLoadImage();
+		}
+
+	};
+
+	SpriteSheet.SpriteSheetImages = {};
+
+	SpriteSheet.prototype.onLoadImage = function(){
+		this.imageWidth = this.image.width;
+		this.imageHeight = this.image.height;
+		this.horzSprites = this.imageWidth / this.spriteWidth;
+		this.vertSprites = this.imageHeight / this.spriteHeight;
+		this._image_tint = document.createElement('canvas');
+        this._image_tint.width = this.image.width;
+        this._image_tint.height = this.image.height;
+        
+        
+        this._image_buffer = document.createElement('canvas');
+        this._image_buffer.width = this.image.width;
+        this._image_buffer.height = this.image.height;
+
+        this.buffer = this.image;
+
+		this.ready = true;
 	};
 
 	SpriteSheet.prototype.getSrcRect = function(sprite){
@@ -12036,7 +12071,7 @@ define('sge/components/sprite',['sge/component', 'sge/spritesheet', '../config']
 	var SpriteComponent = Component.extend({
 		init : function(entity, data){
 			this._super(entity, data)
-			this.data.frame = 0;
+			this.data.frame = data.frame || 0;
 			this.data.scale = data.scale || 1;
 			this.data.mirror = true;
 			this.data.offsetX = data.offsetX || 0;
@@ -12235,6 +12270,11 @@ define('sge/components/health',['sge/component'], function(Component){
                     this.entity.fireEvent('tint', 'red', 0.25);
                 }
             }.bind(this));
+        },
+        _set_life : function(value, method){
+            var life = this.__set_value('life', value, method);
+            this.data.life = Math.min(life, this.get('maxLife'));
+            return this.data.life
         },
         render : function(renderer, layer){
             if (!this.get('visible')){
@@ -12628,11 +12668,11 @@ define('sge/entity',[
 				return comp;
 			}
 		},
-		set : function(path, value){
+		set : function(path, value, method){
 			var subpaths = path.split('.');
 			var compName = subpaths.shift();
 			var comp = this.components[compName];
-			return comp.set(subpaths.join('.'), value);
+			return comp.set(subpaths.join('.'), value, method);
 		},
 		hasTag : function(tag){
 			return (this.tags.indexOf(tag)>=0);
@@ -15281,9 +15321,6 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
             if (this.elem){
                 this.elem.fadeOut();
             }
-        },
-        tick : function(){
-            console.log('Loading...')
         }
     });
 
@@ -15291,7 +15328,6 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
         initState: function(){
             this.elem = $('.mainmenuscreen') || null;
             this.startGame = function(){
-                console.log('START')
                 this.game._states['game'] = new this.game._gameState(this.game);
                 this.game.fsm.startGame();
             }.bind(this);
@@ -15851,7 +15887,8 @@ define('sge/main',['sge/config',
         'sge/rpgstate',
         'sge/vendor/pxloader',
         'sge/lib/class',
-        'sge/lib/random'],
+        'sge/lib/random',
+        'sge/spritesheet'],
 function(
       config,
       Renderer,
@@ -15866,7 +15903,8 @@ function(
       RPGState,
       PxLoader,
       Class,
-      random
+      random,
+      SpriteSheet
         ){
    return {
         config: config,
@@ -15884,7 +15922,8 @@ function(
           PxLoader : PxLoader
         },
         Class : Class,
-        random : random
+        random : random,
+        SpriteSheet : SpriteSheet
    };
 });
 define('sge', ['sge/main'], function (main) { return main; });
@@ -15907,7 +15946,6 @@ define('dreddrl/components/bullet',['sge'],function(sge){
 			this.entity.addListener('contact.tile', this.kill)
 		},
 		tick: function(delta){
-			console.log(this.entity.get('xform.vx') * delta, this.entity.get('xform.vy') * delta);
 			this.entity.set('physics.width', Math.max(Math.abs(this.entity.get('xform.vx')) * delta, 2)*2);
 			this.entity.set('physics.height', Math.max(Math.abs(this.entity.get('xform.vy')) * delta, 2)*2);
 		}
@@ -15923,7 +15961,13 @@ define('dreddrl/components/weapons',['sge', './bullet'],function(sge){
 			this.fire = this.fire.bind(this);
 		},
 		fire: function(){
-			console.log('Fire Weapons');
+			var ammo = this.entity.get('inventory.ammo');
+			if (ammo<=0){
+				/*blink ammo red*/
+				return;
+			}
+			this.entity.set('inventory.ammo', ammo-1);
+
 			var speed = 1024;
 			var vx = 0;
 			var vy = 0;
@@ -15941,7 +15985,6 @@ define('dreddrl/components/weapons',['sge', './bullet'],function(sge){
 					vx = 1;
 					break;
 			}
-			console.log(  { width: (4 + Math.abs(vx*48)), height: (4+Math.abs(vy*48))});
 			var bullet = new sge.Entity({
 				xform: {
 					tx: this.entity.get('xform.tx') + (vx * 24),
@@ -16030,7 +16073,220 @@ define('dreddrl/components/judgemovement',['sge/component'], function(Component)
 
     return JudgeMovementComponent;
 });
-define('dreddrl/blocklevelgenerator',['sge', './components/weapons', './components/physics', './components/judgemovement'], function(sge){
+define('dreddrl/components/deaddrop',['sge'], function(sge){
+    var DeadDrop = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.drop = this.drop.bind(this);
+            this.entity.addListener('kill', this.drop);
+        },
+        drop: function(){
+            var dropDir = null;
+            var tileX = Math.floor(this.entity.get('xform.tx')/32)
+            var tileY = Math.floor(this.entity.get('xform.ty')/32)
+            var allDirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            while (allDirs.length){
+                var dir = allDirs.shift()
+                var tile = this.state.map.getTile(tileX + dir[0], tileY + dir[1]);
+                if (tile.passable){
+                    dropDir = [32 * (tileX + dir[0] + 0.5), 32 * (tileY + dir[1] + 0.5)];
+                    break;
+                }
+            }
+            if (dropDir===null){
+                return;
+            }
+            var newItem = this.state.factory((Math.random() > 0.5 ? 'rammen' : 'gun'), {
+                xform: {
+    				tx: dropDir[0],
+					ty: dropDir[1],
+				}});
+
+            this.state.addEntity(newItem);
+            console.log(newItem);
+        },
+    	register: function(state){
+			this.state = state;
+		},
+		unregister: function(){
+			this.state = null;
+		}
+    });
+    sge.Component.register('deaddrop', DeadDrop);
+    return DeadDrop
+});
+define('dreddrl/components/freeitem',['sge'], function(sge){
+    var FreeItem = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            var keys = Object.keys(data);
+            for (var i = keys.length - 1; i >= 0; i--) {
+                this.data[keys[i]] = data[keys[i]];
+            };
+            this.pickup = this.pickup.bind(this);
+            this.entity.addListener('contact.start', this.pickup);
+        },
+        pickup: function(entity){
+            if (entity.hasTag('pc')){
+                entity.fireEvent('pickup', this.entity);
+                this.entity.fireEvent('kill');
+            }
+        },
+    	register: function(state){
+			this.state = state;
+		},
+		unregister: function(){
+			this.state = null;
+		}
+    });
+    sge.Component.register('freeitem', FreeItem);
+    return FreeItem
+});
+define('dreddrl/components/inventory',['sge','jquery'],function(sge, $){
+
+	var InventoryComponent = sge.Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.data.ammo = data.ammo || 20;
+			this.data.objects = {};
+			this._elem_ammo = $('span.ammo');
+			this.entity.addListener('pickup', this.pickup.bind(this));
+		},
+		pickup: function(entity){
+			var freeitem = entity.get('freeitem');
+			var newAmmo = freeitem.get('inventory.ammo');
+			if (newAmmo){
+				console.log('Ammo:', this.set('ammo',newAmmo,'add'));
+			}
+			var newLife = freeitem.get('health.life');
+			if (newLife){
+				console.log('Life:', this.entity.set('health.life',newLife,'add'));
+			}
+		},
+		subtractProperty: function(prop, value){
+			value = value || 1;
+			value = this.get(prop) - value;
+			this.set(prop, value);
+		}
+	})
+	sge.Component.register('inventory', InventoryComponent);
+    return InventoryComponent;
+})		;
+define('dreddrl/factory',[
+	'sge',
+	'./components/weapons',
+	'./components/physics',
+	'./components/judgemovement',
+	'./components/deaddrop',
+	'./components/freeitem',
+    './components/inventory'
+	], 
+	function(sge){
+		FACTORYDATA = {
+			pc : function(){return{
+                    xform : {},
+                    controls : {},
+                    sprite : {
+                        src : 'assets/sprites/hunk.png',
+                        width: 32,
+                        offsetY: -8,
+                        scale: 2
+                    },
+                    anim : {
+                        frames: {
+                            walk_down : [0,1,2],
+                            walk_up : [9,10,11],
+                            walk_right : [6,7,8],
+                            walk_left : [3,4,5]
+                        },
+                    },
+                    'judge.movement' : {
+                        map: this.map,
+                        speed: 16
+                    },
+                    health : {alignment:'good', life: 8},
+                    physics : {},
+                    inventory : {},
+                    weapons: {},
+                }},
+            enemy : function(){return {
+                xform : {},
+                sprite : {
+                    src : 'assets/sprites/albertbrownhair.png',
+                    width: 32,
+                    offsetY: -8,
+                    scale: 2
+                },
+                anim : {
+                    frames: {
+                        walk_down : [0,1,2],
+                        walk_up : [9,10,11],
+                        walk_right : [6,7,8],
+                        walk_left : [3,4,5]
+                    },
+                },
+                movement : {
+                    map: this.map,
+                    speed: 16
+                },
+                health : {alignment:'evil', life: 5},
+                simpleai : {},
+                physics : {},
+                deaddrop: {}
+            }},
+            gun : function(){return {
+                xform: {},
+                physics: {},
+                sprite : {
+                        src : 'assets/sprites/scifi_icons_1.png',
+                        width: 24,
+                        offsetY: 0,
+                        scale: 2,
+                    },
+                freeitem: {
+                    'inventory.ammo': 5
+                }
+            }},
+            rammen : function(){return {
+                xform: {},
+                physics: {},
+                sprite : {
+                        src : 'assets/sprites/scifi_icons_1.png',
+                        width: 24,
+                        offsetY: 0,
+                        scale: 2,
+                        frame: 123
+                    },
+                inventory: {ammo: 5},
+                freeitem: {
+                    'health.life' : 5
+                }
+            }}
+		}
+
+		var deepExtend = function(destination, source) {
+		  for (var property in source) {
+		    if (source[property] && source[property].constructor &&
+		     source[property].constructor === Object) {
+		      destination[property] = destination[property] || {};
+		      arguments.callee(destination[property], source[property]);
+		    } else {
+		      destination[property] = source[property];
+		    }
+		  }
+		  return destination;
+		};
+
+		var Factory = function(type, options){
+			options = options || {};
+			var data = deepExtend(FACTORYDATA[type](), options);
+			return new sge.Entity(data);
+		}
+
+		return Factory
+	}
+);
+define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory){
     var FLOORTILE =  { srcX : 0, srcY: 0};
     var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy"}
     var DOOROPENTILE1 = { srcX : 1, srcY: 36}
@@ -16115,37 +16371,13 @@ define('dreddrl/blocklevelgenerator',['sge', './components/weapons', './componen
                 }
             }
             if (pc==null){
-                pc = new sge.Entity({
+                pc = Factory('pc', {
                     xform : {
                         tx: (8 + 0.5) * this.map.tileSize,
                         ty: (8 + 0.5) * this.map.tileSize,
                         vx : Math.random() * 10 - 5,
                         vy : Math.random() * 10 - 5
-                    },
-                    controls : {},
-                    sprite : {
-                        src : 'assets/sprites/hunk.png',
-                        width: 32,
-                        offsetY: -8,
-                        scale: 2
-                    },
-                    anim : {
-                        frames: {
-                            walk_down : [0,1,2],
-                            walk_up : [9,10,11],
-                            walk_right : [6,7,8],
-                            walk_left : [3,4,5]
-                        },
-                    },
-                    'judge.movement' : {
-                        map: this.map,
-                        speed: 16
-                    },
-                    health : {alignment:'good', life: 50},
-                    physics : {},
-                    weapons: {},
-                    debug: {}
-                });
+                    }});
                 pc.tags.push('pc');
                 pc.addListener('kill', function(){
                     this.state._killList.push(pc);
@@ -16158,43 +16390,20 @@ define('dreddrl/blocklevelgenerator',['sge', './components/weapons', './componen
             var enemy = null;
             var tx = sge.random.rangeInt(4,28);
             var ty = sge.random.rangeInt(4,28);
-            passable = false
+            var passable = false
             while (!passable){
                 tx = sge.random.rangeInt(4,28);
                 ty = sge.random.rangeInt(4,28);
                 var tile = this.map.getTile(tx,ty);
                 passable = tile.passable;
             }
-            enemy = new sge.Entity({
+            enemy = Factory('enemy', {
                 xform : {
                     tx: (tx + 0.5) * this.map.tileSize,
                     ty: (ty + 0.5) * this.map.tileSize,
                     vx: Math.random() * 10 - 5,
                     vy: Math.random() * 10 - 5
-                },
-                sprite : {
-                    src : 'assets/sprites/albertbrownhair.png',
-                    width: 32,
-                    offsetY: -8,
-                    scale: 2
-                },
-                anim : {
-                    frames: {
-                        walk_down : [0,1,2],
-                        walk_up : [9,10,11],
-                        walk_right : [6,7,8],
-                        walk_left : [3,4,5]
-                    },
-                },
-                movement : {
-                    map: this.map,
-                    speed: 16
-                },
-                health : {alignment:'evil', life: 5},
-                simpleai : {},
-                physics : {},
-                debug: {}
-            });
+                }});
             enemy.tags.push('enemy');
             this.state.addEntity(enemy);
             return enemy;
@@ -16207,25 +16416,26 @@ define('dreddrl/blocklevelgenerator',['sge', './components/weapons', './componen
             var halfX = 1;
             var halfY = 2;
 
+            var tile = null;
             for (var y=(cy-halfY);y<=(cy+halfY);y++){
                 for (var x=(cx-halfX);x<=(cx+halfX);x++){
-                    var tile = this.map.getTile(x,(cy+halfY)+1);
+                    tile = this.map.getTile(x,(cy+halfY)+1);
                     tile.layers['layer0'] = FLOORTILE;
                     tile.passable = true;
                 }
             }
             this.buildWall((cx-halfX),(cy-halfY)-2,3);
             this.buildWall((cx-halfX)-1,(cy+halfY)+2,5);
-            for (var x=(cx-halfX-1);x<=(cx+halfX+1);x++){
-                var tile = this.map.getTile(x,(cy+halfY)+1);
+            for (x=(cx-halfX-1);x<=(cx+halfX+1);x++){
+                tile = this.map.getTile(x,(cy+halfY)+1);
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
                 tile = this.map.getTile(x,(cy-halfY)-3);
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
             }
-            for (var y=(cy-halfY-2);y<=(cy+halfY+1);y++){
-                var tile = this.map.getTile((cx+halfX)+1,y);
+            for (y=(cy-halfY-2);y<=(cy+halfY+1);y++){
+                tile = this.map.getTile((cx+halfX)+1,y);
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
                 tile = this.map.getTile((cx-halfX)-1,y);
@@ -16235,6 +16445,7 @@ define('dreddrl/blocklevelgenerator',['sge', './components/weapons', './componen
             this.createDoor(cx, cy+halfY+3, sge.random.unit() > 0.5);
         },
         createDoor : function(cx, cy, open){
+            var tile = null;
             if (open){
                 tile = this.map.getTile(cx,cy-1);
                 tile.layers['layer1'] = DOOROPENTILE1;
@@ -16436,7 +16647,7 @@ define('dreddrl/physics',['sge'], function(sge){
 	});
 	return RPGPhysics;
 });
-define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics'], function(sge, BlockLevelGenerator, Physics){
+define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './factory'], function(sge, BlockLevelGenerator, Physics, Factory){
 
 	var DreddRLState = sge.GameState.extend({
 		initState: function(options){
@@ -16446,6 +16657,8 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics'], fun
             this._contactList = [];
 
             this._killList = [];
+            this.factory = Factory;
+            this.initUi();
             this.map = new sge.Map(size,size,{src: 'assets/tiles/future2.png'});
             this.game.renderer.createLayer('base');
             this.game.renderer.createLayer('main');
@@ -16455,7 +16668,11 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics'], fun
             this.physics = new Physics(this);
             this.loader = new sge.vendor.PxLoader();
             this.loader.addCompletionListener(this.game.fsm.finishLoad.bind(this.game.fsm));
+            this.loader.addProgressListener(this.progressListener.bind(this));
+            this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/scifi_icons_1.png');
+            
             
 
             /* Bound Events */
@@ -16468,6 +16685,11 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics'], fun
             }.bind(this);
 
             this.loader.start();
+        },
+
+        progressListener : function(e){
+            sge.SpriteSheet.SpriteSheetImages[e.resource.getName()] == e.resource.img
+            console.log(e.resource.getName(), e);
         },
 
         startState : function(){
@@ -16483,6 +16705,14 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics'], fun
             entity.addListener('kill', function(){
                     this._killList.push(entity);
             }.bind(this));
+        },
+        initUi : function(){
+            this._elem_ammo = $('span.ammo');
+        },
+        updateUi : function(){
+            if (this.pc){
+                this._elem_ammo.text(this.pc.get('inventory.ammo'));
+            }
         },
         tick : function(delta){
             this.tickTimeouts(delta);
@@ -16515,6 +16745,7 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics'], fun
                     entity.componentCall('render', this.game.renderer, 'main');
                 }
             }.bind(this));
+            this.updateUi();
         
         },
         _paused_tick : function(delta){

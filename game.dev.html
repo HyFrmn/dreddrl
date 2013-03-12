@@ -23,7 +23,10 @@
             <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
         <![endif]-->
         <div id="game" class="fullscreen">
-            <div class="debug window">
+            <div id="debug-window" class="window">
+                FPS: <span class="fps"/>
+            </div>
+            <div id="controls-window" class="window">
                 <h1>Controls</h1>
                 <table class="controls">
                     <tr><td class="action">Up</td><td>W or Up Arrow</tr>
@@ -31,9 +34,16 @@
                     <tr><td class="action">Left</td><td>A or Left Arrow</td></tr>
                     <tr><td class="action">Right</td><td>D or Right Arrow</td></tr>
                     <tr><td class="action">Fog</td><td>F</td></tr>
-                    <tr><td class="action">Pause</td><td>Spacebar</td></tr>
-                    <tr><td class="action">FPS</td><td><span class="fps"/></td></tr>
+                    <tr><td class="action">Pause</td><td>Spacebar</td>
                 </table>
+            </div>
+            <div id="inventory-window" class="window">
+                <table class="inventory">
+
+                </table>
+            </div>
+            <div id="stats-window" class="window">
+                AMMO: <span class="ammo"/>
             </div>
             <div class="mainmenuscreen gamestatescreen">
                 <h1>Dredd RL</h1>

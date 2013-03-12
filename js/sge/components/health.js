@@ -22,6 +22,11 @@ define(['sge/component'], function(Component){
                 }
             }.bind(this));
         },
+        _set_life : function(value, method){
+            var life = this.__set_value('life', value, method);
+            this.data.life = Math.min(life, this.get('maxLife'));
+            return this.data.life
+        },
         render : function(renderer, layer){
             if (!this.get('visible')){
                 return;

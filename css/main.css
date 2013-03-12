@@ -155,7 +155,7 @@ html, body {
     margin-right: auto;
 }
 
-.controls {
+table.controls, table.inventory {
     width: 100%;
 }
 

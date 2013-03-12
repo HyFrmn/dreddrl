@@ -48,11 +48,11 @@ define([
 				return comp;
 			}
 		},
-		set : function(path, value){
+		set : function(path, value, method){
 			var subpaths = path.split('.');
 			var compName = subpaths.shift();
 			var comp = this.components[compName];
-			return comp.set(subpaths.join('.'), value);
+			return comp.set(subpaths.join('.'), value, method);
 		},
 		hasTag : function(tag){
 			return (this.tags.indexOf(tag)>=0);

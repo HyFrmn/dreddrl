@@ -1,4 +1,4 @@
-define(['sge', './blocklevelgenerator', './physics'], function(sge, BlockLevelGenerator, Physics){
+define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge, BlockLevelGenerator, Physics, Factory){
 
 	var DreddRLState = sge.GameState.extend({
 		initState: function(options){
@@ -8,6 +8,8 @@ define(['sge', './blocklevelgenerator', './physics'], function(sge, BlockLevelGe
             this._contactList = [];
 
             this._killList = [];
+            this.factory = Factory;
+            this.initUi();
             this.map = new sge.Map(size,size,{src: 'assets/tiles/future2.png'});
             this.game.renderer.createLayer('base');
             this.game.renderer.createLayer('main');
@@ -17,8 +19,11 @@ define(['sge', './blocklevelgenerator', './physics'], function(sge, BlockLevelGe
             this.physics = new Physics(this);
             this.loader = new sge.vendor.PxLoader();
             this.loader.addCompletionListener(this.game.fsm.finishLoad.bind(this.game.fsm));
-            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
+            this.loader.addProgressListener(this.progressListener.bind(this));
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/scifi_icons_1.png');
+            
             
 
             /* Bound Events */
@@ -31,6 +36,11 @@ define(['sge', './blocklevelgenerator', './physics'], function(sge, BlockLevelGe
             }.bind(this);
 
             this.loader.start();
+        },
+
+        progressListener : function(e){
+            sge.SpriteSheet.SpriteSheetImages[e.resource.getName()] == e.resource.img
+            console.log(e.resource.getName(), e);
         },
 
         startState : function(){
@@ -46,6 +56,14 @@ define(['sge', './blocklevelgenerator', './physics'], function(sge, BlockLevelGe
             entity.addListener('kill', function(){
                     this._killList.push(entity);
             }.bind(this));
+        },
+        initUi : function(){
+            this._elem_ammo = $('span.ammo');
+        },
+        updateUi : function(){
+            if (this.pc){
+                this._elem_ammo.text(this.pc.get('inventory.ammo'));
+            }
         },
         tick : function(delta){
             this.tickTimeouts(delta);
@@ -78,6 +96,7 @@ define(['sge', './blocklevelgenerator', './physics'], function(sge, BlockLevelGe
                     entity.componentCall('render', this.game.renderer, 'main');
                 }
             }.bind(this));
+            this.updateUi();
         
         },
         _paused_tick : function(delta){

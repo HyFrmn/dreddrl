@@ -16,12 +16,32 @@ define(['sge/lib/class'], function(Class){
 			}
 			return val;
 		},
-		set : function(path, value){
-			this.data[path] = value;
+		set : function(path, value, method){
+			var newValue = null;
+					
 			if (this['_set_' + path] !== undefined){
-				this['_set_' + path](value);
+				newValue = this['_set_' + path](value, method);
+			} else {
+				newValue = this.__set_value(path, value, method);
 			}
-			return this.data[path];
+			return newValue;
+		},
+		__set_value : function(path, value, method){
+			switch (method){
+				case 'add':
+					var tmp = this.get(path);
+					newValue = this.data[path] = tmp + value;
+					break;
+				case 'subtract':
+					var tmp = this.get(path);
+					newValue = this.data[path] = tmp - value;
+					break;
+				case 'set':
+				default:
+					newValue = this.data[path] = value;
+					break;
+			}
+			return newValue;
 		},
 		render : function(){},
 		tick : function(){},

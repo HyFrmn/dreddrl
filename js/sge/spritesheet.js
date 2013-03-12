@@ -1,35 +1,50 @@
 define(function(){
+
 	var SpriteSheet = function(image, spriteWidth, spriteHeight){
 		if (spriteHeight ===undefined){
 			spriteHeight  = spriteWidth;
 
 		}
 		this.ready = false;
-		this.image = new Image();
-		this.image.onload = function(){
-			this.imageWidth = this.image.width;
-			this.imageHeight = this.image.height;
-			this.horzSprites = this.imageWidth / spriteWidth;
-			this.vertSprites = this.imageHeight / spriteHeight;
-			this._image_tint = document.createElement('canvas');
-	        this._image_tint.width = this.image.width;
-	        this._image_tint.height = this.image.height;
-	        
-	        
-	        this._image_buffer = document.createElement('canvas');
-	        this._image_buffer.width = this.image.width;
-	        this._image_buffer.height = this.image.height;
-
-	        this.buffer = this.image;
-
-			this.ready = true;
-		}.bind(this);
 		this.spriteWidth = spriteWidth;
 		this.spriteHeight = spriteHeight;
 		this.offsetX = this.spriteWidth / -2;
 		this.offsetY = this.spriteHeight / -2;
-		this.image.src = image;
 
+		if (SpriteSheet.SpriteSheetImages[image]===undefined){
+			this.image = new Image();
+			this.buffer = this.image;
+			this.image.onload = this.onLoadImage.bind(this);
+			this.image.src = image;
+			SpriteSheet.SpriteSheetImages[image]=this.image;
+		} else {
+			console.log('FOUND');
+			this.image = SpriteSheet.SpriteSheetImages[image];
+			this.buffer = this.image;
+			this.onLoadImage();
+		}
+
+	};
+
+	SpriteSheet.SpriteSheetImages = {};
+
+	SpriteSheet.prototype.onLoadImage = function(){
+		this.imageWidth = this.image.width;
+		this.imageHeight = this.image.height;
+		this.horzSprites = this.imageWidth / this.spriteWidth;
+		this.vertSprites = this.imageHeight / this.spriteHeight;
+		this._image_tint = document.createElement('canvas');
+        this._image_tint.width = this.image.width;
+        this._image_tint.height = this.image.height;
+        
+        
+        this._image_buffer = document.createElement('canvas');
+        this._image_buffer.width = this.image.width;
+        this._image_buffer.height = this.image.height;
+
+        this.buffer = this.image;
+
+		this.ready = true;
 	};
 
 	SpriteSheet.prototype.getSrcRect = function(sprite){

@@ -10,3 +10,4 @@ FILE STRUCTURE
 CREDITS
 =========================
 Hunk - AkaiSeigi (http://www.rpgmakervxace.net/gallery/image/243-hunk/)
+SciFi Icons - A.M (http://www.rpgmakervx.net/index.php?showtopic=42663)

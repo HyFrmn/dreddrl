@@ -11,7 +11,8 @@ define(['sge/config',
         'sge/rpgstate',
         'sge/vendor/pxloader',
         'sge/lib/class',
-        'sge/lib/random'],
+        'sge/lib/random',
+        'sge/spritesheet'],
 function(
       config,
       Renderer,
@@ -26,7 +27,8 @@ function(
       RPGState,
       PxLoader,
       Class,
-      random
+      random,
+      SpriteSheet
         ){
    return {
         config: config,
@@ -44,6 +46,7 @@ function(
           PxLoader : PxLoader
         },
         Class : Class,
-        random : random
+        random : random,
+        SpriteSheet : SpriteSheet
    };
 });

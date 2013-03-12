@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width">
+
+        <link rel="stylesheet" href="css/normalize.min.css">
+        <link rel="stylesheet" href="css/main.css">
+
+        <!--[if lt IE 9]>
+            <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+            <script>window.html5 || document.write('<script src="js/vendor/html5shiv.js"><\/script>')</script>
+        <![endif]-->
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
+        <![endif]-->
+        <div id="game" class="fullscreen">
+            <div id="debug-window" class="window">
+                FPS: <span class="fps"/>
+            </div>
+            <div id="controls-window" class="window">
+                <h1>Controls</h1>
+                <table class="controls">
+                    <tr><td class="action">Up</td><td>W or Up Arrow</tr>
+                    <tr><td class="action">Down </td><td>S or Down Arrow</td></tr>
+                    <tr><td class="action">Left</td><td>A or Left Arrow</td></tr>
+                    <tr><td class="action">Right</td><td>D or Right Arrow</td></tr>
+                    <tr><td class="action">Fog</td><td>F</td></tr>
+                    <tr><td class="action">Pause</td><td>Spacebar</td>
+                </table>
+            </div>
+            <div id="inventory-window" class="window">
+                <table class="inventory">
+
+                </table>
+            </div>
+            <div id="stats-window" class="window">
+                AMMO: <span class="ammo"/>
+            </div>
+            <div class="mainmenuscreen gamestatescreen">
+                <h1>Dredd RL</h1>
+                <p>Press Enter to Start Game</p>
+            </div>    
+            <div class="gameoverscreen gamestatescreen">
+                <h1>Game Over</h1>
+                <p>You died. Justice is no more.</p>
+            </div> 
+            <div class="gamewinscreen gamestatescreen">
+                <h1>Alive</h1>
+                <p>You are the law.</p>
+            </div> 
+            <div class="pausescreen gamestatescreen">
+                <h1>Paused</h1>
+            </div>
+            <div class="loadscreen gamestatescreen">
+                <img class="loader" src="js/sge/images/ajax-loader.gif"/>
+            </div>
+
+        </div>
+        <script data-main="js/game" src="dreddrl.js"></script>
+    </body>
+</html>

@@ -8,16 +8,15 @@ define(['sge'],function(sge){
 			this.data.maxHealth = data.heath || 10;
 			this.data.alignment = data.alignment || 'evil';
 		},
-		hit: function(){
-			console.log('Hit');
+		addStat : function(stat, value){
+			value = value || 1;
+			this.set(stat, this.get(stat) + value);
 		},
-		kill: function(){
-			this.entity.fireEvent('kill');
+		subtractStat : function(stat, value){
+			value = value || 1;
+			this.set(stat, this.get(stat) - value);
 		},
-		register: function(){
-			this.entity.addListener('contact.tile', this.kill)
-		}
-	});
+	})
 	sge.Component.register('stats', StatsComponent);
     return StatsComponent;
 })		
