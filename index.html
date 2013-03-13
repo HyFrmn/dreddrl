@@ -23,27 +23,32 @@
             <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
         <![endif]-->
         <div id="game" class="fullscreen">
-            <div id="debug-window" class="window">
-                FPS: <span class="fps"/>
-            </div>
-            <div id="controls-window" class="window">
+            <div id="controls-window" class="window float-right clear-both">
                 <h1>Controls</h1>
-                <table class="controls">
+                <table class="controls full-width">
                     <tr><td class="action">Up</td><td>W or Up Arrow</tr>
                     <tr><td class="action">Down </td><td>S or Down Arrow</td></tr>
                     <tr><td class="action">Left</td><td>A or Left Arrow</td></tr>
                     <tr><td class="action">Right</td><td>D or Right Arrow</td></tr>
-                    <tr><td class="action">Fog</td><td>F</td></tr>
+                    <tr><td class="action">Shoot</td><td>X</td></tr>
+                    <tr><td class="action">Strafe</td><td>Y</td></tr>
                     <tr><td class="action">Pause</td><td>Spacebar</td>
                 </table>
             </div>
-            <div id="inventory-window" class="window">
-                <table class="inventory">
-
+            <div id="debug-window" class="window float-right clear-both">
+                FPS: <span class="fps"/>
+            </div>
+            
+            <div id="stats-window" class="window">
+                <table class="stats full-width">
+                   <tr><td class="label">HEALTH:</td><td><span class="health"/></td></tr>
+                   <tr><td class="label">AMMO:</td><td><span class="ammo"/></td></tr>
                 </table>
             </div>
-            <div id="stats-window" class="window">
-                AMMO: <span class="ammo"/>
+            <div id="inventory-window" class="window">
+                <table class="inventory full-width">
+
+                </table>
             </div>
             <div class="mainmenuscreen gamestatescreen">
                 <h1>Dredd RL</h1>
@@ -63,8 +68,12 @@
             <div class="loadscreen gamestatescreen">
                 <img class="loader" src="js/sge/images/ajax-loader.gif"/>
             </div>
+            <div class="dialogscreen gamestatescreen">
+                <div class="dialogbox">
 
+                </div>
+            </div>
         </div>
-        <script data-main="js/game" src="dreddrl.js"></script>
+        <script data-main="js/game" src="js/require-jquery.js"></script>
     </body>
 </html>
