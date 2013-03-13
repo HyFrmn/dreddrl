@@ -175,7 +175,18 @@ html, body {
     clear: both;
 }
 
-
+.dialogbox {
+    width: 80%;
+    color: white;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 8px;
+    background: black;
+    padding: 1em;
+    top: 66%;
+    position: relative;
+    height: 20%;
+}
 
 
 /* ==========================================================================

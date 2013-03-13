@@ -147,7 +147,9 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
                     {name: 'startGame', from: 'mainmenu', to:'loading'},
                     {name: 'loadMainMenu', from: ['game','gameover','gamewin','menu','pause'], to: 'mainmenu'},
                     {name: 'gameOver', from: 'game', to: 'gameover'},
-                    {name: 'gameWin', from: 'game', to:'gamewin'}
+                    {name: 'gameWin', from: 'game', to:'gamewin'},
+                    {name: 'startDialog', from: 'game', to:'dialog'},
+                    {name: 'endDialog', from:'dialog', to:'game'}
                 ],
                 callbacks: {
                     onleavestate: function(evt, from, to){

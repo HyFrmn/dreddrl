@@ -1,4 +1,4 @@
-define(['sge', './factory'], function(sge, Factory){
+define(['sge', 'jquery', './factory'], function(sge, $, Factory){
     var FLOORTILE =  { srcX : 0, srcY: 0};
     var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy"}
     var DOOROPENTILE1 = { srcX : 1, srcY: 36}
@@ -17,7 +17,8 @@ define(['sge', './factory'], function(sge, Factory){
                 }
             });
 
-            this.buildWall(0,0,this.map.width);
+            this.buildWall(0,1,this.map.width,true);
+            
 
             for (var y=0;y<this.map.height;y++){
                 var tile = this.map.getTile(0, y);
@@ -25,16 +26,18 @@ define(['sge', './factory'], function(sge, Factory){
                     'layer0' : CEILTILE
                 }
                 tile.passable = false;
-                tile = this.map.getTile(1, y);
+                tile = this.map.getTile(this.map.width-1, y);
                 tile.layers = {
                     'layer0' : CEILTILE
                 }
                 tile.passable = false;
             }
 
+            this.buildWall(0,this.map.height-2,this.map.width, true);
+
             //Create floor opening.
-            for (var y=24;y<40;y++){
-                for (var x=24;x<40;x++){
+            for (var y=26;y<=38;y++){
+                for (var x=26;x<=38;x++){
                     var tile = this.map.getTile(x, y);
                     tile.layers = {
                         'layer0' : { srcX : 2, srcY: 0}
@@ -42,23 +45,62 @@ define(['sge', './factory'], function(sge, Factory){
                     tile.passable = false;
                 }
             }
+            this.createRoom(12, 5, 3, 5);
+            this.createRoom(16, 5, 3, 5);
+            this.createRoom(20, 5, 3, 5);
+            this.createRoom(24, 5, 3, 5);
+            this.createRoom(28, 5, 3, 5);
+            this.createRoom(32, 5, 3, 5);
+            this.createRoom(36, 5, 3, 5);
+            this.createRoom(40, 5, 3, 5);
+            this.createRoom(44, 5, 3, 5);
+            this.createRoom(48, 5, 3, 5);
 
-            this.createRoom(16, 16);
-            this.createRoom(20, 16);
-            this.createRoom(24, 16);
-            this.createRoom(28, 16);
-            this.createRoom(32, 16);
-            this.createRoom(36, 16);
-            this.createRoom(40, 16);
-            this.createRoom(44, 16);
-            this.createRoom(48, 16);
+
+            this.createRoom(12, 18, 3, 5, {doors: 'top'});
+            this.createRoom(16, 18, 3, 5, {doors: 'top'});
+            this.createRoom(20, 18, 3, 5, {doors: 'top'});
+            this.createRoom(24, 18, 3, 5, {doors: 'top'});
+            this.createRoom(28, 18, 3, 5, {doors: 'top'});
+            this.createRoom(32, 18, 3, 5, {doors: 'top'});
+            this.createRoom(36, 18, 3, 5, {doors: 'top'});
+            this.createRoom(40, 18, 3, 5, {doors: 'top'});
+            this.createRoom(44, 18, 3, 5, {doors: 'top'});
+            this.createRoom(48, 18, 3, 5, {doors: 'top'});
+
+            this.createRoom(12, 46, 3, 5)
+            this.createRoom(16, 46, 3, 5);
+            this.createRoom(20, 46, 3, 5);
+            this.createRoom(24, 46, 3, 5);
+            this.createRoom(28, 46, 3, 5);
+            this.createRoom(32, 46, 3, 5);
+            this.createRoom(36, 46, 3, 5);
+            this.createRoom(40, 46, 3, 5);
+            this.createRoom(44, 46, 3, 5);
+            this.createRoom(48, 46, 3, 5);
+
+            this.createRoom(12, 58, 3, 5, {doors: 'top'});
+            this.createRoom(16, 58, 3, 5, {doors: 'top'});
+            this.createRoom(20, 58, 3, 5, {doors: 'top'});
+            this.createRoom(24, 58, 3, 5, {doors: 'top'});
+            this.createRoom(28, 58, 3, 5, {doors: 'top'});
+            this.createRoom(32, 58, 3, 5, {doors: 'top'});
+            this.createRoom(36, 58, 3, 5, {doors: 'top'});
+            this.createRoom(40, 58, 3, 5, {doors: 'top'});
+            this.createRoom(44, 58, 3, 5, {doors: 'top'});
+            this.createRoom(48, 58, 3, 5, {doors: 'top'});
+
+            this.createRoom(12, 32, 13, 7, {doors: 'both'});
+            this.createRoom(52, 32, 13, 7, {doors: 'both'});
 
             this.state.pc = this.createPC();
+            /*
             for (var i=0;i<10;i++){
                 this.createEnemy();
             }
+            */
         },
-        buildWall: function(sx, sy, length){
+        buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){
                 var tile = this.map.getTile(x+sx, sy);
                 tile.layers = {
@@ -70,6 +112,11 @@ define(['sge', './factory'], function(sge, Factory){
                     'layer0' : { srcX : 6, srcY: 2}
                 }
                 tile.passable = false;
+                if (ceil){
+                   tile = this.map.getTile(x+sx, sy-1);
+                    tile.layers['layer0'] = CEILTILE;
+                    tile.passable = false; 
+                }
             }
         },
         createPC : function(){
@@ -85,8 +132,8 @@ define(['sge', './factory'], function(sge, Factory){
             if (pc==null){
                 pc = Factory('pc', {
                     xform : {
-                        tx: (8 + 0.5) * this.map.tileSize,
-                        ty: (8 + 0.5) * this.map.tileSize,
+                        tx: (16 + 0.5) * this.map.tileSize,
+                        ty: (32 + 0.5) * this.map.tileSize,
                         vx : Math.random() * 10 - 5,
                         vy : Math.random() * 10 - 5
                     }});
@@ -98,17 +145,9 @@ define(['sge', './factory'], function(sge, Factory){
             this.state.addEntity(pc);
             return pc;
         },
-        createEnemy : function(){
+        createEnemy : function(tx, ty){
             var enemy = null;
-            var tx = sge.random.rangeInt(4,28);
-            var ty = sge.random.rangeInt(4,28);
             var passable = false
-            while (!passable){
-                tx = sge.random.rangeInt(4,28);
-                ty = sge.random.rangeInt(4,28);
-                var tile = this.map.getTile(tx,ty);
-                passable = tile.passable;
-            }
             enemy = Factory('enemy', {
                 xform : {
                     tx: (tx + 0.5) * this.map.tileSize,
@@ -120,13 +159,14 @@ define(['sge', './factory'], function(sge, Factory){
             this.state.addEntity(enemy);
             return enemy;
         },
-        createRoom : function(cx, cy){
+        createRoom : function(cx, cy, width, height, options){
+            options = $.extend({doors:'bottom', open: true}, options || {});
             /*
             var cx = 16;  //sge.random.rangeInt(8,this.map.width-8);
             var cy = 16; //sge.random.rangeInt(8,this.map.height-8);
             */
-            var halfX = 1;
-            var halfY = 2;
+            var halfX = Math.floor((width-1)/2);
+            var halfY = Math.floor((height-1)/2);
 
             var tile = null;
             for (var y=(cy-halfY);y<=(cy+halfY);y++){
@@ -136,8 +176,8 @@ define(['sge', './factory'], function(sge, Factory){
                     tile.passable = true;
                 }
             }
-            this.buildWall((cx-halfX),(cy-halfY)-2,3);
-            this.buildWall((cx-halfX)-1,(cy+halfY)+2,5);
+            this.buildWall((cx-halfX),(cy-halfY)-2,width);
+            this.buildWall((cx-halfX)-1,(cy+halfY)+2,width+2);
             for (x=(cx-halfX-1);x<=(cx+halfX+1);x++){
                 tile = this.map.getTile(x,(cy+halfY)+1);
                 tile.layers['layer0'] = CEILTILE;
@@ -154,7 +194,16 @@ define(['sge', './factory'], function(sge, Factory){
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
             }
-            this.createDoor(cx, cy+halfY+3, sge.random.unit() > 0.5);
+            if ((options.doors=='bottom')||(options.doors=='both')){
+                this.createDoor(cx, cy+halfY+3, options.open);
+            } 
+            if ((options.doors=='top')||(options.doors=='both')) {
+                this.createDoor(cx, cy-halfY-1, options.open);
+            }
+
+            if (Math.random()<0.65){
+                this.createEnemy(cx,cy);
+            }            
         },
         createDoor : function(cx, cy, open){
             var tile = null;

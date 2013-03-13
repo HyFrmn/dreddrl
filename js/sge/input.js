@@ -118,11 +118,13 @@ define(['./lib/class', './observable'], function(Class, Observable){
             document.onkeyup = this.keyUpCallback.bind(this);
         },
         keyDownCallback : function(e){
+            console.log('keydown:' + REVERSE_KEYCODES[e.keyCode]);
             if (!this._isKeyDown[e.keyCode]){
                 this._isNewKeyDown[e.keyCode] = true;
             }
         },
         keyUpCallback : function(e){
+            console.log('keyup:' + REVERSE_KEYCODES[e.keyCode]);
             this._isKeyDown[e.keyCode] = undefined;
         },
         isPressed : function(keyCode){
@@ -134,6 +136,7 @@ define(['./lib/class', './observable'], function(Class, Observable){
            		var keyCode = keys[i];
            		this._isKeyDown[keyCode] = true;
            		delete this._isNewKeyDown[keyCode];
+
                 this.fireEvent('keydown:' + REVERSE_KEYCODES[keyCode])
            };
         }

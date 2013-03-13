@@ -1,6 +1,7 @@
-define(['./dreddrlstate'], function(DreddRLState){
+define(['./dreddrlstate','./dialogstate'], function(DreddRLState, DialogState){
 
 	return {
-		DreddRLState : DreddRLState
+		DreddRLState : DreddRLState,
+		DialogState : DialogState
 	}
 })

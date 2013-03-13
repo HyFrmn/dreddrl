@@ -1,11 +1,15 @@
 define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge, BlockLevelGenerator, Physics, Factory){
 
+    INTRO = "Welcome Rookie\nYou've been assigned to the homicide reported at Peach Trees in Sector 13.\nYou are the law.";
+
 	var DreddRLState = sge.GameState.extend({
 		initState: function(options){
             // Tile Map
             var size = 64;
             this.options = options || {};
             this._contactList = [];
+
+            this._intro = false;
 
             this._killList = [];
             this.factory = Factory;
@@ -99,12 +103,20 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
                     closest.fireEvent('focus.gain');
                 }
                 this._closest = closest;
-                console.log('CHANGE')
             }
+        },
+        startDialog: function(dialog){
+            this.game._states['dialog'].setDialog(dialog);
+            this.game.fsm.startDialog();
+            console.log('DIALOG');
         },
         tick : function(delta){
             this.tickTimeouts(delta);
             this.physics.resolveCollisions(delta);
+            if (this._intro==false){
+                this._intro = true;
+                this.startDialog(INTRO)
+            }
             this._interaction_tick(delta);
             _.each(this._entity_ids, function(id){
                 var entity = this.entities[id];
@@ -118,9 +130,11 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
                 this.game.fsm.gameOver();
             }
 
+            /*
             if (this.getEntitiesWithTag('enemy').length<=0){
                 this.game.fsm.gameWin();
             }
+            */
 
             this.game.renderer.track(this.pc);
             //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));

@@ -169,7 +169,7 @@ define(function(require){
             }
             */
             ctx.drawImage(
-                spriteSheet.image,
+                spriteSheet.buffer,
                 srcRect[0],
                 srcRect[1],
                 srcRect[2],
