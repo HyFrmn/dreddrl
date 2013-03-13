@@ -19,18 +19,18 @@ define(function(require){
 
     Renderer.prototype.track = function(entity, options){
         options = {
-            padding: 64,
+            padding: 128,
             speedScale: 1
         }
         var width = this.width;
         var height = this.height;
         var screenX = entity.get('xform.tx') - this.tx;
         var screenY = entity.get('xform.ty') - this.ty;
-        if (screenX < options.padding){
-            this.tx += options.speedScale * (screenX - options.padding);
+        if (screenX < 300){
+            this.tx += options.speedScale * (screenX - 300);
         }
-        if (screenX > width-options.padding){
-            this.tx += options.speedScale * (screenX - (width - options.padding));
+        if (screenX > width-300){
+            this.tx += options.speedScale * (screenX - (width - 300));
         }
         if (screenY < options.padding){
             this.ty += options.speedScale * (screenY - options.padding);

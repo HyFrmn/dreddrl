@@ -60,8 +60,7 @@ define(['sge'], function(sge){
 		resolveCollisions : function(delta){
 		    var entities = [];
 		    var newContacts = [];
-		    _.each(this.state._entity_ids, function(id){
-		        var entity = this.state.entities[id];
+		    _.each(this.state.getEntitiesWithComponent('physics'), function(entity){
 		        var vx = entity.get('xform.vx') * delta;
 		        var vy = entity.get('xform.vy') * delta;
 		        this.moveGameObject(entity, vx, vy);

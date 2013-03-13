@@ -17,11 +17,6 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             // Load Game "Plugins"
             this.physics = new Physics(this);
             this.loader = new sge.vendor.PxLoader();
-            /*
-            this.loader.addCompletionListener(function(){
-                this.initGame(options);
-            }.bind(this));
-            */
             this.loader.addProgressListener(this.progressListener.bind(this));
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
@@ -43,8 +38,6 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
         },
 
         initGame : function(){
-            //Populate world
-            console.log('EVERYTHING LOADED');
             this.level = new BlockLevelGenerator(this, this.options);
             setTimeout(function() {
                     this.game.fsm.finishLoad();
@@ -53,8 +46,6 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
 
         progressListener : function(e){
             sge.SpriteSheet.SpriteSheetImages[e.resource.getName()] = e.resource.img;
-            //e.resource.img.onload = function(){console.log('Loaded', e.resource.getName())};
-            console.log(e.resource.getName(), e);
             if (e.completedCount == e.totalCount){
                 this.initGame();
             }
@@ -76,15 +67,45 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
         },
         initUi : function(){
             this._elem_ammo = $('span.ammo');
+            this._elem_health = $('span.health');
         },
         updateUi : function(){
             if (this.pc){
                 this._elem_ammo.text(this.pc.get('inventory.ammo'));
+                this._elem_health.text(this.pc.get('health.life'));
+            }
+        },
+        _interaction_tick : function(delta){
+
+            var closest = null;
+            var cdist = 64;
+            var entities = this.getEntitiesWithComponent('interact');
+            
+            for (var i = entities.length - 1; i >= 0; i--) {
+                entity = entities[i];
+                var dx = entity.get('xform.tx') - this.pc.get('xform.tx');
+                var dy = entity.get('xform.ty') - this.pc.get('xform.ty');
+                var dist = Math.sqrt((dx*dx)+(dy*dy));
+                if (dist < cdist){
+                    closest = entity;
+                    cdist = dist;
+                }
+            }
+            if (closest!=this._closest){
+                if (this._closest){
+                    this._closest.fireEvent('focus.lose');
+                }
+                if (closest){
+                    closest.fireEvent('focus.gain');
+                }
+                this._closest = closest;
+                console.log('CHANGE')
             }
         },
         tick : function(delta){
             this.tickTimeouts(delta);
             this.physics.resolveCollisions(delta);
+            this._interaction_tick(delta);
             _.each(this._entity_ids, function(id){
                 var entity = this.entities[id];
                 entity.componentCall('tick', delta);

@@ -5,7 +5,9 @@ define([
 	'./components/judgemovement',
 	'./components/deaddrop',
 	'./components/freeitem',
-    './components/inventory'
+    './components/inventory',
+    './components/interaction',
+    './components/door'
 	], 
 	function(sge){
 		FACTORYDATA = {
@@ -87,6 +89,11 @@ define([
                 freeitem: {
                     'health.life' : 5
                 }
+            }},
+            door : function(){return {
+                xform: {},
+                interact : {},
+                door: {}
             }}
 		}
 

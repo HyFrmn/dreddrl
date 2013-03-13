@@ -158,6 +158,13 @@ define(['sge', './factory'], function(sge, Factory){
         },
         createDoor : function(cx, cy, open){
             var tile = null;
+            var door = this.state.factory('door', {xform:{
+                tx: ((cx + 0.5) * 32),
+                ty: ((cy + 0.5) * 32),
+            }, door: {open: open}});
+            door.tags.push('door');
+            this.state.addEntity(door);
+            /*
             if (open){
                 tile = this.map.getTile(cx,cy-1);
                 tile.layers['layer1'] = DOOROPENTILE1;
@@ -173,6 +180,7 @@ define(['sge', './factory'], function(sge, Factory){
                 tile.layers['layer1'] = DOORCLOSEDTILE2;
                 tile.passable=true;
             }
+            */
         }
     });
     return LevelGenerator;

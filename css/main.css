@@ -148,26 +148,32 @@ html, body {
 .loadscreen {
     background: black;
 }
-
+ 
 .loadscreen img.loader {;
     display: block;
     margin-left: auto;
     margin-right: auto;
 }
 
-table.controls, table.inventory {
+.full-width {
     width: 100%;
 }
 
-.controls td {
+.window table td {
     padding-left: 0.25em;
 }
 
-.controls td.action {
+.window table td.action, .window table td.label{
     color: orange;
 }
 
+.float-right {
+    float: right;
+}
 
+.clear-both {
+    clear: both;
+}
 
 
 

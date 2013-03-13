@@ -11802,12 +11802,19 @@ define('sge/renderer',['require','jquery','sge/lib/vector'],function(require){
         if (clear!==false){
             this.clear(layer, clearX, clearY,destRect[2],destRect[3])
         }
+
         this.draw(layer, function(){
             ctx.save();
             ctx.translate(tx, ty);
             ctx.scale(scale[0],scale[1]);
+            /*
+            if (spriteSheet.buffer){
+                console.log('Missing', spriteSheet, spriteSheet.buffer)
+                return;
+            }
+            */
             ctx.drawImage(
-                spriteSheet.buffer,
+                spriteSheet.image,
                 srcRect[0],
                 srcRect[1],
                 srcRect[2],
@@ -11998,10 +12005,10 @@ define('sge/spritesheet',[],function(){
 			this.image.src = image;
 			SpriteSheet.SpriteSheetImages[image]=this.image;
 		} else {
-			console.log('FOUND');
 			this.image = SpriteSheet.SpriteSheetImages[image];
 			this.buffer = this.image;
 			this.onLoadImage();
+            console.log('FOUND', image, this.image.width);
 		}
 
 	};
@@ -15329,7 +15336,7 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
             this.elem = $('.mainmenuscreen') || null;
             this.startGame = function(){
                 this.game._states['game'] = new this.game._gameState(this.game);
-                this.game.fsm.startGame();
+                this.game.fsm.startGame();    
             }.bind(this);
             this.startState()
         },
@@ -16212,7 +16219,7 @@ define('dreddrl/factory',[
             enemy : function(){return {
                 xform : {},
                 sprite : {
-                    src : 'assets/sprites/albertbrownhair.png',
+                    src : 'assets/sprites/albert.png',
                     width: 32,
                     offsetY: -8,
                     scale: 2
@@ -16664,13 +16671,17 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
             this.game.renderer.createLayer('main');
             this.game.renderer.createLayer('canopy');
             // Load Game "Plugins"
-            this.level = new BlockLevelGenerator(this, options);
             this.physics = new Physics(this);
             this.loader = new sge.vendor.PxLoader();
-            this.loader.addCompletionListener(this.game.fsm.finishLoad.bind(this.game.fsm));
+            /*
+            this.loader.addCompletionListener(function(){
+                this.initGame(options);
+            }.bind(this));
+            */
             this.loader.addProgressListener(this.progressListener.bind(this));
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/scifi_icons_1.png');
             
             
@@ -16687,9 +16698,22 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
             this.loader.start();
         },
 
+        initGame : function(){
+            //Populate world
+            console.log('EVERYTHING LOADED');
+            this.level = new BlockLevelGenerator(this, this.options);
+            setTimeout(function() {
+                    this.game.fsm.finishLoad();
+            }.bind(this), 1000);
+        },
+
         progressListener : function(e){
-            sge.SpriteSheet.SpriteSheetImages[e.resource.getName()] == e.resource.img
+            sge.SpriteSheet.SpriteSheetImages[e.resource.getName()] = e.resource.img;
+            //e.resource.img.onload = function(){console.log('Loaded', e.resource.getName())};
             console.log(e.resource.getName(), e);
+            if (e.completedCount == e.totalCount){
+                this.initGame();
+            }
         },
 
         startState : function(){

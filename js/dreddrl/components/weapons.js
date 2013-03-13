@@ -46,7 +46,6 @@ define(['sge', './bullet'],function(sge){
 		},
 		register: function(state){
 			this.state = state;
-			console.log('REGISTER')
 			this.entity.state.input.addListener('keydown:X', this.fire);
 		},
 		unregister: function(){

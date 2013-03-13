@@ -89,6 +89,12 @@ define(['./lib/class', './vendor/underscore'],
 			});
 		},
 
+		getEntitiesWithComponent: function(comp){
+			return _.filter(this.getEntities(), function(e){
+				return (e.components[comp]!==undefined);
+			});
+		},
+
 		removeEntity: function(entity){
 			var id = entity.id;
 			this._entity_ids = _.without(this._entity_ids, id);

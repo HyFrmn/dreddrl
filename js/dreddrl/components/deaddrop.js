@@ -28,7 +28,6 @@ define(['sge'], function(sge){
 				}});
 
             this.state.addEntity(newItem);
-            console.log(newItem);
         },
     	register: function(state){
 			this.state = state;

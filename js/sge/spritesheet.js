@@ -21,7 +21,6 @@ define(function(){
 			this.image = SpriteSheet.SpriteSheetImages[image];
 			this.buffer = this.image;
 			this.onLoadImage();
-            console.log('FOUND', image, this.image.width);
 		}
 
 	};

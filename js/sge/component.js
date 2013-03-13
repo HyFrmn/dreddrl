@@ -46,9 +46,11 @@ define(['sge/lib/class'], function(Class){
 		render : function(){},
 		tick : function(){},
 		register: function(state){
-
+			this.state = state;
 		},
-		deregister: function(state){},
+		deregister: function(state){
+			this.state = null;
+		},
 		createInputListener: function(event, callback){
 			this._listeners[callback] = callback.bind(this);
 		}
