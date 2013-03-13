@@ -18,10 +18,10 @@ define(function(){
 			this.image.src = image;
 			SpriteSheet.SpriteSheetImages[image]=this.image;
 		} else {
-			console.log('FOUND');
 			this.image = SpriteSheet.SpriteSheetImages[image];
 			this.buffer = this.image;
 			this.onLoadImage();
+            console.log('FOUND', image, this.image.width);
 		}
 
 	};

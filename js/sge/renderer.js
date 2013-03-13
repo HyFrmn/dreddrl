@@ -157,12 +157,19 @@ define(function(require){
         if (clear!==false){
             this.clear(layer, clearX, clearY,destRect[2],destRect[3])
         }
+
         this.draw(layer, function(){
             ctx.save();
             ctx.translate(tx, ty);
             ctx.scale(scale[0],scale[1]);
+            /*
+            if (spriteSheet.buffer){
+                console.log('Missing', spriteSheet, spriteSheet.buffer)
+                return;
+            }
+            */
             ctx.drawImage(
-                spriteSheet.buffer,
+                spriteSheet.image,
                 srcRect[0],
                 srcRect[1],
                 srcRect[2],

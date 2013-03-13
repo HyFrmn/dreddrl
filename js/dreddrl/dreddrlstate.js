@@ -15,13 +15,17 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             this.game.renderer.createLayer('main');
             this.game.renderer.createLayer('canopy');
             // Load Game "Plugins"
-            this.level = new BlockLevelGenerator(this, options);
             this.physics = new Physics(this);
             this.loader = new sge.vendor.PxLoader();
-            this.loader.addCompletionListener(this.game.fsm.finishLoad.bind(this.game.fsm));
+            /*
+            this.loader.addCompletionListener(function(){
+                this.initGame(options);
+            }.bind(this));
+            */
             this.loader.addProgressListener(this.progressListener.bind(this));
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/scifi_icons_1.png');
             
             
@@ -38,9 +42,22 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             this.loader.start();
         },
 
+        initGame : function(){
+            //Populate world
+            console.log('EVERYTHING LOADED');
+            this.level = new BlockLevelGenerator(this, this.options);
+            setTimeout(function() {
+                    this.game.fsm.finishLoad();
+            }.bind(this), 1000);
+        },
+
         progressListener : function(e){
-            sge.SpriteSheet.SpriteSheetImages[e.resource.getName()] == e.resource.img
+            sge.SpriteSheet.SpriteSheetImages[e.resource.getName()] = e.resource.img;
+            //e.resource.img.onload = function(){console.log('Loaded', e.resource.getName())};
             console.log(e.resource.getName(), e);
+            if (e.completedCount == e.totalCount){
+                this.initGame();
+            }
         },
 
         startState : function(){

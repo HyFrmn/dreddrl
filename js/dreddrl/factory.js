@@ -38,7 +38,7 @@ define([
             enemy : function(){return {
                 xform : {},
                 sprite : {
-                    src : 'assets/sprites/albertbrownhair.png',
+                    src : 'assets/sprites/albert.png',
                     width: 32,
                     offsetY: -8,
                     scale: 2

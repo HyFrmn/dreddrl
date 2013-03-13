@@ -24,7 +24,7 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
             this.elem = $('.mainmenuscreen') || null;
             this.startGame = function(){
                 this.game._states['game'] = new this.game._gameState(this.game);
-                this.game.fsm.startGame();
+                this.game.fsm.startGame();    
             }.bind(this);
             this.startState()
         },
