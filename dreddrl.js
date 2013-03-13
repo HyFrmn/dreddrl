@@ -11664,18 +11664,18 @@ define('sge/renderer',['require','jquery','sge/lib/vector'],function(require){
 
     Renderer.prototype.track = function(entity, options){
         options = {
-            padding: 64,
+            padding: 128,
             speedScale: 1
         }
         var width = this.width;
         var height = this.height;
         var screenX = entity.get('xform.tx') - this.tx;
         var screenY = entity.get('xform.ty') - this.ty;
-        if (screenX < options.padding){
-            this.tx += options.speedScale * (screenX - options.padding);
+        if (screenX < 300){
+            this.tx += options.speedScale * (screenX - 300);
         }
-        if (screenX > width-options.padding){
-            this.tx += options.speedScale * (screenX - (width - options.padding));
+        if (screenX > width-300){
+            this.tx += options.speedScale * (screenX - (width - 300));
         }
         if (screenY < options.padding){
             this.ty += options.speedScale * (screenY - options.padding);
@@ -11814,7 +11814,7 @@ define('sge/renderer',['require','jquery','sge/lib/vector'],function(require){
             }
             */
             ctx.drawImage(
-                spriteSheet.image,
+                spriteSheet.buffer,
                 srcRect[0],
                 srcRect[1],
                 srcRect[2],
@@ -11967,9 +11967,11 @@ define('sge/component',['sge/lib/class'], function(Class){
 		render : function(){},
 		tick : function(){},
 		register: function(state){
-
+			this.state = state;
 		},
-		deregister: function(state){},
+		deregister: function(state){
+			this.state = null;
+		},
 		createInputListener: function(event, callback){
 			this._listeners[callback] = callback.bind(this);
 		}
@@ -12008,7 +12010,6 @@ define('sge/spritesheet',[],function(){
 			this.image = SpriteSheet.SpriteSheetImages[image];
 			this.buffer = this.image;
 			this.onLoadImage();
-            console.log('FOUND', image, this.image.width);
 		}
 
 	};
@@ -14648,6 +14649,12 @@ define('sge/gamestate',['./lib/class', './vendor/underscore'],
 			});
 		},
 
+		getEntitiesWithComponent: function(comp){
+			return _.filter(this.getEntities(), function(e){
+				return (e.components[comp]!==undefined);
+			});
+		},
+
 		removeEntity: function(entity){
 			var id = entity.id;
 			this._entity_ids = _.without(this._entity_ids, id);
@@ -14781,11 +14788,13 @@ define('sge/input',['./lib/class', './observable'], function(Class, Observable){
             document.onkeyup = this.keyUpCallback.bind(this);
         },
         keyDownCallback : function(e){
+            console.log('keydown:' + REVERSE_KEYCODES[e.keyCode]);
             if (!this._isKeyDown[e.keyCode]){
                 this._isNewKeyDown[e.keyCode] = true;
             }
         },
         keyUpCallback : function(e){
+            console.log('keyup:' + REVERSE_KEYCODES[e.keyCode]);
             this._isKeyDown[e.keyCode] = undefined;
         },
         isPressed : function(keyCode){
@@ -14797,6 +14806,7 @@ define('sge/input',['./lib/class', './observable'], function(Class, Observable){
            		var keyCode = keys[i];
            		this._isKeyDown[keyCode] = true;
            		delete this._isNewKeyDown[keyCode];
+
                 this.fireEvent('keydown:' + REVERSE_KEYCODES[keyCode])
            };
         }
@@ -15459,7 +15469,9 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
                     {name: 'startGame', from: 'mainmenu', to:'loading'},
                     {name: 'loadMainMenu', from: ['game','gameover','gamewin','menu','pause'], to: 'mainmenu'},
                     {name: 'gameOver', from: 'game', to: 'gameover'},
-                    {name: 'gameWin', from: 'game', to:'gamewin'}
+                    {name: 'gameWin', from: 'game', to:'gamewin'},
+                    {name: 'startDialog', from: 'game', to:'dialog'},
+                    {name: 'endDialog', from:'dialog', to:'game'}
                 ],
                 callbacks: {
                     onleavestate: function(evt, from, to){
@@ -16008,7 +16020,6 @@ define('dreddrl/components/weapons',['sge', './bullet'],function(sge){
 		},
 		register: function(state){
 			this.state = state;
-			console.log('REGISTER')
 			this.entity.state.input.addListener('keydown:X', this.fire);
 		},
 		unregister: function(){
@@ -16110,7 +16121,6 @@ define('dreddrl/components/deaddrop',['sge'], function(sge){
 				}});
 
             this.state.addEntity(newItem);
-            console.log(newItem);
         },
     	register: function(state){
 			this.state = state;
@@ -16179,6 +16189,115 @@ define('dreddrl/components/inventory',['sge','jquery'],function(sge, $){
 	sge.Component.register('inventory', InventoryComponent);
     return InventoryComponent;
 })		;
+define('dreddrl/components/interaction',['sge'], function(sge){
+    var Interact = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.data.fillStyle = 'green';
+            this.data.strokeStyle = 'black';
+            this.active = false;
+            this.interact = this.interact.bind(this);
+            this.entity.addListener('focus.gain', this.activate.bind(this));
+            this.entity.addListener('focus.lose', this.deactivate.bind(this));
+        },
+        tick : function(){
+        	var pc = this.getPC();
+        	if (pc){
+        		var data = this.getPCPosition();
+        		if (data[4]<48){
+        			pc.fireEvent('')
+        		}
+        	}
+        },
+        activate: function(){
+            this.active = true;
+            this.state.input.addListener('keydown:enter', this.interact);
+        },
+        deactivate: function(){
+            this.active = false;
+            this.state.input.removeListener('keydown:enter', this.interact);
+        },
+        interact: function(){
+            this.entity.fireEvent('interact');
+        },
+        getPC: function(){
+            return this.entity.state.getEntitiesWithTag('pc')[0] || null;
+        },
+        getPCPosition: function(){
+            var pc = this.getPC();
+            var dx = this.entity.get('xform.tx') - pc.get('xform.tx');
+            var dy = this.entity.get('xform.ty') - pc.get('xform.ty');
+            var dist = Math.sqrt((dx*dx)+(dy*dy));
+            return [pc, dx, dy, dist];
+        },
+        render : function(renderer, layer){
+            if (this.active){
+                var tx = this.entity.get('xform.tx');
+                var ty = this.entity.get('xform.ty');
+                var width = 32; //this.entity.get('physics.width');
+                var height = 32; //this.entity.get('physics.height');
+                renderer.drawRect(layer, tx - width/2, ty - height/2, width, height, {fillStyle: this.get('fillStyle'), strokeStyle: this.get('strokeStyle')})
+            }
+        }
+    });
+    sge.Component.register('interact', Interact);
+    return Interact
+});
+var DOOROPENTILE1 = { srcX : 2, srcY: 36}
+var DOOROPENTILE2 = { srcX : 2, srcY: 37}
+var DOORCLOSEDTILE1 = { srcX : 1, srcY: 36}
+var DOORCLOSEDTILE2 = { srcX : 1, srcY: 37}
+
+define('dreddrl/components/door',['sge'], function(sge){
+    var Door = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.data.open = data.open || true;
+            this.interact = this.interact.bind(this);
+            this.entity.addListener('interact', this.interact);
+        },
+        interact: function(){
+            this.set('open', !this.get('open'));
+            this.updateTiles();
+        },
+        updateTiles : function(){
+            var tx = Math.floor(this.entity.get('xform.tx') / 32);
+            var ty = Math.floor(this.entity.get('xform.ty') / 32);
+            console.log(tx,ty)
+            if (this.get('open')){
+                tile = this.map.getTile(tx,ty-2);
+                tile.passable=true;
+                tile = this.map.getTile(tx,ty-1);
+                tile.layers['layer1'] = DOOROPENTILE1;
+                tile.passable=true;
+                tile = this.map.getTile(tx,ty);
+                tile.passable=true;
+                tile.layers['layer1'] = DOOROPENTILE2;
+            } else {
+                tile = this.map.getTile(tx,ty-2);
+                tile.passable=false;
+                tile = this.map.getTile(tx,ty-1);
+                tile.layers['layer1'] = DOORCLOSEDTILE1;
+                tile.passable=false;
+                tile = this.map.getTile(tx,ty);
+                tile.layers['layer1'] = DOORCLOSEDTILE2;
+                tile.passable=false;
+            }
+        },
+
+    	register: function(state){
+			this.state = state;
+            this.map = state.map;
+            this.updateTiles();
+		},
+		unregister: function(){
+			this.state = null;
+            this.map = null;
+		}
+    });
+    sge.Component.register('door', Door);
+    return Door
+});
 define('dreddrl/factory',[
 	'sge',
 	'./components/weapons',
@@ -16186,7 +16305,9 @@ define('dreddrl/factory',[
 	'./components/judgemovement',
 	'./components/deaddrop',
 	'./components/freeitem',
-    './components/inventory'
+    './components/inventory',
+    './components/interaction',
+    './components/door'
 	], 
 	function(sge){
 		FACTORYDATA = {
@@ -16268,6 +16389,11 @@ define('dreddrl/factory',[
                 freeitem: {
                     'health.life' : 5
                 }
+            }},
+            door : function(){return {
+                xform: {},
+                interact : {},
+                door: {}
             }}
 		}
 
@@ -16293,7 +16419,7 @@ define('dreddrl/factory',[
 		return Factory
 	}
 );
-define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory){
+define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory'], function(sge, $, Factory){
     var FLOORTILE =  { srcX : 0, srcY: 0};
     var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy"}
     var DOOROPENTILE1 = { srcX : 1, srcY: 36}
@@ -16312,7 +16438,8 @@ define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory
                 }
             });
 
-            this.buildWall(0,0,this.map.width);
+            this.buildWall(0,1,this.map.width,true);
+            
 
             for (var y=0;y<this.map.height;y++){
                 var tile = this.map.getTile(0, y);
@@ -16320,16 +16447,18 @@ define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory
                     'layer0' : CEILTILE
                 }
                 tile.passable = false;
-                tile = this.map.getTile(1, y);
+                tile = this.map.getTile(this.map.width-1, y);
                 tile.layers = {
                     'layer0' : CEILTILE
                 }
                 tile.passable = false;
             }
 
+            this.buildWall(0,this.map.height-2,this.map.width, true);
+
             //Create floor opening.
-            for (var y=24;y<40;y++){
-                for (var x=24;x<40;x++){
+            for (var y=26;y<=38;y++){
+                for (var x=26;x<=38;x++){
                     var tile = this.map.getTile(x, y);
                     tile.layers = {
                         'layer0' : { srcX : 2, srcY: 0}
@@ -16337,23 +16466,62 @@ define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory
                     tile.passable = false;
                 }
             }
+            this.createRoom(12, 5, 3, 5);
+            this.createRoom(16, 5, 3, 5);
+            this.createRoom(20, 5, 3, 5);
+            this.createRoom(24, 5, 3, 5);
+            this.createRoom(28, 5, 3, 5);
+            this.createRoom(32, 5, 3, 5);
+            this.createRoom(36, 5, 3, 5);
+            this.createRoom(40, 5, 3, 5);
+            this.createRoom(44, 5, 3, 5);
+            this.createRoom(48, 5, 3, 5);
 
-            this.createRoom(16, 16);
-            this.createRoom(20, 16);
-            this.createRoom(24, 16);
-            this.createRoom(28, 16);
-            this.createRoom(32, 16);
-            this.createRoom(36, 16);
-            this.createRoom(40, 16);
-            this.createRoom(44, 16);
-            this.createRoom(48, 16);
+
+            this.createRoom(12, 18, 3, 5, {doors: 'top'});
+            this.createRoom(16, 18, 3, 5, {doors: 'top'});
+            this.createRoom(20, 18, 3, 5, {doors: 'top'});
+            this.createRoom(24, 18, 3, 5, {doors: 'top'});
+            this.createRoom(28, 18, 3, 5, {doors: 'top'});
+            this.createRoom(32, 18, 3, 5, {doors: 'top'});
+            this.createRoom(36, 18, 3, 5, {doors: 'top'});
+            this.createRoom(40, 18, 3, 5, {doors: 'top'});
+            this.createRoom(44, 18, 3, 5, {doors: 'top'});
+            this.createRoom(48, 18, 3, 5, {doors: 'top'});
+
+            this.createRoom(12, 46, 3, 5)
+            this.createRoom(16, 46, 3, 5);
+            this.createRoom(20, 46, 3, 5);
+            this.createRoom(24, 46, 3, 5);
+            this.createRoom(28, 46, 3, 5);
+            this.createRoom(32, 46, 3, 5);
+            this.createRoom(36, 46, 3, 5);
+            this.createRoom(40, 46, 3, 5);
+            this.createRoom(44, 46, 3, 5);
+            this.createRoom(48, 46, 3, 5);
+
+            this.createRoom(12, 58, 3, 5, {doors: 'top'});
+            this.createRoom(16, 58, 3, 5, {doors: 'top'});
+            this.createRoom(20, 58, 3, 5, {doors: 'top'});
+            this.createRoom(24, 58, 3, 5, {doors: 'top'});
+            this.createRoom(28, 58, 3, 5, {doors: 'top'});
+            this.createRoom(32, 58, 3, 5, {doors: 'top'});
+            this.createRoom(36, 58, 3, 5, {doors: 'top'});
+            this.createRoom(40, 58, 3, 5, {doors: 'top'});
+            this.createRoom(44, 58, 3, 5, {doors: 'top'});
+            this.createRoom(48, 58, 3, 5, {doors: 'top'});
+
+            this.createRoom(12, 32, 13, 7, {doors: 'both'});
+            this.createRoom(52, 32, 13, 7, {doors: 'both'});
 
             this.state.pc = this.createPC();
+            /*
             for (var i=0;i<10;i++){
                 this.createEnemy();
             }
+            */
         },
-        buildWall: function(sx, sy, length){
+        buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){
                 var tile = this.map.getTile(x+sx, sy);
                 tile.layers = {
@@ -16365,6 +16533,11 @@ define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory
                     'layer0' : { srcX : 6, srcY: 2}
                 }
                 tile.passable = false;
+                if (ceil){
+                   tile = this.map.getTile(x+sx, sy-1);
+                    tile.layers['layer0'] = CEILTILE;
+                    tile.passable = false; 
+                }
             }
         },
         createPC : function(){
@@ -16380,8 +16553,8 @@ define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory
             if (pc==null){
                 pc = Factory('pc', {
                     xform : {
-                        tx: (8 + 0.5) * this.map.tileSize,
-                        ty: (8 + 0.5) * this.map.tileSize,
+                        tx: (16 + 0.5) * this.map.tileSize,
+                        ty: (32 + 0.5) * this.map.tileSize,
                         vx : Math.random() * 10 - 5,
                         vy : Math.random() * 10 - 5
                     }});
@@ -16393,17 +16566,9 @@ define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory
             this.state.addEntity(pc);
             return pc;
         },
-        createEnemy : function(){
+        createEnemy : function(tx, ty){
             var enemy = null;
-            var tx = sge.random.rangeInt(4,28);
-            var ty = sge.random.rangeInt(4,28);
             var passable = false
-            while (!passable){
-                tx = sge.random.rangeInt(4,28);
-                ty = sge.random.rangeInt(4,28);
-                var tile = this.map.getTile(tx,ty);
-                passable = tile.passable;
-            }
             enemy = Factory('enemy', {
                 xform : {
                     tx: (tx + 0.5) * this.map.tileSize,
@@ -16415,13 +16580,14 @@ define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory
             this.state.addEntity(enemy);
             return enemy;
         },
-        createRoom : function(cx, cy){
+        createRoom : function(cx, cy, width, height, options){
+            options = $.extend({doors:'bottom', open: true}, options || {});
             /*
             var cx = 16;  //sge.random.rangeInt(8,this.map.width-8);
             var cy = 16; //sge.random.rangeInt(8,this.map.height-8);
             */
-            var halfX = 1;
-            var halfY = 2;
+            var halfX = Math.floor((width-1)/2);
+            var halfY = Math.floor((height-1)/2);
 
             var tile = null;
             for (var y=(cy-halfY);y<=(cy+halfY);y++){
@@ -16431,8 +16597,8 @@ define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory
                     tile.passable = true;
                 }
             }
-            this.buildWall((cx-halfX),(cy-halfY)-2,3);
-            this.buildWall((cx-halfX)-1,(cy+halfY)+2,5);
+            this.buildWall((cx-halfX),(cy-halfY)-2,width);
+            this.buildWall((cx-halfX)-1,(cy+halfY)+2,width+2);
             for (x=(cx-halfX-1);x<=(cx+halfX+1);x++){
                 tile = this.map.getTile(x,(cy+halfY)+1);
                 tile.layers['layer0'] = CEILTILE;
@@ -16449,10 +16615,26 @@ define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
             }
-            this.createDoor(cx, cy+halfY+3, sge.random.unit() > 0.5);
+            if ((options.doors=='bottom')||(options.doors=='both')){
+                this.createDoor(cx, cy+halfY+3, options.open);
+            } 
+            if ((options.doors=='top')||(options.doors=='both')) {
+                this.createDoor(cx, cy-halfY-1, options.open);
+            }
+
+            if (Math.random()<0.65){
+                this.createEnemy(cx,cy);
+            }            
         },
         createDoor : function(cx, cy, open){
             var tile = null;
+            var door = this.state.factory('door', {xform:{
+                tx: ((cx + 0.5) * 32),
+                ty: ((cy + 0.5) * 32),
+            }, door: {open: open}});
+            door.tags.push('door');
+            this.state.addEntity(door);
+            /*
             if (open){
                 tile = this.map.getTile(cx,cy-1);
                 tile.layers['layer1'] = DOOROPENTILE1;
@@ -16468,6 +16650,7 @@ define('dreddrl/blocklevelgenerator',['sge', './factory'], function(sge, Factory
                 tile.layers['layer1'] = DOORCLOSEDTILE2;
                 tile.passable=true;
             }
+            */
         }
     });
     return LevelGenerator;
@@ -16534,8 +16717,7 @@ define('dreddrl/physics',['sge'], function(sge){
 		resolveCollisions : function(delta){
 		    var entities = [];
 		    var newContacts = [];
-		    _.each(this.state._entity_ids, function(id){
-		        var entity = this.state.entities[id];
+		    _.each(this.state.getEntitiesWithComponent('physics'), function(entity){
 		        var vx = entity.get('xform.vx') * delta;
 		        var vy = entity.get('xform.vy') * delta;
 		        this.moveGameObject(entity, vx, vy);
@@ -16656,12 +16838,16 @@ define('dreddrl/physics',['sge'], function(sge){
 });
 define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './factory'], function(sge, BlockLevelGenerator, Physics, Factory){
 
+    INTRO = "Welcome Rookie\nYou've been assigned to the homicide reported at Peach Trees in Sector 13.\nYou are the law.";
+
 	var DreddRLState = sge.GameState.extend({
 		initState: function(options){
             // Tile Map
             var size = 64;
             this.options = options || {};
             this._contactList = [];
+
+            this._intro = false;
 
             this._killList = [];
             this.factory = Factory;
@@ -16673,11 +16859,6 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
             // Load Game "Plugins"
             this.physics = new Physics(this);
             this.loader = new sge.vendor.PxLoader();
-            /*
-            this.loader.addCompletionListener(function(){
-                this.initGame(options);
-            }.bind(this));
-            */
             this.loader.addProgressListener(this.progressListener.bind(this));
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
@@ -16699,8 +16880,6 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
         },
 
         initGame : function(){
-            //Populate world
-            console.log('EVERYTHING LOADED');
             this.level = new BlockLevelGenerator(this, this.options);
             setTimeout(function() {
                     this.game.fsm.finishLoad();
@@ -16709,8 +16888,6 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
 
         progressListener : function(e){
             sge.SpriteSheet.SpriteSheetImages[e.resource.getName()] = e.resource.img;
-            //e.resource.img.onload = function(){console.log('Loaded', e.resource.getName())};
-            console.log(e.resource.getName(), e);
             if (e.completedCount == e.totalCount){
                 this.initGame();
             }
@@ -16732,15 +16909,53 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
         },
         initUi : function(){
             this._elem_ammo = $('span.ammo');
+            this._elem_health = $('span.health');
         },
         updateUi : function(){
             if (this.pc){
                 this._elem_ammo.text(this.pc.get('inventory.ammo'));
+                this._elem_health.text(this.pc.get('health.life'));
             }
+        },
+        _interaction_tick : function(delta){
+
+            var closest = null;
+            var cdist = 64;
+            var entities = this.getEntitiesWithComponent('interact');
+            
+            for (var i = entities.length - 1; i >= 0; i--) {
+                entity = entities[i];
+                var dx = entity.get('xform.tx') - this.pc.get('xform.tx');
+                var dy = entity.get('xform.ty') - this.pc.get('xform.ty');
+                var dist = Math.sqrt((dx*dx)+(dy*dy));
+                if (dist < cdist){
+                    closest = entity;
+                    cdist = dist;
+                }
+            }
+            if (closest!=this._closest){
+                if (this._closest){
+                    this._closest.fireEvent('focus.lose');
+                }
+                if (closest){
+                    closest.fireEvent('focus.gain');
+                }
+                this._closest = closest;
+            }
+        },
+        startDialog: function(dialog){
+            this.game._states['dialog'].setDialog(dialog);
+            this.game.fsm.startDialog();
+            console.log('DIALOG');
         },
         tick : function(delta){
             this.tickTimeouts(delta);
             this.physics.resolveCollisions(delta);
+            if (this._intro==false){
+                this._intro = true;
+                this.startDialog(INTRO)
+            }
+            this._interaction_tick(delta);
             _.each(this._entity_ids, function(id){
                 var entity = this.entities[id];
                 entity.componentCall('tick', delta);
@@ -16753,9 +16968,11 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
                 this.game.fsm.gameOver();
             }
 
+            /*
             if (this.getEntitiesWithTag('enemy').length<=0){
                 this.game.fsm.gameWin();
             }
+            */
 
             this.game.renderer.track(this.pc);
             //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
@@ -16784,10 +17001,42 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
 
 	return DreddRLState;
 });
-define('dreddrl/main',['./dreddrlstate'], function(DreddRLState){
+define('dreddrl/dialogstate',['sge'], function(sge){
+	var DialogState = sge.GameState.extend({
+		initState: function(){
+            this.elem = $('.dialogscreen') || null;
+            this.interact = this.interact.bind(this);
+        },
+        startState : function(){
+            this.input.addListener('keydown:enter', this.interact);
+            if (this.elem){
+            	this.elem.find('.dialogbox').html(this.dialog.replace('\n', '<br/>'));
+                this.elem.fadeIn();
+            }
+        },
+        endState : function(){
+            this.input.removeListener('keydown:enter', this.interact);
+            if (this.elem){
+                this.elem.fadeOut();
+            }
+        },
+        interact: function(){
+        	this.game.fsm.endDialog();
+        },
+		tick: function(){
+			this.game._states['game']._paused_tick();
+		},
+		setDialog: function(dialog){
+			this.dialog = dialog;
+		}
+	});
+	return DialogState;
+});
+define('dreddrl/main',['./dreddrlstate','./dialogstate'], function(DreddRLState, DialogState){
 
 	return {
-		DreddRLState : DreddRLState
+		DreddRLState : DreddRLState,
+		DialogState : DialogState
 	}
 });
 define('dreddrl', ['dreddrl/main'], function (main) { return main; });
