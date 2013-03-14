@@ -25,6 +25,7 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/scifi_icons_1.png');
             
             

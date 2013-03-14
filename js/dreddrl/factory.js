@@ -7,10 +7,11 @@ define([
 	'./components/freeitem',
     './components/inventory',
     './components/interaction',
-    './components/door'
+    './components/door',
+    './components/dialog'
 	], 
 	function(sge){
-		FACTORYDATA = {
+		var FACTORYDATA = {
 			pc : function(){return{
                     xform : {},
                     controls : {},
@@ -57,7 +58,7 @@ define([
                     map: this.map,
                     speed: 16
                 },
-                health : {alignment:'evil', life: 5},
+                health : {alignment:'evil', life: 3},
                 simpleai : {},
                 physics : {},
                 deaddrop: {}
@@ -94,6 +95,60 @@ define([
                 xform: {},
                 interact : {},
                 door: {}
+            }},
+            women : function(){return {
+                xform : {},
+                sprite : {
+                    src : 'assets/sprites/women.png',
+                    width: 32,
+                    offsetY: -8,
+                    scale: 2
+                },
+                anim : {
+                    frames: {
+                        walk_down : [0,1,2],
+                        walk_up : [9,10,11],
+                        walk_right : [6,7,8],
+                        walk_left : [3,4,5]
+                    },
+                },
+                movement : {
+                    map: this.map,
+                    speed: 16
+                },
+                health : {alignment:'good', life: 5},
+                physics : {},
+                deaddrop: {},
+                interact: {},
+                dialog: {dialog: "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."}
+            }},
+            daughter : function(){return {
+                xform : {},
+                sprite : {
+                    src : 'assets/sprites/women.png',
+                    width: 32,
+                    offsetY: -8,
+                    scale: 2
+                },
+                anim : {
+                    frames: {
+                        walk_down : [0,1,2],
+                        walk_up : [9,10,11],
+                        walk_right : [6,7,8],
+                        walk_left : [3,4,5]
+                    },
+                },
+                movement : {
+                    map: this.map,
+                    speed: 16
+                },
+                health : {alignment:'good', life: 5},
+                physics : {},
+                deaddrop: {},
+                interact: {},
+                dialog: {
+                    dialog: "Yes, I'm fine. Go tell my Mom to stop worrying."
+                }
             }}
 		}
 

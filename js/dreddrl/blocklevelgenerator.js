@@ -19,6 +19,7 @@ define(['sge', 'jquery', './factory'], function(sge, $, Factory){
 
             this.buildWall(0,1,this.map.width,true);
             
+            this.rooms = []
 
             for (var y=0;y<this.map.height;y++){
                 var tile = this.map.getTile(0, y);
@@ -94,11 +95,29 @@ define(['sge', 'jquery', './factory'], function(sge, $, Factory){
             this.createRoom(52, 32, 13, 7, {doors: 'both'});
 
             this.state.pc = this.createPC();
+            
+            var npc = this.state.factory('women', {xform: {
+                tx: this.state.pc.get('xform.tx'),
+                ty: this.state.pc.get('xform.ty') + 64
+            }});
+            npc.tags.push('npc');
+            this.state.addEntity(npc);
+            
+            this.state.daughter = null;
+            
             /*
             for (var i=0;i<10;i++){
                 this.createEnemy();
             }
             */
+            
+            var daughtersRoom = sge.random.item(this.rooms);
+            npc = this.state.factory('daughter', {xform: {
+                tx: daughtersRoom[0] * 32,
+                ty: daughtersRoom[1] * 32 + 64
+            }});
+            npc.tags.push('npc');
+            this.state.addEntity(npc);
         },
         buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){
@@ -160,6 +179,7 @@ define(['sge', 'jquery', './factory'], function(sge, $, Factory){
             return enemy;
         },
         createRoom : function(cx, cy, width, height, options){
+            this.rooms.push([cx, cy])
             options = $.extend({doors:'bottom', open: true}, options || {});
             /*
             var cx = 16;  //sge.random.rangeInt(8,this.map.width-8);
@@ -203,7 +223,9 @@ define(['sge', 'jquery', './factory'], function(sge, $, Factory){
 
             if (Math.random()<0.65){
                 this.createEnemy(cx,cy);
-            }            
+            }
+            
+            
         },
         createDoor : function(cx, cy, open){
             var tile = null;
