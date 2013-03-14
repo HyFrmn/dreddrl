@@ -41,11 +41,12 @@ define(function(require){
 
     }
 
-    Renderer.prototype.draw = function(layer, func){
+    Renderer.prototype.draw = function(layer, func, priority){
+        priority = priority || 0;
         if (this._drawList[layer]===undefined){
             this._drawList[layer] = [];
         }
-        this._drawList[layer].push(func);
+        this._drawList[layer].push({func: func, priority: priority*1000});
     }
 
     Renderer.prototype.clear = function(layer, x, y, width, height){
@@ -76,9 +77,10 @@ define(function(require){
             if (drawList===undefined){
                 return;
             }
-            drawList.reverse();
+            drawList.sort(function(a,b){return b.priority - a.priority});
+            //drawList.reverse();
             for (var j = drawList.length - 1; j >= 0; j--) {
-                var func = drawList[j];
+                var func = drawList[j].func;
                 func();
             };
             this._drawList[layer]=undefined;
@@ -103,7 +105,7 @@ define(function(require){
                             
     };
 
-    Renderer.prototype.drawRect = function(layer, x, y, width, height, style){
+    Renderer.prototype.drawRect = function(layer, x, y, width, height, style, priority){
         var destRect = [
             Math.round(x - this.tx),
             Math.round(y - this.ty),
@@ -114,6 +116,7 @@ define(function(require){
             return;
         }
         var ctx = this.layers[layer].context;
+        priority = priority || 0;
         this.clear(layer, destRect[0]-8,destRect[1]-8,destRect[2]+16,destRect[3]+16)
         this.draw(layer, function(){
             ctx.save();
@@ -127,14 +130,16 @@ define(function(require){
             ctx.fillRect(destRect[0],destRect[1],destRect[2],destRect[3]);
             ctx.stroke();
             ctx.restore();
-        });
+        }, priority + (y+x));
     }
 
-    Renderer.prototype.drawSprite = function(layer, spriteSheet, sprite, x, y, scale, clear){
+    Renderer.prototype.drawSprite = function(layer, spriteSheet, sprite, x, y, scale, clear, priority){
         if (scale===undefined){
             scale=[1,1];
         }
         var srcRect = spriteSheet.getSrcRect(sprite);
+
+        priority = priority || 0;
 
         var tx = Math.round(x + (spriteSheet.offsetX * scale[0]) - this.tx);
         var ty = Math.round(y + (spriteSheet.offsetY * scale[1]) - this.ty);
@@ -179,7 +184,7 @@ define(function(require){
                 destRect[2],
                 destRect[3]);
             ctx.restore();
-        });
+        }, priority + (y+x));
     }
 
     return Renderer;

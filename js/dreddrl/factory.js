@@ -8,7 +8,14 @@ define([
     './components/inventory',
     './components/interaction',
     './components/door',
-    './components/dialog'
+    './components/dialog',
+    './components/elevator',
+    './components/quest',
+
+    './actions/dialog',
+    './actions/if',
+    './actions/set',
+    './actions/switch'
 	], 
 	function(sge){
 		var FACTORYDATA = {
@@ -37,6 +44,7 @@ define([
                     physics : {},
                     inventory : {},
                     weapons: {},
+                    quest: {}
                 }},
             enemy : function(){return {
                 xform : {},
@@ -96,36 +104,15 @@ define([
                 interact : {},
                 door: {}
             }},
+            elevator : function(){return {
+                xform: {},
+                interact : {},
+                elevator: {}
+            }},
             women : function(){return {
                 xform : {},
                 sprite : {
-                    src : 'assets/sprites/women.png',
-                    width: 32,
-                    offsetY: -8,
-                    scale: 2
-                },
-                anim : {
-                    frames: {
-                        walk_down : [0,1,2],
-                        walk_up : [9,10,11],
-                        walk_right : [6,7,8],
-                        walk_left : [3,4,5]
-                    },
-                },
-                movement : {
-                    map: this.map,
-                    speed: 16
-                },
-                health : {alignment:'good', life: 5},
-                physics : {},
-                deaddrop: {},
-                interact: {},
-                dialog: {dialog: "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."}
-            }},
-            daughter : function(){return {
-                xform : {},
-                sprite : {
-                    src : 'assets/sprites/women.png',
+                    src : 'assets/sprites/women_8.png',
                     width: 32,
                     offsetY: -8,
                     scale: 2
@@ -147,7 +134,56 @@ define([
                 deaddrop: {},
                 interact: {},
                 dialog: {
-                    dialog: "Yes, I'm fine. Go tell my Mom to stop worrying."
+                    "dialog":
+                        ['switch', '${@(pc).quest.status}', 
+                            [
+                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
+                                ['set', '@(pc).quest.status', 1]
+                            ],[
+                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
+                            ],[
+                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
+                                ['set', '@(pc).quest.status', 3]
+                            ],[
+                                ['dialog', "Welcome to Peach Trees. "]
+                            ]
+                        ]
+                    }
+            }},
+            daughter : function(){return {
+                xform : {},
+                sprite : {
+                    src : 'assets/sprites/women_1.png',
+                    width: 32,
+                    offsetY: -8,
+                    scale: 2
+                },
+                anim : {
+                    frames: {
+                        walk_down : [0,1,2],
+                        walk_up : [9,10,11],
+                        walk_right : [6,7,8],
+                        walk_left : [3,4,5]
+                    },
+                },
+                movement : {
+                    map: this.map,
+                    speed: 16
+                },
+                health : {alignment:'good', life: 5},
+                physics : {},
+                deaddrop: {},
+                interact: {},
+                dialog: {
+                    "dialog":
+                        ['if', '${@(pc).quest.status}==1', 
+                            [
+                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
+                                ['set', '@(pc).quest.status', 2]
+                            ],[
+                                ['dialog', "Hey there. Haven't seen you around the block before."]
+                            ]
+                        ]
                 }
             }}
 		}

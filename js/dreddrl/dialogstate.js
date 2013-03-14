@@ -13,12 +13,15 @@ define(['sge'], function(sge){
         },
         endState : function(){
             this.input.removeListener('keydown:enter', this.interact);
-            if (this.elem){
-                this.elem.fadeOut();
-            }
+            
         },
         interact: function(){
-        	this.game.fsm.endDialog();
+            if (this.elem){
+                this.elem.fadeOut(400, function(){
+                    this.game.fsm.endDialog();
+                }.bind(this));
+            }
+        	
         },
 		tick: function(){
 			this.game._states['game']._paused_tick();

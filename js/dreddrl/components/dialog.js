@@ -1,4 +1,4 @@
-define(['sge'], function(sge){
+define(['sge', '../action'], function(sge, Action){
     var Dialog = sge.Component.extend({
         init: function(entity, data){
             this._super(entity, data);
@@ -7,7 +7,16 @@ define(['sge'], function(sge){
             this.entity.addListener('interact', this.interact);
         },
         interact: function(){
-            this.state.startDialog(this.get('dialog'));
+            var dialog = this.get('dialog');
+            if (typeof dialog === 'string'){
+                this.state.startDialog(this.get('dialog'));
+            } else{
+                console.log(dialog)
+                dialogData = dialog.slice(0);
+                var type = dialogData.shift();
+                var action = Action.Load({type: type, args: dialogData});
+                action.run(this.state);
+            }
         },
     	register: function(state){
 			this.state = state;

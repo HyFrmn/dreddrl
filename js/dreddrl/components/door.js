@@ -18,7 +18,6 @@ define(['sge'], function(sge){
         updateTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32);
             var ty = Math.floor(this.entity.get('xform.ty') / 32);
-            console.log(tx,ty)
             if (this.get('open')){
                 tile = this.map.getTile(tx,ty-2);
                 tile.passable=true;

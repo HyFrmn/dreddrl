@@ -98,7 +98,7 @@ define(['sge', 'jquery', './factory'], function(sge, $, Factory){
             
             var npc = this.state.factory('women', {xform: {
                 tx: this.state.pc.get('xform.tx'),
-                ty: this.state.pc.get('xform.ty') + 64
+                ty: this.state.pc.get('xform.ty') + 32
             }});
             npc.tags.push('npc');
             this.state.addEntity(npc);
@@ -111,13 +111,20 @@ define(['sge', 'jquery', './factory'], function(sge, $, Factory){
             }
             */
             
-            var daughtersRoom = sge.random.item(this.rooms);
+            var daughtersRoom = [this.state.pc.get('xform.tx'), this.state.pc.get('xform.ty')-64]//sge.random.item(this.rooms);
             npc = this.state.factory('daughter', {xform: {
-                tx: daughtersRoom[0] * 32,
-                ty: daughtersRoom[1] * 32 + 64
+                tx: daughtersRoom[0],
+                ty: daughtersRoom[1]
             }});
             npc.tags.push('npc');
             this.state.addEntity(npc);
+
+
+            elevator = this.state.factory('elevator',{xform:{
+                tx:48,
+                ty: 16
+            }});
+            this.state.addEntity(elevator);
         },
         buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){
@@ -235,23 +242,6 @@ define(['sge', 'jquery', './factory'], function(sge, $, Factory){
             }, door: {open: open}});
             door.tags.push('door');
             this.state.addEntity(door);
-            /*
-            if (open){
-                tile = this.map.getTile(cx,cy-1);
-                tile.layers['layer1'] = DOOROPENTILE1;
-                tile = this.map.getTile(cx,cy);
-                tile.layers['layer1'] = DOOROPENTILE2;
-            } else {
-                tile = this.map.getTile(cx,cy-2);
-                tile.passable=true;
-                tile = this.map.getTile(cx,cy-1);
-                tile.layers['layer1'] = DOORCLOSEDTILE1;
-                tile.passable=true;
-                tile = this.map.getTile(cx,cy);
-                tile.layers['layer1'] = DOORCLOSEDTILE2;
-                tile.passable=true;
-            }
-            */
         }
     });
     return LevelGenerator;

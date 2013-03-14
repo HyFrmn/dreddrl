@@ -47,6 +47,10 @@ define(['sge'], function(sge){
                 var height = 32; //this.entity.get('physics.height');
                 renderer.drawRect(layer, tx - width/2, ty - height/2, width, height, {fillStyle: this.get('fillStyle'), strokeStyle: this.get('strokeStyle')})
             }
+        },
+        deregister: function(){
+            this._super();
+            this.state.input.removeListener('keydown:enter', this.interact);
         }
     });
     sge.Component.register('interact', Interact);

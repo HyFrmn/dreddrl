@@ -154,12 +154,12 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
                 callbacks: {
                     onleavestate: function(evt, from, to){
                         if (from=="none"){return};
-                        console.log('Leaving:', from)
+                        //console.log('Leaving:', from)
                         this._states[from].endState(evt, from, to);
                     }.bind(this),
                     onenterstate: function(evt, from, to){
                         if (from=="none"){return};
-                        console.log('Entering:', to)
+                        //console.log('Entering:', to)
                         this._states[to].startState(evt, from, to);
                         this.state = this._states[to];
                     }.bind(this)

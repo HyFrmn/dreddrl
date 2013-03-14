@@ -105,7 +105,7 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 						var tileData = tile.layers[this.layers[j]];
 						if (tileData){
 							var layer = tileData.layer || "base"
-							renderer.drawSprite(layer, this.tileSheet, [tileData.srcX, tileData.srcY], tx, ty, [1,1], false);
+							renderer.drawSprite(layer, this.tileSheet, [tileData.srcX, tileData.srcY], tx, ty, [1,1], false, j*10);
 						}
 						ctx.restore();
 					}

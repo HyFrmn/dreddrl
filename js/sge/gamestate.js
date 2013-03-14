@@ -88,6 +88,11 @@ define(['./lib/class', './vendor/underscore'],
 				return _.include(e.tags, tag);
 			});
 		},
+		getEntityWithTag: function(tag){
+			return _.filter(this.getEntities(), function(e){
+				return _.include(e.tags, tag)[0];
+			});
+		},
 
 		getEntitiesWithComponent: function(comp){
 			return _.filter(this.getEntities(), function(e){

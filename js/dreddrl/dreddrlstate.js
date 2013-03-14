@@ -25,7 +25,14 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
-            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_1.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_2.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_3.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_4.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_5.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_6.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_7.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_8.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/scifi_icons_1.png');
             
             
@@ -73,11 +80,13 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
         initUi : function(){
             this._elem_ammo = $('span.ammo');
             this._elem_health = $('span.health');
+            this._elem_quest = $('span.quest');
         },
         updateUi : function(){
             if (this.pc){
                 this._elem_ammo.text(this.pc.get('inventory.ammo'));
                 this._elem_health.text(this.pc.get('health.life'));
+                this._elem_quest.text(this.pc.get('quest.status'));
             }
         },
         _interaction_tick : function(delta){
