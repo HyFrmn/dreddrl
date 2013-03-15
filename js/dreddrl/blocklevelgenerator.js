@@ -10,26 +10,71 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
         start: function(){
             //Create Mother
             var mothersRoom = sge.random.item(this.block.rooms);
-            var mother = this.state.factory('women', {xform: {
-                tx: mothersRoom[0] * 32,
-                ty: mothersRoom[1] * 32
-            }});
+            var mother = this.state.factory('women', {
+                xform: {
+                    tx: mothersRoom[0] * 32,
+                    ty: mothersRoom[1] * 32
+                },
+                dialog: {
+                    dialog :
+                        ['switch', '${@(pc).quest.status}', 
+                            [
+                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
+                                ['set', '@(pc).quest.status', 1]
+                            ],[
+                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
+                            ],[
+                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
+                                ['set', '@(pc).quest.status', 3]
+                            ],[
+                                ['dialog', "Welcome to Peach Trees. "]
+                            ]
+                        ]
+                }
+            });
             mother.tags.push('mother');
             this.block.state.addEntity(mother);
             
 
             //Create Daughter
             var daughtersRoom = sge.random.item(this.block.rooms);
-            var daughter = this.state.factory('daughter', {xform: {
-                tx: daughtersRoom[0] * 32,
-                ty: daughtersRoom[1] * 32
-            }});
+            var daughter = this.state.factory('daughter', {
+                xform: {
+                    tx: daughtersRoom[0] * 32,
+                    ty: daughtersRoom[1] * 32
+                },
+                dialog: {
+                   "dialog":
+                        ['if', '${@(pc).quest.status}==1', 
+                            [
+                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
+                                ['set', '@(pc).quest.status', 2]
+                            ],[
+                                ['dialog', "Hey there. Haven't seen you around the block before."]
+                            ]
+                        ] 
+                }
+            });
             daughter.tags.push('daughter');
             this.block.state.addEntity(daughter);
 
         }
     });
 
+    var ExecuteEncounter = Encounter.extend({
+        start: function(){
+            //Create Mother
+            var gangBossRoom = sge.random.item(this.block.rooms);
+            var gangBoss = this.state.factory('gangboss', {
+                xform: {
+                    tx: gangBossRoom[0] * 32,
+                    ty: gangBossRoom[1] * 32
+                }
+            });
+            gangBoss.tags.push('gangboss');
+            this.block.state.addEntity(gangBoss);
+        }
+    });
 
     var LevelGenerator = sge.Class.extend({
         init: function(state, options){
@@ -138,6 +183,7 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
             this.state.addEntity(elevator);
 
             encounter = new CheckupEncounter(this);
+            new ExecuteEncounter(this);
         },
         buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){

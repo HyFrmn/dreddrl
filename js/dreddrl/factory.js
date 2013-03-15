@@ -71,6 +71,31 @@ define([
                 physics : {},
                 deaddrop: {}
             }},
+            gangboss : function(){return {
+                xform : {},
+                sprite : {
+                    src : 'assets/sprites/albertbrownhair.png',
+                    width: 32,
+                    offsetY: -8,
+                    scale: 2
+                },
+                anim : {
+                    frames: {
+                        walk_down : [0,1,2],
+                        walk_up : [9,10,11],
+                        walk_right : [6,7,8],
+                        walk_left : [3,4,5]
+                    },
+                },
+                movement : {
+                    map: this.map,
+                    speed: 16
+                },
+                health : {alignment:'evil', life: 6},
+                simpleai : {},
+                physics : {},
+                deaddrop: {}
+            }},
             gun : function(){return {
                 xform: {},
                 physics: {},
