@@ -7,18 +7,17 @@ define(['sge'], function(sge){
             this.entity.addListener('interact', this.interact);
         },
         interact: function(){
-            this.set('open', !this.get('open'));
-            this.updateTiles();
+
         },
         updateTiles : function(){
-            var tx = Math.floor(this.entity.get('xform.tx') / 32);
-            var ty = Math.floor(this.entity.get('xform.ty') / 32);
+            var tx = Math.floor(this.entity.get('xform.tx') / 32)-1;
+            var ty = Math.floor(this.entity.get('xform.ty') / 32)-2
             
-            for (var y=0;y<2;y++){
+            for (var y=0;y<3;y++){
                 for (var x=0;x<3;x++){
                     tile = this.map.getTile(tx+x,ty+y);
-                    tile.passable=true;
-                    tile.layers['layer1'] = {srcX: x,srcY: 12+y}
+                    //tile.passable=true;
+                    tile.layers['layer1'] = {srcX: x,srcY: 32+y, spritesheet:"future1"}
                 }
             }
         },

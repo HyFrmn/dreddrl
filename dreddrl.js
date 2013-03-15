@@ -12758,6 +12758,18 @@ define('sge/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Cl
 			this.layers = ['layer0','layer1','layer2'];
 			this.tileset = new Image();
 			this.tileSheet = null;
+			this.defaultSheet = 'default';
+			this.spriteSheets = {};
+			if (typeof options.src == "string"){
+				this.spriteSheets['default'] = new SpriteSheet(options.src, 32, 32)
+			} else {
+				for (var i = options.src.length - 1; i >= 0; i--) {
+					var src = options.src[i];
+					var subpath = src.split('/');
+					var name = subpath[subpath.length-1].split('.')[0];
+					this.spriteSheets[name] = new SpriteSheet(src, 32, 32);
+				};
+			}
 
             var total = this.width * this.height;
             var x = 0;
@@ -12777,8 +12789,8 @@ define('sge/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Cl
 			}
 
 			//this.tileset.onload =  this.loadCallback.bind(this);
-			this.tileset.src = options.src;
-			this.tileSheet = new SpriteSheet(this.tileset.src, 32, 32);
+			//this.tileset.src = options.src;
+			//this.tileSheet = new SpriteSheet(this.tileset.src, 32, 32);
 		},
 		getIndex : function(x, y){
 			var index = (y * this.width) + x;
@@ -12806,7 +12818,8 @@ define('sge/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Cl
 						var tileData = tile.layers[this.layers[j]];
 						if (tileData){
 							var layer = tileData.layer || "base"
-							renderer.drawSprite(layer, this.tileSheet, [tileData.srcX, tileData.srcY], tx, ty, [1,1], false, j*10);
+							var spriteSheet = tileData.spritesheet || this.defaultSheet;
+							renderer.drawSprite(layer, this.spriteSheets[spriteSheet], [tileData.srcX, tileData.srcY], tx, ty, [1,1], false, j*10);
 						}
 						ctx.restore();
 					}
@@ -16488,18 +16501,17 @@ define('dreddrl/components/elevator',['sge'], function(sge){
             this.entity.addListener('interact', this.interact);
         },
         interact: function(){
-            this.set('open', !this.get('open'));
-            this.updateTiles();
+
         },
         updateTiles : function(){
-            var tx = Math.floor(this.entity.get('xform.tx') / 32);
-            var ty = Math.floor(this.entity.get('xform.ty') / 32);
+            var tx = Math.floor(this.entity.get('xform.tx') / 32)-1;
+            var ty = Math.floor(this.entity.get('xform.ty') / 32)-2
             
-            for (var y=0;y<2;y++){
+            for (var y=0;y<3;y++){
                 for (var x=0;x<3;x++){
                     tile = this.map.getTile(tx+x,ty+y);
-                    tile.passable=true;
-                    tile.layers['layer1'] = {srcX: x,srcY: 12+y}
+                    //tile.passable=true;
+                    tile.layers['layer1'] = {srcX: x,srcY: 32+y, spritesheet:"future1"}
                 }
             }
         },
@@ -16826,13 +16838,70 @@ define('dreddrl/factory',[
 		return Factory
 	}
 );
-define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory'], function(sge, $, Factory){
-    var FLOORTILE =  { srcX : 0, srcY: 0};
-    var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy"}
-    var DOOROPENTILE1 = { srcX : 1, srcY: 36}
-    var DOOROPENTILE2 = { srcX : 1, srcY: 37}
-    var DOORCLOSEDTILE1 = { srcX : 2, srcY: 36}
-    var DOORCLOSEDTILE2 = { srcX : 2, srcY: 37}
+define('dreddrl/encounters',['sge'], function(sge){
+	var Encounter = sge.Class.extend({
+		init: function(block){
+			this.block = block;
+			this.state = block.state;
+			this.factory = block.factory;
+			this.start();
+		},
+		start: function(){
+
+		},
+		finish: function(){
+
+		},
+		tick: function(){
+			/**
+			*
+			*/
+
+		}
+	});
+
+	var RescueEncounter = Encounter.extend({
+		start: function(){
+
+		}
+	});
+
+
+
+	return Encounter
+});
+define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory, Encounter){
+    var FLOORTILE =  { srcX : 0, srcY: 0, spritesheet: 'future2'};
+    var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spritesheet: 'future2'}
+    var DOOROPENTILE1 = { srcX : 1, srcY: 36, spritesheet: 'future2'}
+    var DOOROPENTILE2 = { srcX : 1, srcY: 37, spritesheet: 'future2'}
+    var DOORCLOSEDTILE1 = { srcX : 2, srcY: 36, spritesheet: 'future2'}
+    var DOORCLOSEDTILE2 = { srcX : 2, srcY: 37, spritesheet: 'future2'}
+
+    var CheckupEncounter = Encounter.extend({
+        start: function(){
+            //Create Mother
+            var mothersRoom = sge.random.item(this.block.rooms);
+            var mother = this.state.factory('women', {xform: {
+                tx: mothersRoom[0] * 32,
+                ty: mothersRoom[1] * 32
+            }});
+            mother.tags.push('mother');
+            this.block.state.addEntity(mother);
+            
+
+            //Create Daughter
+            var daughtersRoom = sge.random.item(this.block.rooms);
+            var daughter = this.state.factory('daughter', {xform: {
+                tx: daughtersRoom[0] * 32,
+                ty: daughtersRoom[1] * 32
+            }});
+            daughter.tags.push('daughter');
+            this.block.state.addEntity(daughter);
+
+        }
+    });
+
 
     var LevelGenerator = sge.Class.extend({
         init: function(state, options){
@@ -16869,7 +16938,7 @@ define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory'], function(sg
                 for (var x=26;x<=38;x++){
                     var tile = this.map.getTile(x, y);
                     tile.layers = {
-                        'layer0' : { srcX : 2, srcY: 0}
+                        'layer0' : { srcX : 2, srcY: 0, spritesheet: 'future2'}
                     }
                     tile.passable = false;
                 }
@@ -16924,12 +16993,7 @@ define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory'], function(sg
 
             this.state.pc = this.createPC();
             
-            var npc = this.state.factory('women', {xform: {
-                tx: this.state.pc.get('xform.tx'),
-                ty: this.state.pc.get('xform.ty') + 32
-            }});
-            npc.tags.push('npc');
-            this.state.addEntity(npc);
+           
             
             this.state.daughter = null;
             
@@ -16939,31 +17003,24 @@ define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory'], function(sg
             }
             */
             
-            var daughtersRoom = [this.state.pc.get('xform.tx'), this.state.pc.get('xform.ty')-64]//sge.random.item(this.rooms);
-            npc = this.state.factory('daughter', {xform: {
-                tx: daughtersRoom[0],
-                ty: daughtersRoom[1]
-            }});
-            npc.tags.push('npc');
-            this.state.addEntity(npc);
-
-
             elevator = this.state.factory('elevator',{xform:{
-                tx:48,
-                ty: 16
+                tx:80,
+                ty:112
             }});
             this.state.addEntity(elevator);
+
+            encounter = new CheckupEncounter(this);
         },
         buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){
                 var tile = this.map.getTile(x+sx, sy);
                 tile.layers = {
-                    'layer0' : { srcX : 6, srcY: 1}
+                    'layer0' : { srcX : 6, srcY: 1, spritesheet: 'future2'}
                 }
                 tile.passable = false;
                 tile = this.map.getTile(x+sx, sy+1);
                 tile.layers = {
-                    'layer0' : { srcX : 6, srcY: 2}
+                    'layer0' : { srcX : 6, srcY: 2, spritesheet: 'future2'}
                 }
                 tile.passable = false;
                 if (ceil){
@@ -16986,8 +17043,8 @@ define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory'], function(sg
             if (pc==null){
                 pc = Factory('pc', {
                     xform : {
-                        tx: (16 + 0.5) * this.map.tileSize,
-                        ty: (32 + 0.5) * this.map.tileSize,
+                        tx: (6 + 0.5) * this.map.tileSize,
+                        ty: (6 + 0.5) * this.map.tileSize,
                         vx : Math.random() * 10 - 5,
                         vy : Math.random() * 10 - 5
                     }});
@@ -17271,7 +17328,8 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
             this._killList = [];
             this.factory = Factory;
             this.initUi();
-            this.map = new sge.Map(size,size,{src: 'assets/tiles/future2.png'});
+            this.map = new sge.Map(size,size,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
+            this.map.defaultSheet = 'future2';
             this.game.renderer.createLayer('base');
             this.game.renderer.createLayer('main');
             this.game.renderer.createLayer('canopy');
@@ -17279,7 +17337,10 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
             this.physics = new Physics(this);
             this.loader = new sge.vendor.PxLoader();
             this.loader.addProgressListener(this.progressListener.bind(this));
+            this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future1.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future3.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future4.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_1.png');
@@ -17304,6 +17365,11 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
             }.bind(this);
 
             this.loader.start();
+        },
+
+        log : function(msg){
+            this._log.push(msg);
+            
         },
 
         initGame : function(){
@@ -17439,7 +17505,6 @@ define('dreddrl/dialogstate',['sge'], function(sge){
         startState : function(){
             this.input.addListener('keydown:enter', this.interact);
             if (this.elem){
-            	this.elem.find('.dialogbox').html(this.dialog.replace('\n', '<br/>'));
                 this.elem.fadeIn();
             }
         },
@@ -17460,6 +17525,7 @@ define('dreddrl/dialogstate',['sge'], function(sge){
 		},
 		setDialog: function(dialog){
 			this.dialog = dialog;
+            this.elem.find('.dialogbox .content').html(this.dialog.replace('\n', '<br/>'));
 		}
 	});
 	return DialogState;

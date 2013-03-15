@@ -1,10 +1,35 @@
-define(['sge', 'jquery', './factory'], function(sge, $, Factory){
-    var FLOORTILE =  { srcX : 0, srcY: 0};
-    var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy"}
-    var DOOROPENTILE1 = { srcX : 1, srcY: 36}
-    var DOOROPENTILE2 = { srcX : 1, srcY: 37}
-    var DOORCLOSEDTILE1 = { srcX : 2, srcY: 36}
-    var DOORCLOSEDTILE2 = { srcX : 2, srcY: 37}
+define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory, Encounter){
+    var FLOORTILE =  { srcX : 0, srcY: 0, spritesheet: 'future2'};
+    var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spritesheet: 'future2'}
+    var DOOROPENTILE1 = { srcX : 1, srcY: 36, spritesheet: 'future2'}
+    var DOOROPENTILE2 = { srcX : 1, srcY: 37, spritesheet: 'future2'}
+    var DOORCLOSEDTILE1 = { srcX : 2, srcY: 36, spritesheet: 'future2'}
+    var DOORCLOSEDTILE2 = { srcX : 2, srcY: 37, spritesheet: 'future2'}
+
+    var CheckupEncounter = Encounter.extend({
+        start: function(){
+            //Create Mother
+            var mothersRoom = sge.random.item(this.block.rooms);
+            var mother = this.state.factory('women', {xform: {
+                tx: mothersRoom[0] * 32,
+                ty: mothersRoom[1] * 32
+            }});
+            mother.tags.push('mother');
+            this.block.state.addEntity(mother);
+            
+
+            //Create Daughter
+            var daughtersRoom = sge.random.item(this.block.rooms);
+            var daughter = this.state.factory('daughter', {xform: {
+                tx: daughtersRoom[0] * 32,
+                ty: daughtersRoom[1] * 32
+            }});
+            daughter.tags.push('daughter');
+            this.block.state.addEntity(daughter);
+
+        }
+    });
+
 
     var LevelGenerator = sge.Class.extend({
         init: function(state, options){
@@ -41,7 +66,7 @@ define(['sge', 'jquery', './factory'], function(sge, $, Factory){
                 for (var x=26;x<=38;x++){
                     var tile = this.map.getTile(x, y);
                     tile.layers = {
-                        'layer0' : { srcX : 2, srcY: 0}
+                        'layer0' : { srcX : 2, srcY: 0, spritesheet: 'future2'}
                     }
                     tile.passable = false;
                 }
@@ -96,12 +121,7 @@ define(['sge', 'jquery', './factory'], function(sge, $, Factory){
 
             this.state.pc = this.createPC();
             
-            var npc = this.state.factory('women', {xform: {
-                tx: this.state.pc.get('xform.tx'),
-                ty: this.state.pc.get('xform.ty') + 32
-            }});
-            npc.tags.push('npc');
-            this.state.addEntity(npc);
+           
             
             this.state.daughter = null;
             
@@ -111,31 +131,24 @@ define(['sge', 'jquery', './factory'], function(sge, $, Factory){
             }
             */
             
-            var daughtersRoom = [this.state.pc.get('xform.tx'), this.state.pc.get('xform.ty')-64]//sge.random.item(this.rooms);
-            npc = this.state.factory('daughter', {xform: {
-                tx: daughtersRoom[0],
-                ty: daughtersRoom[1]
-            }});
-            npc.tags.push('npc');
-            this.state.addEntity(npc);
-
-
             elevator = this.state.factory('elevator',{xform:{
-                tx:48,
-                ty: 16
+                tx:80,
+                ty:112
             }});
             this.state.addEntity(elevator);
+
+            encounter = new CheckupEncounter(this);
         },
         buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){
                 var tile = this.map.getTile(x+sx, sy);
                 tile.layers = {
-                    'layer0' : { srcX : 6, srcY: 1}
+                    'layer0' : { srcX : 6, srcY: 1, spritesheet: 'future2'}
                 }
                 tile.passable = false;
                 tile = this.map.getTile(x+sx, sy+1);
                 tile.layers = {
-                    'layer0' : { srcX : 6, srcY: 2}
+                    'layer0' : { srcX : 6, srcY: 2, spritesheet: 'future2'}
                 }
                 tile.passable = false;
                 if (ceil){
@@ -158,8 +171,8 @@ define(['sge', 'jquery', './factory'], function(sge, $, Factory){
             if (pc==null){
                 pc = Factory('pc', {
                     xform : {
-                        tx: (16 + 0.5) * this.map.tileSize,
-                        ty: (32 + 0.5) * this.map.tileSize,
+                        tx: (6 + 0.5) * this.map.tileSize,
+                        ty: (6 + 0.5) * this.map.tileSize,
                         vx : Math.random() * 10 - 5,
                         vy : Math.random() * 10 - 5
                     }});

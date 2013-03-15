@@ -14,7 +14,8 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             this._killList = [];
             this.factory = Factory;
             this.initUi();
-            this.map = new sge.Map(size,size,{src: 'assets/tiles/future2.png'});
+            this.map = new sge.Map(size,size,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
+            this.map.defaultSheet = 'future2';
             this.game.renderer.createLayer('base');
             this.game.renderer.createLayer('main');
             this.game.renderer.createLayer('canopy');
@@ -22,7 +23,10 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             this.physics = new Physics(this);
             this.loader = new sge.vendor.PxLoader();
             this.loader.addProgressListener(this.progressListener.bind(this));
+            this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future1.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future3.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future4.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_1.png');
@@ -47,6 +51,11 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             }.bind(this);
 
             this.loader.start();
+        },
+
+        log : function(msg){
+            this._log.push(msg);
+            
         },
 
         initGame : function(){

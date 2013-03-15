@@ -7,7 +7,6 @@ define(['sge'], function(sge){
         startState : function(){
             this.input.addListener('keydown:enter', this.interact);
             if (this.elem){
-            	this.elem.find('.dialogbox').html(this.dialog.replace('\n', '<br/>'));
                 this.elem.fadeIn();
             }
         },
@@ -28,6 +27,7 @@ define(['sge'], function(sge){
 		},
 		setDialog: function(dialog){
 			this.dialog = dialog;
+            this.elem.find('.dialogbox .content').html(this.dialog.replace('\n', '<br/>'));
 		}
 	});
 	return DialogState;
