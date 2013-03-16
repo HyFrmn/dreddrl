@@ -40,7 +40,7 @@ define([
                         map: this.map,
                         speed: 16
                     },
-                    health : {alignment:'good', life: 8},
+                    health : {alignment:5, life: 8},
                     physics : {},
                     inventory : {},
                     weapons: {},
@@ -66,7 +66,7 @@ define([
                     map: this.map,
                     speed: 16
                 },
-                health : {alignment:'evil', life: 3},
+                health : {alignment:-10, life: 3},
                 simpleai : {},
                 physics : {},
                 deaddrop: {}
@@ -91,7 +91,7 @@ define([
                     map: this.map,
                     speed: 16
                 },
-                health : {alignment:'evil', life: 6},
+                health : {alignment:-20, life: 6},
                 simpleai : {},
                 physics : {},
                 deaddrop: {}
@@ -154,7 +154,7 @@ define([
                     map: this.map,
                     speed: 16
                 },
-                health : {alignment:'good', life: 5},
+                health : {alignment:1000, life: 5},
                 physics : {},
                 deaddrop: {},
                 interact: {},
@@ -195,7 +195,7 @@ define([
                     map: this.map,
                     speed: 16
                 },
-                health : {alignment:'good', life: 5},
+                health : {alignment:1000, life: 5},
                 physics : {},
                 deaddrop: {},
                 interact: {},

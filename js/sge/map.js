@@ -105,13 +105,17 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 			return this._tiles[this.getIndex(x, y)] || null;
 		},
 		render : function(renderer){
+			var tmpW = renderer.width;
+			var tmpH = renderer.height;
+			renderer.width = this.width * this.tileSize;
+			renderer.height = this.height * this.tileSize;
 			var ctx = renderer.layers['base'].context;
-			ctx.clearRect(0, 0, this.width * this.tileSize, this.height * this.tileSize)
+			//ctx.clearRect(0, 0, this.width * this.tileSize, this.height * this.tileSize)
 			for (var j=0;j<this.layers.length;j++){
 				for (var i = this._tiles.length - 1; i >= 0; i--) {
 					var tile = this._tiles[i];
 					if (tile.fade<1){
-						ctx.save()
+						//ctx.save()
 						var tx = (tile.x + 0.5) * this.tileSize;
 						var ty = (tile.y + 0.5) * this.tileSize;
 						var tileData = tile.layers[this.layers[j]];
@@ -120,7 +124,7 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 							var spriteSheet = tileData.spritesheet || this.defaultSheet;
 							renderer.drawSprite(layer, this.spriteSheets[spriteSheet], [tileData.srcX, tileData.srcY], tx, ty, [1,1], false, j*10);
 						}
-						ctx.restore();
+						//ctx.restore();
 					}
 				};
 			}
@@ -131,9 +135,12 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 				tile.anim();
 				ctx.save()
 					renderer.drawRect("canopy", tx, ty, this.tileSize, this.tileSize, {fillStyle: 'rgba(0,32,16,'+tile.fade+')', strokeStyle: 'none'});
-				ctx.restore()
-				//}
+				ctx.restore();
 			}
+			renderer.cache('base', this.width*this.tileSize, this.height*this.tileSize);
+			renderer.cache('canopy', this.width*this.tileSize, this.height*this.tileSize);
+			renderer.width = tmpW;
+			renderer.height = tmpH;
 		},
 		loadCallback : function(){
 

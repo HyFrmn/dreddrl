@@ -63,6 +63,7 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             setTimeout(function() {
                     this.game.fsm.finishLoad();
             }.bind(this), 1000);
+            this.map.render(this.game.renderer);
         },
 
         progressListener : function(e){
@@ -157,7 +158,7 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
 
             this.game.renderer.track(this.pc);
             //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
-            this.map.render(this.game.renderer);
+            //this.map.render(this.game.renderer);
             _.each(this._entity_ids, function(id){
                 var entity = this.entities[id];
                 var tx = entity.get('xform.tx');
@@ -172,7 +173,7 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
         },
         _paused_tick : function(delta){
             this.game.renderer.track(this.pc);
-            this.map.render(this.game.renderer);
+            //this.map.render(this.game.renderer);
             _.each(this._entity_ids, function(id){
                 var entity = this.entities[id];
                 entity.componentCall('render', this.game.renderer, 'main');

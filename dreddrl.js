@@ -11660,6 +11660,8 @@ define('sge/renderer',['require','jquery','sge/lib/vector'],function(require){
         this._clearListNew = {};
         this._drawList = {};
         this._layers = [];
+
+
     };
 
     Renderer.prototype.track = function(entity, options){
@@ -11683,6 +11685,8 @@ define('sge/renderer',['require','jquery','sge/lib/vector'],function(require){
         if (screenY > height-options.padding){
             this.ty += options.speedScale * (screenY - (height - options.padding));
         }
+        this.tx = Math.round(this.tx);
+        this.ty = Math.round(this.ty);
 
     }
 
@@ -11702,33 +11706,71 @@ define('sge/renderer',['require','jquery','sge/lib/vector'],function(require){
         }
     }
 
-    Renderer.prototype.render = function(layer){
-        if (layer===undefined){
+    Renderer.prototype.cache = function(layerName, width, height){
+        var layer = this.layers[layerName];
+        layer.cacheCanvas = $('<canvas/>').attr({width: width, height: height})[0];
+        layer.cacheContext = layer.cacheCanvas.getContext('2d');
+        layer.cacheContext.setTransform(1,0,0,1,0,0);
+        var tmpW = this.width;
+        var tmpH = this.height;
+        this.width = width;
+        this.height = height;
+        var drawList = this._drawList[layerName];
+        if (drawList===undefined){
+            return;
+        }
+        drawList.sort(function(a,b){return b.priority - a.priority});
+        //drawList.reverse();
+        for (var j = drawList.length - 1; j >= 0; j--) {
+            var func = drawList[j].func;
+            func(layer.cacheContext);
+        };
+        this.height = tmpH;
+        this.width = tmpW;
+        this._drawList[layerName]=undefined;
+        $(layer.cacheCanvas).css({display: 'none'});
+        $('body').append(layer.cacheCanvas)
+    }
+
+    Renderer.prototype.render = function(layerName){
+        if (layerName===undefined){
             var layers = this._layers;
             layers.reverse();
             for (var i = layers.length - 1; i >= 0; i--) {
                 this.render(layers[i])
             }
         } else {
-            if (this._clearList[layer]!==undefined){
-                for (var i = this._clearList[layer].length - 1; i >= 0; i--) {
-                    var clearRect = this._clearList[layer][i];
-                    this.layers[layer].context.clearRect(clearRect[0],clearRect[1],clearRect[2],clearRect[3]);
+            var layer = this.layers[layerName];
+            if (layer.cacheCanvas){
+                layer.context.save()
+                layer.context.setTransform(1,0,0,1,0,0);
+                layer.context.clearRect(0,0,this.width, this.height);
+                var tx = Math.max(0,this.tx);
+                var offsetx = Math.min(0,this.tx);
+                var ty = Math.max(0,this.ty);
+                var offsety = Math.min(0,this.ty);
+                layer.context.drawImage(layer.cacheCanvas, tx, ty, this.width-offsetx, this.height-offsety, -offsetx, -offsety, this.width-offsetx, this.height-offsety);
+                layer.context.restore();
+            } else {
+                if (this._clearList[layerName]!==undefined){
+                    for (var i = this._clearList[layerName].length - 1; i >= 0; i--) {
+                        var clearRect = this._clearList[layerName][i];
+                        this.layers[layerName].context.clearRect(clearRect[0],clearRect[1],clearRect[2],clearRect[3]);
+                    };
+                }
+                this._clearList[layerName] = this._clearListNew[layerName];
+                this._clearListNew[layerName] = undefined;
+                var drawList = this._drawList[layerName];
+                if (drawList===undefined){
+                    return;
+                }
+                drawList.sort(function(a,b){return b.priority - a.priority});
+                for (var j = drawList.length - 1; j >= 0; j--) {
+                    var func = drawList[j].func;
+                    func(layer.context);
                 };
+                this._drawList[layerName]=undefined;
             }
-            this._clearList[layer] = this._clearListNew[layer];
-            this._clearListNew[layer] = undefined;
-            var drawList = this._drawList[layer];
-            if (drawList===undefined){
-                return;
-            }
-            drawList.sort(function(a,b){return b.priority - a.priority});
-            //drawList.reverse();
-            for (var j = drawList.length - 1; j >= 0; j--) {
-                var func = drawList[j].func;
-                func();
-            };
-            this._drawList[layer]=undefined;
         }
     }
 
@@ -11760,10 +11802,10 @@ define('sge/renderer',['require','jquery','sge/lib/vector'],function(require){
         if ((destRect[0]>this.width) || (destRect[1]>this.height)|| (destRect[2]+destRect[0]<0) || (destRect[1]+destRect[3]<0)){
             return;
         }
-        var ctx = this.layers[layer].context;
+        //var ctx = this.layers[layer].context;
         priority = priority || 0;
         this.clear(layer, destRect[0]-8,destRect[1]-8,destRect[2]+16,destRect[3]+16)
-        this.draw(layer, function(){
+        this.draw(layer, function(ctx){
             ctx.save();
             var keys = Object.keys(style);
             for (var j = keys.length - 1; j >= 0; j--) {
@@ -11803,12 +11845,12 @@ define('sge/renderer',['require','jquery','sge/lib/vector'],function(require){
             return;
         }
 
-        var ctx = this.layers[layer].context;
+        //var ctx = this.layers[layer].context;
         if (clear!==false){
             this.clear(layer, clearX, clearY,destRect[2],destRect[3])
         }
 
-        this.draw(layer, function(){
+        this.draw(layer, function(ctx){
             ctx.save();
             ctx.translate(tx, ty);
             ctx.scale(scale[0],scale[1]);
@@ -12272,7 +12314,7 @@ define('sge/components/health',['sge/component'], function(Component){
                 if (!entity.get('health')){
                     return;
                 }
-                if (this.data.alignment==entity.get('health.alignment')){
+                if (this.data.alignment+entity.get('health.alignment')>=0){
                     return;
                 }
             	this.data.life--;
@@ -12806,13 +12848,17 @@ define('sge/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Cl
 			return this._tiles[this.getIndex(x, y)] || null;
 		},
 		render : function(renderer){
+			var tmpW = renderer.width;
+			var tmpH = renderer.height;
+			renderer.width = this.width * this.tileSize;
+			renderer.height = this.height * this.tileSize;
 			var ctx = renderer.layers['base'].context;
-			ctx.clearRect(0, 0, this.width * this.tileSize, this.height * this.tileSize)
+			//ctx.clearRect(0, 0, this.width * this.tileSize, this.height * this.tileSize)
 			for (var j=0;j<this.layers.length;j++){
 				for (var i = this._tiles.length - 1; i >= 0; i--) {
 					var tile = this._tiles[i];
 					if (tile.fade<1){
-						ctx.save()
+						//ctx.save()
 						var tx = (tile.x + 0.5) * this.tileSize;
 						var ty = (tile.y + 0.5) * this.tileSize;
 						var tileData = tile.layers[this.layers[j]];
@@ -12821,7 +12867,7 @@ define('sge/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Cl
 							var spriteSheet = tileData.spritesheet || this.defaultSheet;
 							renderer.drawSprite(layer, this.spriteSheets[spriteSheet], [tileData.srcX, tileData.srcY], tx, ty, [1,1], false, j*10);
 						}
-						ctx.restore();
+						//ctx.restore();
 					}
 				};
 			}
@@ -12832,9 +12878,12 @@ define('sge/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Cl
 				tile.anim();
 				ctx.save()
 					renderer.drawRect("canopy", tx, ty, this.tileSize, this.tileSize, {fillStyle: 'rgba(0,32,16,'+tile.fade+')', strokeStyle: 'none'});
-				ctx.restore()
-				//}
+				ctx.restore();
 			}
+			renderer.cache('base', this.width*this.tileSize, this.height*this.tileSize);
+			renderer.cache('canopy', this.width*this.tileSize, this.height*this.tileSize);
+			renderer.width = tmpW;
+			renderer.height = tmpH;
 		},
 		loadCallback : function(){
 
@@ -16668,7 +16717,7 @@ define('dreddrl/factory',[
                         map: this.map,
                         speed: 16
                     },
-                    health : {alignment:'good', life: 8},
+                    health : {alignment:5, life: 8},
                     physics : {},
                     inventory : {},
                     weapons: {},
@@ -16694,7 +16743,32 @@ define('dreddrl/factory',[
                     map: this.map,
                     speed: 16
                 },
-                health : {alignment:'evil', life: 3},
+                health : {alignment:-10, life: 3},
+                simpleai : {},
+                physics : {},
+                deaddrop: {}
+            }},
+            gangboss : function(){return {
+                xform : {},
+                sprite : {
+                    src : 'assets/sprites/albertbrownhair.png',
+                    width: 32,
+                    offsetY: -8,
+                    scale: 2
+                },
+                anim : {
+                    frames: {
+                        walk_down : [0,1,2],
+                        walk_up : [9,10,11],
+                        walk_right : [6,7,8],
+                        walk_left : [3,4,5]
+                    },
+                },
+                movement : {
+                    map: this.map,
+                    speed: 16
+                },
+                health : {alignment:-20, life: 6},
                 simpleai : {},
                 physics : {},
                 deaddrop: {}
@@ -16757,7 +16831,7 @@ define('dreddrl/factory',[
                     map: this.map,
                     speed: 16
                 },
-                health : {alignment:'good', life: 5},
+                health : {alignment:1000, life: 5},
                 physics : {},
                 deaddrop: {},
                 interact: {},
@@ -16798,7 +16872,7 @@ define('dreddrl/factory',[
                     map: this.map,
                     speed: 16
                 },
-                health : {alignment:'good', life: 5},
+                health : {alignment:1000, life: 5},
                 physics : {},
                 deaddrop: {},
                 interact: {},
@@ -16882,26 +16956,71 @@ define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory', './encounter
         start: function(){
             //Create Mother
             var mothersRoom = sge.random.item(this.block.rooms);
-            var mother = this.state.factory('women', {xform: {
-                tx: mothersRoom[0] * 32,
-                ty: mothersRoom[1] * 32
-            }});
+            var mother = this.state.factory('women', {
+                xform: {
+                    tx: mothersRoom[0] * 32,
+                    ty: mothersRoom[1] * 32
+                },
+                dialog: {
+                    dialog :
+                        ['switch', '${@(pc).quest.status}', 
+                            [
+                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
+                                ['set', '@(pc).quest.status', 1]
+                            ],[
+                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
+                            ],[
+                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
+                                ['set', '@(pc).quest.status', 3]
+                            ],[
+                                ['dialog', "Welcome to Peach Trees. "]
+                            ]
+                        ]
+                }
+            });
             mother.tags.push('mother');
             this.block.state.addEntity(mother);
             
 
             //Create Daughter
             var daughtersRoom = sge.random.item(this.block.rooms);
-            var daughter = this.state.factory('daughter', {xform: {
-                tx: daughtersRoom[0] * 32,
-                ty: daughtersRoom[1] * 32
-            }});
+            var daughter = this.state.factory('daughter', {
+                xform: {
+                    tx: daughtersRoom[0] * 32,
+                    ty: daughtersRoom[1] * 32
+                },
+                dialog: {
+                   "dialog":
+                        ['if', '${@(pc).quest.status}==1', 
+                            [
+                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
+                                ['set', '@(pc).quest.status', 2]
+                            ],[
+                                ['dialog', "Hey there. Haven't seen you around the block before."]
+                            ]
+                        ] 
+                }
+            });
             daughter.tags.push('daughter');
             this.block.state.addEntity(daughter);
 
         }
     });
 
+    var ExecuteEncounter = Encounter.extend({
+        start: function(){
+            //Create Mother
+            var gangBossRoom = sge.random.item(this.block.rooms);
+            var gangBoss = this.state.factory('gangboss', {
+                xform: {
+                    tx: gangBossRoom[0] * 32,
+                    ty: gangBossRoom[1] * 32
+                }
+            });
+            gangBoss.tags.push('gangboss');
+            this.block.state.addEntity(gangBoss);
+        }
+    });
 
     var LevelGenerator = sge.Class.extend({
         init: function(state, options){
@@ -17010,6 +17129,7 @@ define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory', './encounter
             this.state.addEntity(elevator);
 
             encounter = new CheckupEncounter(this);
+            new ExecuteEncounter(this);
         },
         buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){
@@ -17377,6 +17497,7 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
             setTimeout(function() {
                     this.game.fsm.finishLoad();
             }.bind(this), 1000);
+            this.map.render(this.game.renderer);
         },
 
         progressListener : function(e){
@@ -17471,7 +17592,7 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
 
             this.game.renderer.track(this.pc);
             //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
-            this.map.render(this.game.renderer);
+            //this.map.render(this.game.renderer);
             _.each(this._entity_ids, function(id){
                 var entity = this.entities[id];
                 var tx = entity.get('xform.tx');
@@ -17486,7 +17607,7 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
         },
         _paused_tick : function(delta){
             this.game.renderer.track(this.pc);
-            this.map.render(this.game.renderer);
+            //this.map.render(this.game.renderer);
             _.each(this._entity_ids, function(id){
                 var entity = this.entities[id];
                 entity.componentCall('render', this.game.renderer, 'main');

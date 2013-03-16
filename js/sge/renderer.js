@@ -15,6 +15,8 @@ define(function(require){
         this._clearListNew = {};
         this._drawList = {};
         this._layers = [];
+
+
     };
 
     Renderer.prototype.track = function(entity, options){
@@ -38,6 +40,8 @@ define(function(require){
         if (screenY > height-options.padding){
             this.ty += options.speedScale * (screenY - (height - options.padding));
         }
+        this.tx = Math.round(this.tx);
+        this.ty = Math.round(this.ty);
 
     }
 
@@ -57,33 +61,71 @@ define(function(require){
         }
     }
 
-    Renderer.prototype.render = function(layer){
-        if (layer===undefined){
+    Renderer.prototype.cache = function(layerName, width, height){
+        var layer = this.layers[layerName];
+        layer.cacheCanvas = $('<canvas/>').attr({width: width, height: height})[0];
+        layer.cacheContext = layer.cacheCanvas.getContext('2d');
+        layer.cacheContext.setTransform(1,0,0,1,0,0);
+        var tmpW = this.width;
+        var tmpH = this.height;
+        this.width = width;
+        this.height = height;
+        var drawList = this._drawList[layerName];
+        if (drawList===undefined){
+            return;
+        }
+        drawList.sort(function(a,b){return b.priority - a.priority});
+        //drawList.reverse();
+        for (var j = drawList.length - 1; j >= 0; j--) {
+            var func = drawList[j].func;
+            func(layer.cacheContext);
+        };
+        this.height = tmpH;
+        this.width = tmpW;
+        this._drawList[layerName]=undefined;
+        $(layer.cacheCanvas).css({display: 'none'});
+        $('body').append(layer.cacheCanvas)
+    }
+
+    Renderer.prototype.render = function(layerName){
+        if (layerName===undefined){
             var layers = this._layers;
             layers.reverse();
             for (var i = layers.length - 1; i >= 0; i--) {
                 this.render(layers[i])
             }
         } else {
-            if (this._clearList[layer]!==undefined){
-                for (var i = this._clearList[layer].length - 1; i >= 0; i--) {
-                    var clearRect = this._clearList[layer][i];
-                    this.layers[layer].context.clearRect(clearRect[0],clearRect[1],clearRect[2],clearRect[3]);
+            var layer = this.layers[layerName];
+            if (layer.cacheCanvas){
+                layer.context.save()
+                layer.context.setTransform(1,0,0,1,0,0);
+                layer.context.clearRect(0,0,this.width, this.height);
+                var tx = Math.max(0,this.tx);
+                var offsetx = Math.min(0,this.tx);
+                var ty = Math.max(0,this.ty);
+                var offsety = Math.min(0,this.ty);
+                layer.context.drawImage(layer.cacheCanvas, tx, ty, this.width-offsetx, this.height-offsety, -offsetx, -offsety, this.width-offsetx, this.height-offsety);
+                layer.context.restore();
+            } else {
+                if (this._clearList[layerName]!==undefined){
+                    for (var i = this._clearList[layerName].length - 1; i >= 0; i--) {
+                        var clearRect = this._clearList[layerName][i];
+                        this.layers[layerName].context.clearRect(clearRect[0],clearRect[1],clearRect[2],clearRect[3]);
+                    };
+                }
+                this._clearList[layerName] = this._clearListNew[layerName];
+                this._clearListNew[layerName] = undefined;
+                var drawList = this._drawList[layerName];
+                if (drawList===undefined){
+                    return;
+                }
+                drawList.sort(function(a,b){return b.priority - a.priority});
+                for (var j = drawList.length - 1; j >= 0; j--) {
+                    var func = drawList[j].func;
+                    func(layer.context);
                 };
+                this._drawList[layerName]=undefined;
             }
-            this._clearList[layer] = this._clearListNew[layer];
-            this._clearListNew[layer] = undefined;
-            var drawList = this._drawList[layer];
-            if (drawList===undefined){
-                return;
-            }
-            drawList.sort(function(a,b){return b.priority - a.priority});
-            //drawList.reverse();
-            for (var j = drawList.length - 1; j >= 0; j--) {
-                var func = drawList[j].func;
-                func();
-            };
-            this._drawList[layer]=undefined;
         }
     }
 
@@ -115,10 +157,10 @@ define(function(require){
         if ((destRect[0]>this.width) || (destRect[1]>this.height)|| (destRect[2]+destRect[0]<0) || (destRect[1]+destRect[3]<0)){
             return;
         }
-        var ctx = this.layers[layer].context;
+        //var ctx = this.layers[layer].context;
         priority = priority || 0;
         this.clear(layer, destRect[0]-8,destRect[1]-8,destRect[2]+16,destRect[3]+16)
-        this.draw(layer, function(){
+        this.draw(layer, function(ctx){
             ctx.save();
             var keys = Object.keys(style);
             for (var j = keys.length - 1; j >= 0; j--) {
@@ -158,12 +200,12 @@ define(function(require){
             return;
         }
 
-        var ctx = this.layers[layer].context;
+        //var ctx = this.layers[layer].context;
         if (clear!==false){
             this.clear(layer, clearX, clearY,destRect[2],destRect[3])
         }
 
-        this.draw(layer, function(){
+        this.draw(layer, function(ctx){
             ctx.save();
             ctx.translate(tx, ty);
             ctx.scale(scale[0],scale[1]);

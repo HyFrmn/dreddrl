@@ -10,7 +10,7 @@ define(['sge/component'], function(Component){
                 if (!entity.get('health')){
                     return;
                 }
-                if (this.data.alignment==entity.get('health.alignment')){
+                if (this.data.alignment+entity.get('health.alignment')>=0){
                     return;
                 }
             	this.data.life--;
