@@ -5,13 +5,21 @@ define(['sge/component'], function(Component){
             this.data.visible = data.visible === undefined ? true : data.visible;
             this.data.life = data.life || 100;
             this.data.maxLife = data.maxLife || data.life || 100;
-            this.data.alignment = data.alignment || 'evil';
+            this.data.alignment = data.alignment || 0;
             this.entity.addListener('contact.start', function(entity){
                 if (!entity.get('health')){
                     return;
                 }
-                if (this.data.alignment+entity.get('health.alignment')>=0){
+                var alignA = this.get('alignment');
+                var alignB = entity.get('health.alignment');
+                if ((alignA==0)||(alignB==0)){
                     return;
+                }
+                if ((alignA<0)&&(alignB<0)){
+                    return
+                }
+                if ((alignA>0)&&(alignB>0)){
+                    return
                 }
             	this.data.life--;
                 if (this.data.life <= 0){

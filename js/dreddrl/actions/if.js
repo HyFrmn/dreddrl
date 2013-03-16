@@ -1,12 +1,12 @@
 define(['sge','../action'], function(sge, Action){
 	var IfAction = Action.extend({
-		init: function(data){
-			this._super(data);
+		init: function(entity, data){
+			this._super(entity, data);
 			this.async = true;
 		},
 		start: function(expr, trueActions, falseActions){
-	        var parsedExpr = this.parseExpr(expr);
-	        var result = Boolean(this.evalExpr(parsedExpr));
+	        var parsedExpr = this.parseExpr(expr, this.entity);
+	        var result = Boolean(this.evalExpr(parsedExpr, this.entity));
 	        console.log(result);
 	        var actionList = [];
 	        if(result) {
@@ -18,7 +18,7 @@ define(['sge','../action'], function(sge, Action){
 	        	actionData = actionData.slice(0);
 	        	console.log(actionData);
 	            var type = actionData.shift();
-                var action = Action.Load({type: type, args: actionData});
+                var action = Action.Load(this.entity, {type: type, args: actionData});
                 action.run(this.state);
 	        }.bind(this));
 		}

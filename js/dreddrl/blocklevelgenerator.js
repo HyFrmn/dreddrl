@@ -15,17 +15,20 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
                     tx: mothersRoom[0] * 32,
                     ty: mothersRoom[1] * 32
                 },
+                encounter: {
+                    encounter : this,
+                },
                 dialog: {
                     dialog :
-                        ['switch', '${@(pc).quest.status}', 
+                        ['switch', '${encounter.status}', 
                             [
                                 ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
-                                ['set', '@(pc).quest.status', 1]
+                                ['set', 'encounter.status', 1]
                             ],[
                                 ['dialog', "Have you found my daughter yet?! I'm worried!"]
                             ],[
                                 ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
-                                ['set', '@(pc).quest.status', 3]
+                                ['set', 'encounter.status', 3]
                             ],[
                                 ['dialog', "Welcome to Peach Trees. "]
                             ]
@@ -43,12 +46,15 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
                     tx: daughtersRoom[0] * 32,
                     ty: daughtersRoom[1] * 32
                 },
+                encounter: {
+                    encounter : this,
+                },
                 dialog: {
                    "dialog":
-                        ['if', '${@(pc).quest.status}==1', 
+                        ['if', '${encounter.status}==1', 
                             [
                                 ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
-                                ['set', '@(pc).quest.status', 2]
+                                ['set', 'encounter.status', 2]
                             ],[
                                 ['dialog', "Hey there. Haven't seen you around the block before."]
                             ]

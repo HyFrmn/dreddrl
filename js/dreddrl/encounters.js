@@ -4,6 +4,7 @@ define(['sge'], function(sge){
 			this.block = block;
 			this.state = block.state;
 			this.factory = block.factory;
+			this.status = 0;
 			this.start();
 		},
 		start: function(){

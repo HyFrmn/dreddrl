@@ -104,18 +104,21 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 		getTile : function(x, y){
 			return this._tiles[this.getIndex(x, y)] || null;
 		},
-		render : function(renderer){
-			var tmpW = renderer.width;
-			var tmpH = renderer.height;
-			renderer.width = this.width * this.tileSize;
-			renderer.height = this.height * this.tileSize;
-			var ctx = renderer.layers['base'].context;
-			//ctx.clearRect(0, 0, this.width * this.tileSize, this.height * this.tileSize)
-			for (var j=0;j<this.layers.length;j++){
-				for (var i = this._tiles.length - 1; i >= 0; i--) {
-					var tile = this._tiles[i];
+		renderTiles : function(renderer, coords){
+			var trackX = renderer.tx;
+        	var trackY = renderer.ty;
+        	renderer.tx = 0;
+        	renderer.ty = 0;
+        	var width = renderer.width;
+        	var height = renderer.height;
+        	renderer.width = 2048;
+        	renderer.height = 2048;
+			for (var i = coords.length - 1; i >= 0; i--) {
+				var x = coords[i][0];
+				var y = coords[i][1];
+				var tile = this.getTile(x,y);
+				for (var j=0;j<this.layers.length;j++){
 					if (tile.fade<1){
-						//ctx.save()
 						var tx = (tile.x + 0.5) * this.tileSize;
 						var ty = (tile.y + 0.5) * this.tileSize;
 						var tileData = tile.layers[this.layers[j]];
@@ -124,7 +127,32 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 							var spriteSheet = tileData.spritesheet || this.defaultSheet;
 							renderer.drawSprite(layer, this.spriteSheets[spriteSheet], [tileData.srcX, tileData.srcY], tx, ty, [1,1], false, j*10);
 						}
-						//ctx.restore();
+					}
+				}
+			};
+			renderer.cacheUpdate('base');
+			renderer.width = width;
+			renderer.height = height;
+			renderer.tx = trackX;
+        	renderer.ty = trackY;
+		},
+		render : function(renderer){
+			var tmpW = renderer.width;
+			var tmpH = renderer.height;
+			renderer.width = this.width * this.tileSize;
+			renderer.height = this.height * this.tileSize;
+			for (var j=0;j<this.layers.length;j++){
+				for (var i = this._tiles.length - 1; i >= 0; i--) {
+					var tile = this._tiles[i];
+					if (tile.fade<1){
+						var tx = (tile.x + 0.5) * this.tileSize;
+						var ty = (tile.y + 0.5) * this.tileSize;
+						var tileData = tile.layers[this.layers[j]];
+						if (tileData){
+							var layer = tileData.layer || "base"
+							var spriteSheet = tileData.spritesheet || this.defaultSheet;
+							renderer.drawSprite(layer, this.spriteSheets[spriteSheet], [tileData.srcX, tileData.srcY], tx, ty, [1,1], false, j*10);
+						}
 					}
 				};
 			}
@@ -133,9 +161,7 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 				var tx = (tile.x) * this.tileSize;
 				var ty = (tile.y) * this.tileSize;
 				tile.anim();
-				ctx.save()
-					renderer.drawRect("canopy", tx, ty, this.tileSize, this.tileSize, {fillStyle: 'rgba(0,32,16,'+tile.fade+')', strokeStyle: 'none'});
-				ctx.restore();
+				renderer.drawRect("canopy", tx, ty, this.tileSize, this.tileSize, {fillStyle: 'rgba(0,32,16,'+tile.fade+')', strokeStyle: 'none'});
 			}
 			renderer.cache('base', this.width*this.tileSize, this.height*this.tileSize);
 			renderer.cache('canopy', this.width*this.tileSize, this.height*this.tileSize);

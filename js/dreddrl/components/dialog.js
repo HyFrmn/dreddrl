@@ -14,7 +14,7 @@ define(['sge', '../action'], function(sge, Action){
                 console.log(dialog)
                 dialogData = dialog.slice(0);
                 var type = dialogData.shift();
-                var action = Action.Load({type: type, args: dialogData});
+                var action = Action.Load(this.entity, {type: type, args: dialogData});
                 action.run(this.state);
             }
         },

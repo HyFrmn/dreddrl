@@ -128,7 +128,6 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
         startDialog: function(dialog){
             this.game._states['dialog'].setDialog(dialog);
             this.game.fsm.startDialog();
-            console.log('DIALOG');
         },
         tick : function(delta){
             this.tickTimeouts(delta);

@@ -87,6 +87,30 @@ define(function(require){
         $('body').append(layer.cacheCanvas)
     }
 
+     Renderer.prototype.cacheUpdate = function(layerName){
+        var layer = this.layers[layerName];
+        if (!layer.cacheCanvas){
+            return;
+        }
+        var drawList = this._drawList[layerName];
+        if (drawList===undefined){
+            return;
+        }
+        var trackX = this.tx;
+        var trackY = this.ty;
+        this.tx = 0;
+        this.ty = 0;
+        drawList.sort(function(a,b){return b.priority - a.priority});
+        //drawList.reverse();
+        for (var j = drawList.length - 1; j >= 0; j--) {
+            var func = drawList[j].func;
+            func(layer.cacheContext);
+        };
+        this._drawList[layerName]=undefined;
+        this.tx = trackX;
+        this.ty = trackY;
+     }
+
     Renderer.prototype.render = function(layerName){
         if (layerName===undefined){
             var layers = this._layers;
@@ -102,9 +126,11 @@ define(function(require){
                 layer.context.clearRect(0,0,this.width, this.height);
                 var tx = Math.max(0,this.tx);
                 var offsetx = Math.min(0,this.tx);
+                var height = Math.min(layer.cacheCanvas.height-this.ty,this.height);
                 var ty = Math.max(0,this.ty);
                 var offsety = Math.min(0,this.ty);
-                layer.context.drawImage(layer.cacheCanvas, tx, ty, this.width-offsetx, this.height-offsety, -offsetx, -offsety, this.width-offsetx, this.height-offsety);
+                var width = Math.min(layer.cacheCanvas.width-this.tx,this.width);
+                layer.context.drawImage(layer.cacheCanvas, tx, ty, width-offsetx, height-offsety, -offsetx, -offsety, width-offsetx, height-offsety);
                 layer.context.restore();
             } else {
                 if (this._clearList[layerName]!==undefined){

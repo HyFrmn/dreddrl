@@ -1,6 +1,7 @@
 define(['sge'], function(sge){
 	var Action = sge.Class.extend({
-		init: function(data){
+		init: function(entity, data){
+			this.entity = entity;
 			this.children = []
 			this.label = null;
 
@@ -81,13 +82,10 @@ define(['sge'], function(sge){
 		        }
 	            path = path.replace('@(' + name + ').', '');
 	        }
-	        if (_ctx === undefined){
-	            return this.getVariable(path);
-	        }
 	        return _ctx.get(path);
 	    },
 	    setAttr : function(path, value) {
-	    	var _ctx = undefined;
+	    	_ctx = this.entity;
 	    	console.log('PATH', path)
 	        if (path.match(/^@/)){
 	            var name = path.split('.')[0];
@@ -99,22 +97,19 @@ define(['sge'], function(sge){
 		        }
 	            path = path.replace('@(' + name + ').', '');
 	        }
-	        if (_ctx === undefined){
-	            return this.getVariable(path);
-	        }
 	        return _ctx.set(path, value);
 	    },
 	});
 
 	Action._classHash = {};
 
-	Action.Load = function(data) {
+	Action.Load = function(entity, data) {
 		var type = data.type;
 	    var cls = Action._classHash[type];
 	    if(cls === undefined) {
 	        return null;
 	    }
-	    var comp = new cls(data);
+	    var comp = new cls(entity, data);
 	    comp.type = type;
 	    return comp;
 	};

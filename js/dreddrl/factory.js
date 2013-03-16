@@ -11,6 +11,7 @@ define([
     './components/dialog',
     './components/elevator',
     './components/quest',
+    './components/encounter',
 
     './actions/dialog',
     './actions/if',
@@ -154,7 +155,7 @@ define([
                     map: this.map,
                     speed: 16
                 },
-                health : {alignment:1000, life: 5},
+                health : {alignment:0, life: 5},
                 physics : {},
                 deaddrop: {},
                 interact: {},
@@ -195,7 +196,7 @@ define([
                     map: this.map,
                     speed: 16
                 },
-                health : {alignment:1000, life: 5},
+                health : {alignment:0, life: 5},
                 physics : {},
                 deaddrop: {},
                 interact: {},
