@@ -11728,9 +11728,33 @@ define('sge/renderer',['require','jquery','sge/lib/vector'],function(require){
         this.height = tmpH;
         this.width = tmpW;
         this._drawList[layerName]=undefined;
-        $(layer.cacheCanvas).css({display: 'none'});
-        $('body').append(layer.cacheCanvas)
+        //$(layer.cacheCanvas).css({display: 'none'});
+        //$('body').append(layer.cacheCanvas)
     }
+
+     Renderer.prototype.cacheUpdate = function(layerName){
+        var layer = this.layers[layerName];
+        if (!layer.cacheCanvas){
+            return;
+        }
+        var drawList = this._drawList[layerName];
+        if (drawList===undefined){
+            return;
+        }
+        var trackX = this.tx;
+        var trackY = this.ty;
+        this.tx = 0;
+        this.ty = 0;
+        drawList.sort(function(a,b){return b.priority - a.priority});
+        //drawList.reverse();
+        for (var j = drawList.length - 1; j >= 0; j--) {
+            var func = drawList[j].func;
+            func(layer.cacheContext);
+        };
+        this._drawList[layerName]=undefined;
+        this.tx = trackX;
+        this.ty = trackY;
+     }
 
     Renderer.prototype.render = function(layerName){
         if (layerName===undefined){
@@ -11747,9 +11771,11 @@ define('sge/renderer',['require','jquery','sge/lib/vector'],function(require){
                 layer.context.clearRect(0,0,this.width, this.height);
                 var tx = Math.max(0,this.tx);
                 var offsetx = Math.min(0,this.tx);
+                var height = Math.min(layer.cacheCanvas.height-this.ty,this.height);
                 var ty = Math.max(0,this.ty);
                 var offsety = Math.min(0,this.ty);
-                layer.context.drawImage(layer.cacheCanvas, tx, ty, this.width-offsetx, this.height-offsety, -offsetx, -offsety, this.width-offsetx, this.height-offsety);
+                var width = Math.min(layer.cacheCanvas.width-this.tx,this.width);
+                layer.context.drawImage(layer.cacheCanvas, tx, ty, width-offsetx, height-offsety, -offsetx, -offsety, width-offsetx, height-offsety);
                 layer.context.restore();
             } else {
                 if (this._clearList[layerName]!==undefined){
@@ -12269,7 +12295,7 @@ define('sge/components/controls',['sge/component'], function(Component){
     var ControlsComponent = Component.extend({
         init: function(entity, data){
             this._super(entity, data);
-            this.data.speed = 128;
+            this.data.speed = 256;
         },
         register: function(state){
             this.input = state.input;
@@ -12309,13 +12335,21 @@ define('sge/components/health',['sge/component'], function(Component){
             this.data.visible = data.visible === undefined ? true : data.visible;
             this.data.life = data.life || 100;
             this.data.maxLife = data.maxLife || data.life || 100;
-            this.data.alignment = data.alignment || 'evil';
+            this.data.alignment = data.alignment || 0;
             this.entity.addListener('contact.start', function(entity){
                 if (!entity.get('health')){
                     return;
                 }
-                if (this.data.alignment+entity.get('health.alignment')>=0){
+                var alignA = this.get('alignment');
+                var alignB = entity.get('health.alignment');
+                if ((alignA==0)||(alignB==0)){
                     return;
+                }
+                if ((alignA<0)&&(alignB<0)){
+                    return
+                }
+                if ((alignA>0)&&(alignB>0)){
+                    return
                 }
             	this.data.life--;
                 if (this.data.life <= 0){
@@ -12754,6 +12788,7 @@ define('sge/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Cl
 			this.fade = 1;
 			this.animate = false;
 			this.fadeDelta = 0.1;
+			this.metaData = {};
 		},
 		hide: function(){
 			//this.fade=1
@@ -12847,18 +12882,27 @@ define('sge/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Cl
 		getTile : function(x, y){
 			return this._tiles[this.getIndex(x, y)] || null;
 		},
-		render : function(renderer){
-			var tmpW = renderer.width;
-			var tmpH = renderer.height;
-			renderer.width = this.width * this.tileSize;
-			renderer.height = this.height * this.tileSize;
-			var ctx = renderer.layers['base'].context;
-			//ctx.clearRect(0, 0, this.width * this.tileSize, this.height * this.tileSize)
-			for (var j=0;j<this.layers.length;j++){
-				for (var i = this._tiles.length - 1; i >= 0; i--) {
-					var tile = this._tiles[i];
+		getTiles :  function(coords){
+			tiles =  _.map(coords, function(coord){
+				return this.getTile(coord[0],coord[1]);
+			}.bind(this));
+			return tiles;
+		},
+		renderTiles : function(renderer, coords){
+			var trackX = renderer.tx;
+        	var trackY = renderer.ty;
+        	renderer.tx = 0;
+        	renderer.ty = 0;
+        	var width = renderer.width;
+        	var height = renderer.height;
+        	renderer.width = 2048;
+        	renderer.height = 2048;
+			for (var i = coords.length - 1; i >= 0; i--) {
+				var x = coords[i][0];
+				var y = coords[i][1];
+				var tile = this.getTile(x,y);
+				for (var j=0;j<this.layers.length;j++){
 					if (tile.fade<1){
-						//ctx.save()
 						var tx = (tile.x + 0.5) * this.tileSize;
 						var ty = (tile.y + 0.5) * this.tileSize;
 						var tileData = tile.layers[this.layers[j]];
@@ -12867,7 +12911,34 @@ define('sge/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Cl
 							var spriteSheet = tileData.spritesheet || this.defaultSheet;
 							renderer.drawSprite(layer, this.spriteSheets[spriteSheet], [tileData.srcX, tileData.srcY], tx, ty, [1,1], false, j*10);
 						}
-						//ctx.restore();
+					}
+				}
+			};
+			renderer.cacheUpdate('base');
+			renderer.width = width;
+			renderer.height = height;
+			renderer.tx = trackX;
+        	renderer.ty = trackY;
+		},
+		render : function(renderer){
+			renderer.tx = 0;
+			renderer.ty = 0;
+			var tmpW = renderer.width;
+			var tmpH = renderer.height;
+			renderer.width = this.width * this.tileSize;
+			renderer.height = this.height * this.tileSize;
+			for (var j=0;j<this.layers.length;j++){
+				for (var i = this._tiles.length - 1; i >= 0; i--) {
+					var tile = this._tiles[i];
+					if (tile.fade<1){
+						var tx = (tile.x + 0.5) * this.tileSize;
+						var ty = (tile.y + 0.5) * this.tileSize;
+						var tileData = tile.layers[this.layers[j]];
+						if (tileData){
+							var layer = tileData.layer || "base"
+							var spriteSheet = tileData.spritesheet || this.defaultSheet;
+							renderer.drawSprite(layer, this.spriteSheets[spriteSheet], [tileData.srcX, tileData.srcY], tx, ty, [1,1], false, j*10);
+						}
 					}
 				};
 			}
@@ -12876,9 +12947,7 @@ define('sge/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Cl
 				var tx = (tile.x) * this.tileSize;
 				var ty = (tile.y) * this.tileSize;
 				tile.anim();
-				ctx.save()
-					renderer.drawRect("canopy", tx, ty, this.tileSize, this.tileSize, {fillStyle: 'rgba(0,32,16,'+tile.fade+')', strokeStyle: 'none'});
-				ctx.restore();
+				renderer.drawRect("canopy", tx, ty, this.tileSize, this.tileSize, {fillStyle: 'rgba(0,32,16,'+tile.fade+')', strokeStyle: 'none'});
 			}
 			renderer.cache('base', this.width*this.tileSize, this.height*this.tileSize);
 			renderer.cache('canopy', this.width*this.tileSize, this.height*this.tileSize);
@@ -16237,6 +16306,7 @@ define('dreddrl/components/inventory',['sge','jquery'],function(sge, $){
 		init: function(entity, data){
 			this._super(entity, data);
 			this.data.ammo = data.ammo || 20;
+			this.data.items = []
 			this.data.objects = {};
 			this._elem_ammo = $('span.ammo');
 			this.entity.addListener('pickup', this.pickup.bind(this));
@@ -16244,13 +16314,16 @@ define('dreddrl/components/inventory',['sge','jquery'],function(sge, $){
 		pickup: function(entity){
 			var freeitem = entity.get('freeitem');
 			var newAmmo = freeitem.get('inventory.ammo');
-			if (newAmmo){
-				console.log('Ammo:', this.set('ammo',newAmmo,'add'));
-			}
-			var newLife = freeitem.get('health.life');
-			if (newLife){
-				console.log('Life:', this.entity.set('health.life',newLife,'add'));
-			}
+			var keys = Object.keys(freeitem.data);
+			for (var i = keys.length - 1; i >= 0; i--) {
+				var key = keys[i];
+				if (key=='inventory.add'){
+					this.data.items.push(freeitem.data[key]);
+				} else {
+					console.log(key, freeitem.data[key])
+					this.entity.set(key, freeitem.data[key], 'add');
+				}
+			};
 		},
 		subtractProperty: function(prop, value){
 			value = value || 1;
@@ -16267,6 +16340,9 @@ define('dreddrl/components/interaction',['sge'], function(sge){
             this._super(entity, data);
             this.data.fillStyle = 'green';
             this.data.strokeStyle = 'black';
+            this.data.targets = data.targets || null;
+            this.data.width = data.width || 32;
+            this.data.height = data.height || 32;
             this.active = false;
             this.interact = this.interact.bind(this);
             this.entity.addListener('focus.gain', this.activate.bind(this));
@@ -16281,8 +16357,10 @@ define('dreddrl/components/interaction',['sge'], function(sge){
         		}
         	}
         },
-        activate: function(){
+        activate: function(coord){
+            this.activeCoord = coord;
             this.active = true;
+            console.log(this.entity.tags);
             this.state.input.addListener('keydown:enter', this.interact);
         },
         deactivate: function(){
@@ -16306,8 +16384,8 @@ define('dreddrl/components/interaction',['sge'], function(sge){
             if (this.active){
                 var tx = this.entity.get('xform.tx');
                 var ty = this.entity.get('xform.ty');
-                var width = 32; //this.entity.get('physics.width');
-                var height = 32; //this.entity.get('physics.height');
+                var width = this.get('width'); //this.entity.get('physics.width');
+                var height = this.get('height'); //this.entity.get('physics.height');
                 renderer.drawRect(layer, tx - width/2, ty - height/2, width, height, {fillStyle: this.get('fillStyle'), strokeStyle: this.get('strokeStyle')})
             }
         },
@@ -16328,7 +16406,7 @@ define('dreddrl/components/door',['sge'], function(sge){
     var Door = sge.Component.extend({
         init: function(entity, data){
             this._super(entity, data);
-            this.data.open = data.open || true;
+            this.data.open = data.open===undefined ?  true : data.open;
             this.interact = this.interact.bind(this);
             this.entity.addListener('interact', this.interact);
         },
@@ -16339,7 +16417,7 @@ define('dreddrl/components/door',['sge'], function(sge){
         updateTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32);
             var ty = Math.floor(this.entity.get('xform.ty') / 32);
-            if (this.get('open')){
+            if (this.get('open')==true){
                 tile = this.map.getTile(tx,ty-2);
                 tile.passable=true;
                 tile = this.map.getTile(tx,ty-1);
@@ -16358,6 +16436,8 @@ define('dreddrl/components/door',['sge'], function(sge){
                 tile.layers['layer1'] = DOORCLOSEDTILE2;
                 tile.passable=false;
             }
+            this.map.renderTiles(this.state.game.renderer, [[tx,ty-2],[tx, ty-1],[tx,ty]]);
+            
         },
 
     	register: function(state){
@@ -16375,7 +16455,8 @@ define('dreddrl/components/door',['sge'], function(sge){
 });
 define('dreddrl/action',['sge'], function(sge){
 	var Action = sge.Class.extend({
-		init: function(data){
+		init: function(entity, data){
+			this.entity = entity;
 			this.children = []
 			this.label = null;
 
@@ -16456,13 +16537,10 @@ define('dreddrl/action',['sge'], function(sge){
 		        }
 	            path = path.replace('@(' + name + ').', '');
 	        }
-	        if (_ctx === undefined){
-	            return this.getVariable(path);
-	        }
 	        return _ctx.get(path);
 	    },
 	    setAttr : function(path, value) {
-	    	var _ctx = undefined;
+	    	_ctx = this.entity;
 	    	console.log('PATH', path)
 	        if (path.match(/^@/)){
 	            var name = path.split('.')[0];
@@ -16474,22 +16552,19 @@ define('dreddrl/action',['sge'], function(sge){
 		        }
 	            path = path.replace('@(' + name + ').', '');
 	        }
-	        if (_ctx === undefined){
-	            return this.getVariable(path);
-	        }
 	        return _ctx.set(path, value);
 	    },
 	});
 
 	Action._classHash = {};
 
-	Action.Load = function(data) {
+	Action.Load = function(entity, data) {
 		var type = data.type;
 	    var cls = Action._classHash[type];
 	    if(cls === undefined) {
 	        return null;
 	    }
-	    var comp = new cls(data);
+	    var comp = new cls(entity, data);
 	    comp.type = type;
 	    return comp;
 	};
@@ -16525,7 +16600,7 @@ define('dreddrl/components/dialog',['sge', '../action'], function(sge, Action){
                 console.log(dialog)
                 dialogData = dialog.slice(0);
                 var type = dialogData.shift();
-                var action = Action.Load({type: type, args: dialogData});
+                var action = Action.Load(this.entity, {type: type, args: dialogData});
                 action.run(this.state);
             }
         },
@@ -16595,10 +16670,29 @@ define('dreddrl/components/quest',['sge'],function(sge){
 	sge.Component.register('quest', QuestComponent);
     return QuestComponent;
 })		;
+define('dreddrl/components/encounter',['sge'], function(sge){
+	var EncounterComponent = sge.Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.encounter = data.encounter
+			this.data.status = data.status || 0;
+		},
+		_get_status : function(){
+			return this.encounter.status;
+		},
+		_set_status : function(status){
+			this.encounter.status = status;
+			console.log('Encounter', this.encounter);
+			return this.encounter.status;
+		}
+	});
+	sge.Component.register('encounter', EncounterComponent);
+	return EncounterComponent;
+});
 define('dreddrl/actions/dialog',['sge','../action'], function(sge, Action){
 	var DialogAction = Action.extend({
-		init: function(data){
-			this._super(data);
+		init: function(entity, data){
+			this._super(entity, data);
 			this.async = true;
 		},
 		start: function(text){
@@ -16610,13 +16704,13 @@ define('dreddrl/actions/dialog',['sge','../action'], function(sge, Action){
 });
 define('dreddrl/actions/if',['sge','../action'], function(sge, Action){
 	var IfAction = Action.extend({
-		init: function(data){
-			this._super(data);
+		init: function(entity, data){
+			this._super(entity, data);
 			this.async = true;
 		},
 		start: function(expr, trueActions, falseActions){
-	        var parsedExpr = this.parseExpr(expr);
-	        var result = Boolean(this.evalExpr(parsedExpr));
+	        var parsedExpr = this.parseExpr(expr, this.entity);
+	        var result = Boolean(this.evalExpr(parsedExpr, this.entity));
 	        console.log(result);
 	        var actionList = [];
 	        if(result) {
@@ -16628,7 +16722,7 @@ define('dreddrl/actions/if',['sge','../action'], function(sge, Action){
 	        	actionData = actionData.slice(0);
 	        	console.log(actionData);
 	            var type = actionData.shift();
-                var action = Action.Load({type: type, args: actionData});
+                var action = Action.Load(this.entity, {type: type, args: actionData});
                 action.run(this.state);
 	        }.bind(this));
 		}
@@ -16638,8 +16732,8 @@ define('dreddrl/actions/if',['sge','../action'], function(sge, Action){
 });
 define('dreddrl/actions/set',['sge','../action'], function(sge, Action){
 	var SetAction = Action.extend({
-		init: function(data){
-			this._super(data);
+		init: function(entity, data){
+			this._super(entity, data);
 			this.async = true;
 		},
 		start: function(path, value){
@@ -16652,22 +16746,22 @@ define('dreddrl/actions/set',['sge','../action'], function(sge, Action){
 });
 define('dreddrl/actions/switch',['sge','../action'], function(sge, Action){
 	var SwitchAction = Action.extend({
-		init: function(data){
-			this._super(data);
+		init: function(entity, data){
+			this._super(entity, data);
 			this.async = true;
 		},
 		start: function(){
 			var args = Array.prototype.slice.call(arguments);
 			var expr = args.shift()
-	        var parsedExpr = this.parseExpr(expr);
-	        var result = parseInt(this.evalExpr(parsedExpr));
+	        var parsedExpr = this.parseExpr(expr, this.entity);
+	        var result = parseInt(this.evalExpr(parsedExpr, this.entity));
 	        console.log(result);
 	        var actionList = args[result];
 	        _.each(actionList, function(actionData) {
 	        	actionData = actionData.slice(0);
 	        	console.log(actionData);
 	            var type = actionData.shift();
-                var action = Action.Load({type: type, args: actionData});
+                var action = Action.Load(this.entity, {type: type, args: actionData});
                 action.run(this.state);
 	        }.bind(this));
 		}
@@ -16688,6 +16782,7 @@ define('dreddrl/factory',[
     './components/dialog',
     './components/elevator',
     './components/quest',
+    './components/encounter',
 
     './actions/dialog',
     './actions/if',
@@ -16696,11 +16791,9 @@ define('dreddrl/factory',[
 	], 
 	function(sge){
 		var FACTORYDATA = {
-			pc : function(){return{
-                    xform : {},
-                    controls : {},
+            chara : function(){return{
+                xform : {},
                     sprite : {
-                        src : 'assets/sprites/hunk.png',
                         width: 32,
                         offsetY: -8,
                         scale: 2
@@ -16713,67 +16806,46 @@ define('dreddrl/factory',[
                             walk_left : [3,4,5]
                         },
                     },
-                    'judge.movement' : {
-                        map: this.map,
-                        speed: 16
-                    },
                     health : {alignment:5, life: 8},
                     physics : {},
                     inventory : {},
+            }},
+			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
+                    controls : {},
+                    sprite : {
+                        src : 'assets/sprites/judge.png',
+                    },
+                    'judge.movement' : {
+                        map: this.map,
+                        speed: 64
+                    },
+                    health : {alignment:5, life: 1},
                     weapons: {},
-                    quest: {}
-                }},
-            enemy : function(){return {
-                xform : {},
+                })},
+            npc : function(){return deepExtend(FACTORYDATA['chara'](), {
+                    health : {alignment:0, life: 8},
+                    movement : {
+                        map: this.map,
+                        speed: 16
+                    },
+                })},
+            enemy : function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
                     src : 'assets/sprites/albert.png',
-                    width: 32,
-                    offsetY: -8,
-                    scale: 2
-                },
-                anim : {
-                    frames: {
-                        walk_down : [0,1,2],
-                        walk_up : [9,10,11],
-                        walk_right : [6,7,8],
-                        walk_left : [3,4,5]
-                    },
-                },
-                movement : {
-                    map: this.map,
-                    speed: 16
                 },
                 health : {alignment:-10, life: 3},
                 simpleai : {},
-                physics : {},
                 deaddrop: {}
-            }},
-            gangboss : function(){return {
-                xform : {},
+            })},
+            gangboss : function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
                     src : 'assets/sprites/albertbrownhair.png',
-                    width: 32,
-                    offsetY: -8,
-                    scale: 2
                 },
-                anim : {
-                    frames: {
-                        walk_down : [0,1,2],
-                        walk_up : [9,10,11],
-                        walk_right : [6,7,8],
-                        walk_left : [3,4,5]
-                    },
-                },
-                movement : {
-                    map: this.map,
-                    speed: 16
-                },
-                health : {alignment:-20, life: 6},
+                health : {alignment:-10, life: 6},
                 simpleai : {},
-                physics : {},
                 deaddrop: {}
-            }},
-            gun : function(){return {
+            })},
+            freeitem : function(){ return {
                 xform: {},
                 physics: {},
                 sprite : {
@@ -16782,25 +16854,28 @@ define('dreddrl/factory',[
                         offsetY: 0,
                         scale: 2,
                     },
+            }},
+            gun : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
                 freeitem: {
                     'inventory.ammo': 5
                 }
-            }},
-            rammen : function(){return {
-                xform: {},
-                physics: {},
+            })},
+            rammen : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
                 sprite : {
-                        src : 'assets/sprites/scifi_icons_1.png',
-                        width: 24,
-                        offsetY: 0,
-                        scale: 2,
                         frame: 123
                     },
-                inventory: {ammo: 5},
                 freeitem: {
                     'health.life' : 5
                 }
-            }},
+            })},
+            keycard : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
+                sprite : {
+                        frame: 56
+                    },
+                freeitem: {
+                    'inventory.add' : 'keycard.blue'
+                }
+            })},
             door : function(){return {
                 xform: {},
                 interact : {},
@@ -16811,83 +16886,21 @@ define('dreddrl/factory',[
                 interact : {},
                 elevator: {}
             }},
-            women : function(){return {
-                xform : {},
+            women : function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
                     src : 'assets/sprites/women_8.png',
-                    width: 32,
-                    offsetY: -8,
-                    scale: 2
                 },
-                anim : {
-                    frames: {
-                        walk_down : [0,1,2],
-                        walk_up : [9,10,11],
-                        walk_right : [6,7,8],
-                        walk_left : [3,4,5]
-                    },
+            })},
+            oldwomen : function(){return deepExtend(FACTORYDATA['npc'](), {
+                sprite : {
+                    src : 'assets/sprites/women_4.png',
                 },
-                movement : {
-                    map: this.map,
-                    speed: 16
-                },
-                health : {alignment:1000, life: 5},
-                physics : {},
-                deaddrop: {},
-                interact: {},
-                dialog: {
-                    "dialog":
-                        ['switch', '${@(pc).quest.status}', 
-                            [
-                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
-                                ['set', '@(pc).quest.status', 1]
-                            ],[
-                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
-                            ],[
-                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
-                                ['set', '@(pc).quest.status', 3]
-                            ],[
-                                ['dialog', "Welcome to Peach Trees. "]
-                            ]
-                        ]
-                    }
-            }},
-            daughter : function(){return {
-                xform : {},
+            })},
+            daughter : function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
                     src : 'assets/sprites/women_1.png',
-                    width: 32,
-                    offsetY: -8,
-                    scale: 2
                 },
-                anim : {
-                    frames: {
-                        walk_down : [0,1,2],
-                        walk_up : [9,10,11],
-                        walk_right : [6,7,8],
-                        walk_left : [3,4,5]
-                    },
-                },
-                movement : {
-                    map: this.map,
-                    speed: 16
-                },
-                health : {alignment:1000, life: 5},
-                physics : {},
-                deaddrop: {},
-                interact: {},
-                dialog: {
-                    "dialog":
-                        ['if', '${@(pc).quest.status}==1', 
-                            [
-                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
-                                ['set', '@(pc).quest.status', 2]
-                            ],[
-                                ['dialog', "Hey there. Haven't seen you around the block before."]
-                            ]
-                        ]
-                }
-            }}
+            })}
 		}
 
 		var deepExtend = function(destination, source) {
@@ -16918,6 +16931,8 @@ define('dreddrl/encounters',['sge'], function(sge){
 			this.block = block;
 			this.state = block.state;
 			this.factory = block.factory;
+			this.status = 0;
+			this.total = 1;
 			this.start();
 		},
 		start: function(){
@@ -16934,6 +16949,85 @@ define('dreddrl/encounters',['sge'], function(sge){
 		}
 	});
 
+	var CheckupEncounter = Encounter.extend({
+	        start: function(){
+	            //Create Mother
+	            var mothersRoom = sge.random.item(this.block.rooms);
+	            console.log(mothersRoom);
+	            var mother = this.state.factory('women', {
+	                xform: {
+	                    tx: mothersRoom.cx * 32,
+	                    ty: mothersRoom.cy * 32
+	                },
+	                interact : {},
+	                encounter: {
+	                    encounter : this,
+	                },
+	                dialog: {
+	                    dialog :
+	                        ['switch', '${encounter.status}', 
+	                            [
+	                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
+	                                ['set', 'encounter.status', 1]
+	                            ],[
+	                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
+	                            ],[
+	                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
+	                                ['set', 'encounter.status', 3]
+	                            ],[
+	                                ['dialog', "Welcome to Peach Trees. "]
+	                            ]
+	                        ]
+	                }
+	            });
+	            mother.tags.push('mother');
+	            this.block.state.addEntity(mother);
+	            
+
+	            //Create Daughter
+	            var daughtersRoom = sge.random.item(this.block.rooms);
+	            var daughter = this.state.factory('daughter', {
+	                xform: {
+	                    tx: daughtersRoom.cx * 32,
+	                    ty: daughtersRoom.cy * 32
+	                },
+	                interact : {},
+	                encounter: {
+	                    encounter : this,
+	                },
+	                dialog: {
+	                   "dialog":
+	                        ['if', '${encounter.status}==1', 
+	                            [
+	                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
+	                                ['set', 'encounter.status', 2]
+	                            ],[
+	                                ['dialog', "Hey there. Haven't seen you around the block before."]
+	                            ]
+	                        ] 
+	                }
+	            });
+	            daughter.tags.push('daughter');
+	            this.block.state.addEntity(daughter);
+	        	console.log('Checkup')
+	        }
+	    });
+
+	    var ExecuteEncounter = Encounter.extend({
+	        start: function(){
+	            //Create Mother
+	            var gangBossRoom = sge.random.item(this.block.rooms);
+	            var gangBoss = this.state.factory('gangboss', {
+	                xform: {
+	                    tx: gangBossRoom.cx * 32,
+	                    ty: gangBossRoom.cy * 32
+	                }
+	            });
+	            gangBoss.tags.push('gangboss');
+	            this.block.state.addEntity(gangBoss);
+	        }
+	    });
+
 	var RescueEncounter = Encounter.extend({
 		start: function(){
 
@@ -16942,9 +17036,13 @@ define('dreddrl/encounters',['sge'], function(sge){
 
 
 
-	return Encounter
+	return {
+		Encounter : Encounter,
+		ExecuteEncounter : ExecuteEncounter,
+		CheckupEncounter : CheckupEncounter,
+	}
 });
-define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory, Encounter){
+define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory, Encounters){
     var FLOORTILE =  { srcX : 0, srcY: 0, spritesheet: 'future2'};
     var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spritesheet: 'future2'}
     var DOOROPENTILE1 = { srcX : 1, srcY: 36, spritesheet: 'future2'}
@@ -16952,75 +17050,84 @@ define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory', './encounter
     var DOORCLOSEDTILE1 = { srcX : 2, srcY: 36, spritesheet: 'future2'}
     var DOORCLOSEDTILE2 = { srcX : 2, srcY: 37, spritesheet: 'future2'}
 
-    var CheckupEncounter = Encounter.extend({
-        start: function(){
-            //Create Mother
-            var mothersRoom = sge.random.item(this.block.rooms);
-            var mother = this.state.factory('women', {
-                xform: {
-                    tx: mothersRoom[0] * 32,
-                    ty: mothersRoom[1] * 32
-                },
-                dialog: {
-                    dialog :
-                        ['switch', '${@(pc).quest.status}', 
-                            [
-                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
-                                ['set', '@(pc).quest.status', 1]
-                            ],[
-                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
-                            ],[
-                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
-                                ['set', '@(pc).quest.status', 3]
-                            ],[
-                                ['dialog', "Welcome to Peach Trees. "]
-                            ]
-                        ]
-                }
-            });
-            mother.tags.push('mother');
-            this.block.state.addEntity(mother);
-            
 
-            //Create Daughter
-            var daughtersRoom = sge.random.item(this.block.rooms);
-            var daughter = this.state.factory('daughter', {
-                xform: {
-                    tx: daughtersRoom[0] * 32,
-                    ty: daughtersRoom[1] * 32
-                },
-                dialog: {
-                   "dialog":
-                        ['if', '${@(pc).quest.status}==1', 
-                            [
-                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
-                                ['set', '@(pc).quest.status', 2]
-                            ],[
-                                ['dialog', "Hey there. Haven't seen you around the block before."]
-                            ]
-                        ] 
-                }
-            });
-            daughter.tags.push('daughter');
-            this.block.state.addEntity(daughter);
-
+    var boxcoords = function(sx, sy, width, height){
+        var coords = [];
+        for (var y=0; y<=height;y++){
+            for (var x=0; x<=width;x++){
+                coords.push([sx+x,sy+y]);
+            }
         }
-    });
+        return coords;
+    };
 
-    var ExecuteEncounter = Encounter.extend({
-        start: function(){
-            //Create Mother
-            var gangBossRoom = sge.random.item(this.block.rooms);
-            var gangBoss = this.state.factory('gangboss', {
-                xform: {
-                    tx: gangBossRoom[0] * 32,
-                    ty: gangBossRoom[1] * 32
+    var Room = sge.Class.extend({
+        init: function(gen, cx, cy, width, height, options){
+            this.level = gen;
+            this.options = $.extend({doors:'bottom', open: true}, options ||{})
+            this.cx = cx
+            this.cy = cy
+            this.width = width;
+            this.height = height;
+            this.spawned = [];
+            this.data = {};
+        },
+        plot : function(){
+            var halfX = Math.floor((this.width-1)/2);
+            var halfY = Math.floor((this.height-1)/2);
+
+            var tile = null;
+            for (var y=(this.cy-halfY);y<=(this.cy+halfY);y++){
+                for (var x=(this.cx-halfX);x<=(this.cx+halfX);x++){
+                    tile = this.level.map.getTile(x,(this.cy+halfY)+1);
+                    tile.layers['layer0'] = FLOORTILE;
+                    tile.passable = true;
                 }
-            });
-            gangBoss.tags.push('gangboss');
-            this.block.state.addEntity(gangBoss);
+            }
+            this.level.buildWall((this.cx-halfX),(this.cy-halfY)-2,this.width);
+            this.level.buildWall((this.cx-halfX)-1,(this.cy+halfY)+2,this.width+2);
+            for (x=(this.cx-halfX-1);x<=(this.cx+halfX+1);x++){
+                tile = this.level.map.getTile(x,(this.cy+halfY)+1);
+                tile.layers['layer0'] = CEILTILE;
+                tile.passable = false;
+                tile = this.level.map.getTile(x,(this.cy-halfY)-3);
+                tile.layers['layer0'] = CEILTILE;
+                tile.passable = false;
+            }
+            for (y=(this.cy-halfY-2);y<=(this.cy+halfY+1);y++){
+                tile = this.level.map.getTile((this.cx+halfX)+1,y);
+                tile.layers['layer0'] = CEILTILE;
+                tile.passable = false;
+                tile = this.level.map.getTile((this.cx-halfX)-1,y);
+                tile.layers['layer0'] = CEILTILE;
+                tile.passable = false;
+            }
+            if ((this.options.doors=='bottom')||(this.options.doors=='both')){
+                this.level.createDoor(this.cx, this.cy+halfY+3, this.options.open);
+            } 
+            if ((this.options.doors=='top')||(this.options.doors=='both')) {
+                this.level.createDoor(this.cx, this.cy-halfY-1, this.options.open);
+            }
+        },
+        getTiles : function(){
+            console.log(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width, this.height);
+            return this.level.map.getTiles(boxcoords(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width, this.height));
+        },
+        spawn : function(name, data){
+            data = data || {};
+            var tile = sge.random.item(this.getTiles());
+            if (tile){
+                while (tile.metaData.spawn!==undefined){
+
+                    tile = sge.random.item(this.getTiles());
+                };
+                data['xform'] = {tx: tile.x * 32 + 16, ty: tile.y * 32 + 16};
+                tile.spawn = true;
+                var entity = Factory(name, data);
+                return entity;
+            }
         }
-    });
+    })
 
     var LevelGenerator = sge.Class.extend({
         init: function(state, options){
@@ -17033,9 +17140,13 @@ define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory', './encounter
                 }
             });
 
+            this.rooms = [];
+            this.buildLayout();
+
+            // Build level borders.
             this.buildWall(0,1,this.map.width,true);
             
-            this.rooms = []
+
 
             for (var y=0;y<this.map.height;y++){
                 var tile = this.map.getTile(0, y);
@@ -17052,85 +17163,119 @@ define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory', './encounter
 
             this.buildWall(0,this.map.height-2,this.map.width, true);
 
-            //Create floor opening.
-            for (var y=26;y<=38;y++){
-                for (var x=26;x<=38;x++){
-                    var tile = this.map.getTile(x, y);
-                    tile.layers = {
-                        'layer0' : { srcX : 2, srcY: 0, spritesheet: 'future2'}
-                    }
-                    tile.passable = false;
-                }
-            }
-            this.createRoom(12, 5, 3, 5);
-            this.createRoom(16, 5, 3, 5);
-            this.createRoom(20, 5, 3, 5);
-            this.createRoom(24, 5, 3, 5);
-            this.createRoom(28, 5, 3, 5);
-            this.createRoom(32, 5, 3, 5);
-            this.createRoom(36, 5, 3, 5);
-            this.createRoom(40, 5, 3, 5);
-            this.createRoom(44, 5, 3, 5);
-            this.createRoom(48, 5, 3, 5);
-
-
-            this.createRoom(12, 18, 3, 5, {doors: 'top'});
-            this.createRoom(16, 18, 3, 5, {doors: 'top'});
-            this.createRoom(20, 18, 3, 5, {doors: 'top'});
-            this.createRoom(24, 18, 3, 5, {doors: 'top'});
-            this.createRoom(28, 18, 3, 5, {doors: 'top'});
-            this.createRoom(32, 18, 3, 5, {doors: 'top'});
-            this.createRoom(36, 18, 3, 5, {doors: 'top'});
-            this.createRoom(40, 18, 3, 5, {doors: 'top'});
-            this.createRoom(44, 18, 3, 5, {doors: 'top'});
-            this.createRoom(48, 18, 3, 5, {doors: 'top'});
-
-            this.createRoom(12, 46, 3, 5)
-            this.createRoom(16, 46, 3, 5);
-            this.createRoom(20, 46, 3, 5);
-            this.createRoom(24, 46, 3, 5);
-            this.createRoom(28, 46, 3, 5);
-            this.createRoom(32, 46, 3, 5);
-            this.createRoom(36, 46, 3, 5);
-            this.createRoom(40, 46, 3, 5);
-            this.createRoom(44, 46, 3, 5);
-            this.createRoom(48, 46, 3, 5);
-
-            this.createRoom(12, 58, 3, 5, {doors: 'top'});
-            this.createRoom(16, 58, 3, 5, {doors: 'top'});
-            this.createRoom(20, 58, 3, 5, {doors: 'top'});
-            this.createRoom(24, 58, 3, 5, {doors: 'top'});
-            this.createRoom(28, 58, 3, 5, {doors: 'top'});
-            this.createRoom(32, 58, 3, 5, {doors: 'top'});
-            this.createRoom(36, 58, 3, 5, {doors: 'top'});
-            this.createRoom(40, 58, 3, 5, {doors: 'top'});
-            this.createRoom(44, 58, 3, 5, {doors: 'top'});
-            this.createRoom(48, 58, 3, 5, {doors: 'top'});
-
-            this.createRoom(12, 32, 13, 7, {doors: 'both'});
-            this.createRoom(52, 32, 13, 7, {doors: 'both'});
-
             this.state.pc = this.createPC();
-            
-           
-            
-            this.state.daughter = null;
-            
-            /*
-            for (var i=0;i<10;i++){
-                this.createEnemy();
-            }
-            */
-            
-            elevator = this.state.factory('elevator',{xform:{
-                tx:80,
-                ty:112
-            }});
-            this.state.addEntity(elevator);
-
-            encounter = new CheckupEncounter(this);
-            new ExecuteEncounter(this);
         },
+
+        buildSmallRoomHall : function(sx, sy, ex, options){
+            var remainder = length % 4;
+            var i = sx
+            while (i<(ex-10)){
+                var halfWidth = 1;
+                this.createRoom(i+2, sy + 5, 3, 5, options)
+                i += (halfWidth*2)+2;
+            }
+            this.buildWall(i,9,ex-i-1,true);
+        },
+
+        buildMediumRoomHall : function(sx, sy, ex, options){
+            var remainder = length % 4;
+            var i = sx
+            while (i<(ex-6)){
+                var halfWidth = 2;
+                this.createRoom(i+3, sy + 5, 5, 5, options)
+                i += (halfWidth*2)+2;
+            }
+            this.buildWall(i,9,ex-i-1,true);
+        },
+
+        buildLargeRoomHall : function(sx, sy, ex, options){
+            var remainder = length % 4;
+            var i = sx
+            while (i<(ex-6)){
+                var halfWidth = 3;
+                this.createRoom(i+4, sy + 5, 7, 5, options)
+                i += (halfWidth*2)+2;
+            }
+            this.buildWall(i,9,ex-i-1,true);
+        },
+
+        buildLayout : function(){
+            //Elevator Shafts
+            this.createRoom(4, 5, 7, 5, {doors: null});
+            this.createRoom(60, 5, 7, 5, {doors: null});
+        
+            var tiles = this.map.getTiles(boxcoords(32, 0, 32, 32));
+            _.each(tiles, function(tile){
+                tile.metaData.gang = 'albert';
+            });
+
+            var eco = sge.random.item(['slum','middle','upper']);
+            switch (eco){
+                case 'upper':
+                    //Upper Class
+                    this.buildLargeRoomHall(8,0,60);
+                    this.buildLargeRoomHall(8,13,60, {doors: 'top'});
+                    this.buildLargeRoomHall(8,21,60);
+                    this.buildLargeRoomHall(8,34,60, {doors: 'top'});
+                    this.buildLargeRoomHall(8,42,60);
+                    this.buildLargeRoomHall(8,55,60, {doors: 'top'});
+                    break;
+
+                case 'middle':
+                    this.buildMediumRoomHall(8,0,60);
+                    this.buildMediumRoomHall(8,13,60, {doors: 'top'});
+                    this.buildMediumRoomHall(8,21,60);
+                    this.buildMediumRoomHall(8,34,60, {doors: 'top'});
+                    this.buildMediumRoomHall(8,42,60);
+                    this.buildMediumRoomHall(8,55,60, {doors: 'top'});
+                    break;
+
+                case 'slum':
+                default:
+                    this.buildSmallRoomHall(8,0,65);
+                    this.buildSmallRoomHall(8,13,65, {doors: 'top'});
+                    this.buildSmallRoomHall(8,21,65);
+                    this.buildSmallRoomHall(8,34,65, {doors: 'top'});
+                    this.buildSmallRoomHall(8,42,65);
+                    this.buildSmallRoomHall(8,55,65, {doors: 'top'});
+                    break;
+            }
+            /*
+                //Slum
+                
+            */
+            //*
+                //Middle Class
+                
+            //*/
+            /*
+                
+            */
+
+            //Spawn Gang
+            _.each(this.rooms, function(room){
+                var tile = this.map.getTile(room.cx, room.cy)
+                if (tile.metaData.gang == 'albert'){
+                    var total = sge.random.rangeInt(0,3);
+                    room.data.gana = tile.metaData.gang;
+                    for (var i=0;i<total;i++){
+                        var enemy = room.spawn('enemy');
+                        if (enemy){
+                            this.state.addEntity(enemy);
+                        }
+                    }
+                }
+            }.bind(this));
+
+
+            //Create Encounters
+            var EncounterClass = sge.random.item([Encounters.ExecuteEncounter, Encounters.CheckupEncounter]);
+
+            var encounter = new EncounterClass(this);
+            console.log(encounter);
+        },
+
+
         buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){
                 var tile = this.map.getTile(x+sx, sy);
@@ -17163,8 +17308,8 @@ define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory', './encounter
             if (pc==null){
                 pc = Factory('pc', {
                     xform : {
-                        tx: (6 + 0.5) * this.map.tileSize,
-                        ty: (6 + 0.5) * this.map.tileSize,
+                        tx: (16 + 0.5) * this.map.tileSize,
+                        ty: (16 + 0.5) * this.map.tileSize,
                         vx : Math.random() * 10 - 5,
                         vy : Math.random() * 10 - 5
                     }});
@@ -17191,60 +17336,20 @@ define('dreddrl/blocklevelgenerator',['sge', 'jquery', './factory', './encounter
             return enemy;
         },
         createRoom : function(cx, cy, width, height, options){
-            this.rooms.push([cx, cy])
-            options = $.extend({doors:'bottom', open: true}, options || {});
-            /*
-            var cx = 16;  //sge.random.rangeInt(8,this.map.width-8);
-            var cy = 16; //sge.random.rangeInt(8,this.map.height-8);
-            */
-            var halfX = Math.floor((width-1)/2);
-            var halfY = Math.floor((height-1)/2);
-
-            var tile = null;
-            for (var y=(cy-halfY);y<=(cy+halfY);y++){
-                for (var x=(cx-halfX);x<=(cx+halfX);x++){
-                    tile = this.map.getTile(x,(cy+halfY)+1);
-                    tile.layers['layer0'] = FLOORTILE;
-                    tile.passable = true;
-                }
-            }
-            this.buildWall((cx-halfX),(cy-halfY)-2,width);
-            this.buildWall((cx-halfX)-1,(cy+halfY)+2,width+2);
-            for (x=(cx-halfX-1);x<=(cx+halfX+1);x++){
-                tile = this.map.getTile(x,(cy+halfY)+1);
-                tile.layers['layer0'] = CEILTILE;
-                tile.passable = false;
-                tile = this.map.getTile(x,(cy-halfY)-3);
-                tile.layers['layer0'] = CEILTILE;
-                tile.passable = false;
-            }
-            for (y=(cy-halfY-2);y<=(cy+halfY+1);y++){
-                tile = this.map.getTile((cx+halfX)+1,y);
-                tile.layers['layer0'] = CEILTILE;
-                tile.passable = false;
-                tile = this.map.getTile((cx-halfX)-1,y);
-                tile.layers['layer0'] = CEILTILE;
-                tile.passable = false;
-            }
-            if ((options.doors=='bottom')||(options.doors=='both')){
-                this.createDoor(cx, cy+halfY+3, options.open);
-            } 
-            if ((options.doors=='top')||(options.doors=='both')) {
-                this.createDoor(cx, cy-halfY-1, options.open);
-            }
-
-            if (Math.random()<0.65){
-                this.createEnemy(cx,cy);
-            }
-            
-            
+            options = $.extend({doors:'bottom', open: (Math.random() > 0.5)}, options || {});
+            var room = new Room(this, cx, cy, width, height, options);
+            room.plot();
+            this.rooms.push(room);
         },
         createDoor : function(cx, cy, open){
             var tile = null;
             var door = this.state.factory('door', {xform:{
                 tx: ((cx + 0.5) * 32),
                 ty: ((cy + 0.5) * 32),
-            }, door: {open: open}});
+            }, door: {open: open},
+            interact : {
+                targets: [[((cx + 0.5) * 32),((cy + 0.5) * 32)],[((cx + 0.5) * 32),((cy - 1.5) * 32)]]
+            }});
             door.tags.push('door');
             this.state.addEntity(door);
         }
@@ -17434,12 +17539,11 @@ define('dreddrl/physics',['sge'], function(sge){
 });
 define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './factory'], function(sge, BlockLevelGenerator, Physics, Factory){
 
-    INTRO = "Welcome Rookie\nYou've been assigned to the homicide reported at Peach Trees in Sector 13.\nYou are the law.";
-
+    INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is you responsiblity to bring justice to Mega City One.";
+    INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
 	var DreddRLState = sge.GameState.extend({
 		initState: function(options){
             // Tile Map
-            var size = 64;
             this.options = options || {};
             this._contactList = [];
 
@@ -17448,7 +17552,7 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
             this._killList = [];
             this.factory = Factory;
             this.initUi();
-            this.map = new sge.Map(size,size,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
+            this.map = new sge.Map(65,66,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
             this.map.defaultSheet = 'future2';
             this.game.renderer.createLayer('base');
             this.game.renderer.createLayer('main');
@@ -17461,6 +17565,7 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future3.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future4.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/judge.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_1.png');
@@ -17530,31 +17635,41 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
             if (this.pc){
                 this._elem_ammo.text(this.pc.get('inventory.ammo'));
                 this._elem_health.text(this.pc.get('health.life'));
-                this._elem_quest.text(this.pc.get('quest.status'));
             }
         },
         _interaction_tick : function(delta){
 
             var closest = null;
             var cdist = 64;
+            var ccord = null;
             var entities = this.getEntitiesWithComponent('interact');
             
             for (var i = entities.length - 1; i >= 0; i--) {
                 entity = entities[i];
-                var dx = entity.get('xform.tx') - this.pc.get('xform.tx');
-                var dy = entity.get('xform.ty') - this.pc.get('xform.ty');
-                var dist = Math.sqrt((dx*dx)+(dy*dy));
-                if (dist < cdist){
-                    closest = entity;
-                    cdist = dist;
+                if (entity.get('interact.targets')!==null){
+                    coords = entity.get('interact.targets');
+                } else {
+                    coords = [[entity.get('xform.tx'), entity.get('xform.ty')]];
                 }
+                for (var j = coords.length - 1; j >= 0; j--) {
+                    var dx = coords[j][0] - this.pc.get('xform.tx');
+                    var dy = coords[j][1] - this.pc.get('xform.ty');
+                    var dist = Math.sqrt((dx*dx)+(dy*dy));
+                    if (dist < cdist){
+                        closest = entity;
+                        cdist = dist;
+                        ccord = coords[j];
+                    }
+                };
+                
             }
             if (closest!=this._closest){
                 if (this._closest){
                     this._closest.fireEvent('focus.lose');
                 }
                 if (closest){
-                    closest.fireEvent('focus.gain');
+                    console.log(closest.tags);
+                    closest.fireEvent('focus.gain', ccord);
                 }
                 this._closest = closest;
             }
@@ -17562,7 +17677,6 @@ define('dreddrl/dreddrlstate',['sge', './blocklevelgenerator', './physics', './f
         startDialog: function(dialog){
             this.game._states['dialog'].setDialog(dialog);
             this.game.fsm.startDialog();
-            console.log('DIALOG');
         },
         tick : function(delta){
             this.tickTimeouts(delta);
