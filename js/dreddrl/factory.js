@@ -20,11 +20,9 @@ define([
 	], 
 	function(sge){
 		var FACTORYDATA = {
-			pc : function(){return{
-                    xform : {},
-                    controls : {},
+            chara : function(){return{
+                xform : {},
                     sprite : {
-                        src : 'assets/sprites/hunk.png',
                         width: 32,
                         offsetY: -8,
                         scale: 2
@@ -37,67 +35,46 @@ define([
                             walk_left : [3,4,5]
                         },
                     },
-                    'judge.movement' : {
-                        map: this.map,
-                        speed: 16
-                    },
                     health : {alignment:5, life: 8},
                     physics : {},
                     inventory : {},
+            }},
+			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
+                    controls : {},
+                    sprite : {
+                        src : 'assets/sprites/judge.png',
+                    },
+                    'judge.movement' : {
+                        map: this.map,
+                        speed: 64
+                    },
+                    health : {alignment:5, life: 1},
                     weapons: {},
-                    quest: {}
-                }},
-            enemy : function(){return {
-                xform : {},
+                })},
+            npc : function(){return deepExtend(FACTORYDATA['chara'](), {
+                    health : {alignment:0, life: 8},
+                    movement : {
+                        map: this.map,
+                        speed: 16
+                    },
+                })},
+            enemy : function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
                     src : 'assets/sprites/albert.png',
-                    width: 32,
-                    offsetY: -8,
-                    scale: 2
-                },
-                anim : {
-                    frames: {
-                        walk_down : [0,1,2],
-                        walk_up : [9,10,11],
-                        walk_right : [6,7,8],
-                        walk_left : [3,4,5]
-                    },
-                },
-                movement : {
-                    map: this.map,
-                    speed: 16
                 },
                 health : {alignment:-10, life: 3},
                 simpleai : {},
-                physics : {},
                 deaddrop: {}
-            }},
-            gangboss : function(){return {
-                xform : {},
+            })},
+            gangboss : function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
                     src : 'assets/sprites/albertbrownhair.png',
-                    width: 32,
-                    offsetY: -8,
-                    scale: 2
                 },
-                anim : {
-                    frames: {
-                        walk_down : [0,1,2],
-                        walk_up : [9,10,11],
-                        walk_right : [6,7,8],
-                        walk_left : [3,4,5]
-                    },
-                },
-                movement : {
-                    map: this.map,
-                    speed: 16
-                },
-                health : {alignment:-20, life: 6},
+                health : {alignment:-10, life: 6},
                 simpleai : {},
-                physics : {},
                 deaddrop: {}
-            }},
-            gun : function(){return {
+            })},
+            freeitem : function(){ return {
                 xform: {},
                 physics: {},
                 sprite : {
@@ -106,25 +83,28 @@ define([
                         offsetY: 0,
                         scale: 2,
                     },
+            }},
+            gun : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
                 freeitem: {
                     'inventory.ammo': 5
                 }
-            }},
-            rammen : function(){return {
-                xform: {},
-                physics: {},
+            })},
+            rammen : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
                 sprite : {
-                        src : 'assets/sprites/scifi_icons_1.png',
-                        width: 24,
-                        offsetY: 0,
-                        scale: 2,
                         frame: 123
                     },
-                inventory: {ammo: 5},
                 freeitem: {
                     'health.life' : 5
                 }
-            }},
+            })},
+            keycard : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
+                sprite : {
+                        frame: 56
+                    },
+                freeitem: {
+                    'inventory.add' : 'keycard.blue'
+                }
+            })},
             door : function(){return {
                 xform: {},
                 interact : {},
@@ -135,83 +115,21 @@ define([
                 interact : {},
                 elevator: {}
             }},
-            women : function(){return {
-                xform : {},
+            women : function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
                     src : 'assets/sprites/women_8.png',
-                    width: 32,
-                    offsetY: -8,
-                    scale: 2
                 },
-                anim : {
-                    frames: {
-                        walk_down : [0,1,2],
-                        walk_up : [9,10,11],
-                        walk_right : [6,7,8],
-                        walk_left : [3,4,5]
-                    },
+            })},
+            oldwomen : function(){return deepExtend(FACTORYDATA['npc'](), {
+                sprite : {
+                    src : 'assets/sprites/women_4.png',
                 },
-                movement : {
-                    map: this.map,
-                    speed: 16
-                },
-                health : {alignment:0, life: 5},
-                physics : {},
-                deaddrop: {},
-                interact: {},
-                dialog: {
-                    "dialog":
-                        ['switch', '${@(pc).quest.status}', 
-                            [
-                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
-                                ['set', '@(pc).quest.status', 1]
-                            ],[
-                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
-                            ],[
-                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
-                                ['set', '@(pc).quest.status', 3]
-                            ],[
-                                ['dialog', "Welcome to Peach Trees. "]
-                            ]
-                        ]
-                    }
-            }},
-            daughter : function(){return {
-                xform : {},
+            })},
+            daughter : function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
                     src : 'assets/sprites/women_1.png',
-                    width: 32,
-                    offsetY: -8,
-                    scale: 2
                 },
-                anim : {
-                    frames: {
-                        walk_down : [0,1,2],
-                        walk_up : [9,10,11],
-                        walk_right : [6,7,8],
-                        walk_left : [3,4,5]
-                    },
-                },
-                movement : {
-                    map: this.map,
-                    speed: 16
-                },
-                health : {alignment:0, life: 5},
-                physics : {},
-                deaddrop: {},
-                interact: {},
-                dialog: {
-                    "dialog":
-                        ['if', '${@(pc).quest.status}==1', 
-                            [
-                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
-                                ['set', '@(pc).quest.status', 2]
-                            ],[
-                                ['dialog', "Hey there. Haven't seen you around the block before."]
-                            ]
-                        ]
-                }
-            }}
+            })}
 		}
 
 		var deepExtend = function(destination, source) {

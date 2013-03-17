@@ -11,6 +11,7 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 			this.fade = 1;
 			this.animate = false;
 			this.fadeDelta = 0.1;
+			this.metaData = {};
 		},
 		hide: function(){
 			//this.fade=1
@@ -104,6 +105,12 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 		getTile : function(x, y){
 			return this._tiles[this.getIndex(x, y)] || null;
 		},
+		getTiles :  function(coords){
+			tiles =  _.map(coords, function(coord){
+				return this.getTile(coord[0],coord[1]);
+			}.bind(this));
+			return tiles;
+		},
 		renderTiles : function(renderer, coords){
 			var trackX = renderer.tx;
         	var trackY = renderer.ty;
@@ -137,6 +144,8 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
         	renderer.ty = trackY;
 		},
 		render : function(renderer){
+			renderer.tx = 0;
+			renderer.ty = 0;
 			var tmpW = renderer.width;
 			var tmpH = renderer.height;
 			renderer.width = this.width * this.tileSize;

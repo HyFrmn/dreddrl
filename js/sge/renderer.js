@@ -83,8 +83,8 @@ define(function(require){
         this.height = tmpH;
         this.width = tmpW;
         this._drawList[layerName]=undefined;
-        $(layer.cacheCanvas).css({display: 'none'});
-        $('body').append(layer.cacheCanvas)
+        //$(layer.cacheCanvas).css({display: 'none'});
+        //$('body').append(layer.cacheCanvas)
     }
 
      Renderer.prototype.cacheUpdate = function(layerName){

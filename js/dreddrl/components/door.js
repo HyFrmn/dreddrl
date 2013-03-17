@@ -7,7 +7,7 @@ define(['sge'], function(sge){
     var Door = sge.Component.extend({
         init: function(entity, data){
             this._super(entity, data);
-            this.data.open = data.open || true;
+            this.data.open = data.open===undefined ?  true : data.open;
             this.interact = this.interact.bind(this);
             this.entity.addListener('interact', this.interact);
         },
@@ -18,7 +18,7 @@ define(['sge'], function(sge){
         updateTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32);
             var ty = Math.floor(this.entity.get('xform.ty') / 32);
-            if (this.get('open')){
+            if (this.get('open')==true){
                 tile = this.map.getTile(tx,ty-2);
                 tile.passable=true;
                 tile = this.map.getTile(tx,ty-1);

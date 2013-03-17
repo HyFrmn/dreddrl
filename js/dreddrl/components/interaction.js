@@ -4,6 +4,9 @@ define(['sge'], function(sge){
             this._super(entity, data);
             this.data.fillStyle = 'green';
             this.data.strokeStyle = 'black';
+            this.data.targets = data.targets || null;
+            this.data.width = data.width || 32;
+            this.data.height = data.height || 32;
             this.active = false;
             this.interact = this.interact.bind(this);
             this.entity.addListener('focus.gain', this.activate.bind(this));
@@ -18,7 +21,9 @@ define(['sge'], function(sge){
         		}
         	}
         },
-        activate: function(){
+        activate: function(coord){
+            console.log(coord);
+            this.activeCoord = coord;
             this.active = true;
             this.state.input.addListener('keydown:enter', this.interact);
         },
@@ -43,8 +48,8 @@ define(['sge'], function(sge){
             if (this.active){
                 var tx = this.entity.get('xform.tx');
                 var ty = this.entity.get('xform.ty');
-                var width = 32; //this.entity.get('physics.width');
-                var height = 32; //this.entity.get('physics.height');
+                var width = this.get('width'); //this.entity.get('physics.width');
+                var height = this.get('height'); //this.entity.get('physics.height');
                 renderer.drawRect(layer, tx - width/2, ty - height/2, width, height, {fillStyle: this.get('fillStyle'), strokeStyle: this.get('strokeStyle')})
             }
         },

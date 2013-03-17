@@ -1,11 +1,10 @@
 define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge, BlockLevelGenerator, Physics, Factory){
 
-    INTRO = "Welcome Rookie\nYou've been assigned to the homicide reported at Peach Trees in Sector 13.\nYou are the law.";
-
+    INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is you responsiblity to bring justice to Mega City One.";
+    INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
 	var DreddRLState = sge.GameState.extend({
 		initState: function(options){
             // Tile Map
-            var size = 64;
             this.options = options || {};
             this._contactList = [];
 
@@ -14,7 +13,7 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             this._killList = [];
             this.factory = Factory;
             this.initUi();
-            this.map = new sge.Map(size,size,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
+            this.map = new sge.Map(65,66,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
             this.map.defaultSheet = 'future2';
             this.game.renderer.createLayer('base');
             this.game.renderer.createLayer('main');
@@ -27,6 +26,7 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future3.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future4.png');
+            this.loader.addImage(sge.config.baseUrl + 'assets/sprites/judge.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
             this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_1.png');
@@ -96,31 +96,41 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             if (this.pc){
                 this._elem_ammo.text(this.pc.get('inventory.ammo'));
                 this._elem_health.text(this.pc.get('health.life'));
-                this._elem_quest.text(this.pc.get('quest.status'));
             }
         },
         _interaction_tick : function(delta){
 
             var closest = null;
             var cdist = 64;
+            var ccord = null;
             var entities = this.getEntitiesWithComponent('interact');
             
             for (var i = entities.length - 1; i >= 0; i--) {
                 entity = entities[i];
-                var dx = entity.get('xform.tx') - this.pc.get('xform.tx');
-                var dy = entity.get('xform.ty') - this.pc.get('xform.ty');
-                var dist = Math.sqrt((dx*dx)+(dy*dy));
-                if (dist < cdist){
-                    closest = entity;
-                    cdist = dist;
+                if (entity.get('interact.targets')){
+                    coords = entity.get('interact.targets');
+                    //console.log(coords);
+                } else {
+                    coords = [entity.get('xform.tx'), entity.get('xform.ty')]
                 }
+                for (var j = coords.length - 1; j >= 0; j--) {
+                    var dx = coords[j][0] - this.pc.get('xform.tx');
+                    var dy = coords[j][1] - this.pc.get('xform.ty');
+                    var dist = Math.sqrt((dx*dx)+(dy*dy));
+                    if (dist < cdist){
+                        closest = entity;
+                        cdist = dist;
+                        ccord = coords[j];
+                    }
+                };
+                
             }
             if (closest!=this._closest){
                 if (this._closest){
                     this._closest.fireEvent('focus.lose');
                 }
                 if (closest){
-                    closest.fireEvent('focus.gain');
+                    closest.fireEvent('focus.gain', ccord);
                 }
                 this._closest = closest;
             }

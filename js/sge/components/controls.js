@@ -2,7 +2,7 @@ define(['sge/component'], function(Component){
     var ControlsComponent = Component.extend({
         init: function(entity, data){
             this._super(entity, data);
-            this.data.speed = 128;
+            this.data.speed = 256;
         },
         register: function(state){
             this.input = state.input;

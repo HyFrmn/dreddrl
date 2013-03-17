@@ -6,81 +6,79 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
     var DOORCLOSEDTILE1 = { srcX : 2, srcY: 36, spritesheet: 'future2'}
     var DOORCLOSEDTILE2 = { srcX : 2, srcY: 37, spritesheet: 'future2'}
 
-    var CheckupEncounter = Encounter.extend({
-        start: function(){
-            //Create Mother
-            var mothersRoom = sge.random.item(this.block.rooms);
-            var mother = this.state.factory('women', {
-                xform: {
-                    tx: mothersRoom[0] * 32,
-                    ty: mothersRoom[1] * 32
-                },
-                encounter: {
-                    encounter : this,
-                },
-                dialog: {
-                    dialog :
-                        ['switch', '${encounter.status}', 
-                            [
-                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
-                                ['set', 'encounter.status', 1]
-                            ],[
-                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
-                            ],[
-                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
-                                ['set', 'encounter.status', 3]
-                            ],[
-                                ['dialog', "Welcome to Peach Trees. "]
-                            ]
-                        ]
-                }
-            });
-            mother.tags.push('mother');
-            this.block.state.addEntity(mother);
-            
 
-            //Create Daughter
-            var daughtersRoom = sge.random.item(this.block.rooms);
-            var daughter = this.state.factory('daughter', {
-                xform: {
-                    tx: daughtersRoom[0] * 32,
-                    ty: daughtersRoom[1] * 32
-                },
-                encounter: {
-                    encounter : this,
-                },
-                dialog: {
-                   "dialog":
-                        ['if', '${encounter.status}==1', 
-                            [
-                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
-                                ['set', 'encounter.status', 2]
-                            ],[
-                                ['dialog', "Hey there. Haven't seen you around the block before."]
-                            ]
-                        ] 
-                }
-            });
-            daughter.tags.push('daughter');
-            this.block.state.addEntity(daughter);
-
+    var boxcoords = function(sx, sy, width, height){
+        var coords = [];
+        for (var y=0; y<=height;y++){
+            for (var x=0; x<=width;x++){
+                coords.push([sx+x,sy+y]);
+            }
         }
-    });
+        return coords;
+    };
 
-    var ExecuteEncounter = Encounter.extend({
-        start: function(){
-            //Create Mother
-            var gangBossRoom = sge.random.item(this.block.rooms);
-            var gangBoss = this.state.factory('gangboss', {
-                xform: {
-                    tx: gangBossRoom[0] * 32,
-                    ty: gangBossRoom[1] * 32
+    var Room = sge.Class.extend({
+        init: function(gen, cx, cy, width, height, options){
+            this.level = gen;
+            this.options = $.extend({doors:'bottom', open: true}, options ||{})
+            this.cx = cx
+            this.cy = cy
+            this.width = width;
+            this.height = height;
+            this.spawned = [];
+        },
+        plot : function(){
+            var halfX = Math.floor((this.width-1)/2);
+            var halfY = Math.floor((this.height-1)/2);
+
+            var tile = null;
+            for (var y=(this.cy-halfY);y<=(this.cy+halfY);y++){
+                for (var x=(this.cx-halfX);x<=(this.cx+halfX);x++){
+                    tile = this.level.map.getTile(x,(this.cy+halfY)+1);
+                    tile.layers['layer0'] = FLOORTILE;
+                    tile.passable = true;
                 }
-            });
-            gangBoss.tags.push('gangboss');
-            this.block.state.addEntity(gangBoss);
+            }
+            this.level.buildWall((this.cx-halfX),(this.cy-halfY)-2,this.width);
+            this.level.buildWall((this.cx-halfX)-1,(this.cy+halfY)+2,this.width+2);
+            for (x=(this.cx-halfX-1);x<=(this.cx+halfX+1);x++){
+                tile = this.level.map.getTile(x,(this.cy+halfY)+1);
+                tile.layers['layer0'] = CEILTILE;
+                tile.passable = false;
+                tile = this.level.map.getTile(x,(this.cy-halfY)-3);
+                tile.layers['layer0'] = CEILTILE;
+                tile.passable = false;
+            }
+            for (y=(this.cy-halfY-2);y<=(this.cy+halfY+1);y++){
+                tile = this.level.map.getTile((this.cx+halfX)+1,y);
+                tile.layers['layer0'] = CEILTILE;
+                tile.passable = false;
+                tile = this.level.map.getTile((this.cx-halfX)-1,y);
+                tile.layers['layer0'] = CEILTILE;
+                tile.passable = false;
+            }
+            if ((this.options.doors=='bottom')||(this.options.doors=='both')){
+                this.level.createDoor(this.cx, this.cy+halfY+3, this.options.open);
+            } 
+            if ((this.options.doors=='top')||(this.options.doors=='both')) {
+                this.level.createDoor(this.cx, this.cy-halfY-1, this.options.open);
+            }
+        },
+        getTiles : function(){
+            return this.level.map.getTiles(boxcoords(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width, this.height));
+        },
+        spawn : function(name, data){
+            data = data || {};
+            var tile = sge.random.item(this.getTiles());
+            while (tile.metaData.spawn!==undefined){
+                tile = sge.random.item(this.getTiles());
+            };
+            data['xform'] = {tx: tile.x * 32 + 16, ty: tile.y * 32 + 16};
+            tile.spawn = true;
+            var entity = Factory(name, data);
+            return entity;
         }
-    });
+    })
 
     var LevelGenerator = sge.Class.extend({
         init: function(state, options){
@@ -93,9 +91,13 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
                 }
             });
 
+            this.rooms = [];
+            this.buildLayout();
+
+            // Build level borders.
             this.buildWall(0,1,this.map.width,true);
             
-            this.rooms = []
+
 
             for (var y=0;y<this.map.height;y++){
                 var tile = this.map.getTile(0, y);
@@ -112,85 +114,95 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
 
             this.buildWall(0,this.map.height-2,this.map.width, true);
 
-            //Create floor opening.
-            for (var y=26;y<=38;y++){
-                for (var x=26;x<=38;x++){
-                    var tile = this.map.getTile(x, y);
-                    tile.layers = {
-                        'layer0' : { srcX : 2, srcY: 0, spritesheet: 'future2'}
-                    }
-                    tile.passable = false;
-                }
-            }
-            this.createRoom(12, 5, 3, 5);
-            this.createRoom(16, 5, 3, 5);
-            this.createRoom(20, 5, 3, 5);
-            this.createRoom(24, 5, 3, 5);
-            this.createRoom(28, 5, 3, 5);
-            this.createRoom(32, 5, 3, 5);
-            this.createRoom(36, 5, 3, 5);
-            this.createRoom(40, 5, 3, 5);
-            this.createRoom(44, 5, 3, 5);
-            this.createRoom(48, 5, 3, 5);
-
-
-            this.createRoom(12, 18, 3, 5, {doors: 'top'});
-            this.createRoom(16, 18, 3, 5, {doors: 'top'});
-            this.createRoom(20, 18, 3, 5, {doors: 'top'});
-            this.createRoom(24, 18, 3, 5, {doors: 'top'});
-            this.createRoom(28, 18, 3, 5, {doors: 'top'});
-            this.createRoom(32, 18, 3, 5, {doors: 'top'});
-            this.createRoom(36, 18, 3, 5, {doors: 'top'});
-            this.createRoom(40, 18, 3, 5, {doors: 'top'});
-            this.createRoom(44, 18, 3, 5, {doors: 'top'});
-            this.createRoom(48, 18, 3, 5, {doors: 'top'});
-
-            this.createRoom(12, 46, 3, 5)
-            this.createRoom(16, 46, 3, 5);
-            this.createRoom(20, 46, 3, 5);
-            this.createRoom(24, 46, 3, 5);
-            this.createRoom(28, 46, 3, 5);
-            this.createRoom(32, 46, 3, 5);
-            this.createRoom(36, 46, 3, 5);
-            this.createRoom(40, 46, 3, 5);
-            this.createRoom(44, 46, 3, 5);
-            this.createRoom(48, 46, 3, 5);
-
-            this.createRoom(12, 58, 3, 5, {doors: 'top'});
-            this.createRoom(16, 58, 3, 5, {doors: 'top'});
-            this.createRoom(20, 58, 3, 5, {doors: 'top'});
-            this.createRoom(24, 58, 3, 5, {doors: 'top'});
-            this.createRoom(28, 58, 3, 5, {doors: 'top'});
-            this.createRoom(32, 58, 3, 5, {doors: 'top'});
-            this.createRoom(36, 58, 3, 5, {doors: 'top'});
-            this.createRoom(40, 58, 3, 5, {doors: 'top'});
-            this.createRoom(44, 58, 3, 5, {doors: 'top'});
-            this.createRoom(48, 58, 3, 5, {doors: 'top'});
-
-            this.createRoom(12, 32, 13, 7, {doors: 'both'});
-            this.createRoom(52, 32, 13, 7, {doors: 'both'});
-
             this.state.pc = this.createPC();
-            
-           
-            
-            this.state.daughter = null;
-            
-            /*
-            for (var i=0;i<10;i++){
-                this.createEnemy();
-            }
-            */
-            
-            elevator = this.state.factory('elevator',{xform:{
-                tx:80,
-                ty:112
-            }});
-            this.state.addEntity(elevator);
-
-            encounter = new CheckupEncounter(this);
-            new ExecuteEncounter(this);
         },
+
+        buildSmallRoomHall : function(sx, sy, ex, options){
+            var remainder = length % 4;
+            var i = sx
+            while (i<(ex-10)){
+                var halfWidth = 1;
+                this.createRoom(i+2, sy + 5, 3, 5, options)
+                i += (halfWidth*2)+2;
+            }
+            this.buildWall(i,9,ex-i-1,true);
+        },
+
+        buildMediumRoomHall : function(sx, sy, ex, options){
+            var remainder = length % 4;
+            var i = sx
+            while (i<(ex-6)){
+                var halfWidth = 2;
+                this.createRoom(i+3, sy + 5, 5, 5, options)
+                i += (halfWidth*2)+2;
+            }
+            this.buildWall(i,9,ex-i-1,true);
+        },
+
+        buildLargeRoomHall : function(sx, sy, ex, options){
+            var remainder = length % 4;
+            var i = sx
+            while (i<(ex-6)){
+                var halfWidth = 3;
+                this.createRoom(i+4, sy + 5, 7, 5, options)
+                i += (halfWidth*2)+2;
+            }
+            this.buildWall(i,9,ex-i-1,true);
+        },
+
+        buildLayout : function(){
+            //Elevator Shafts
+            this.createRoom(4, 5, 7, 5, {doors: null});
+            this.createRoom(60, 5, 7, 5, {doors: null});
+        
+            var tiles = this.map.getTiles(boxcoords(32, 0, 32, 32));
+            _.each(tiles, function(tile){
+                tile.metaData.gang = 'albert';
+            });
+
+            /*
+                //Slum
+                this.buildSmallRoomHall(8,0,65);
+                this.buildSmallRoomHall(8,13,65, {doors: 'top'});
+                this.buildSmallRoomHall(8,21,65);
+                this.buildSmallRoomHall(8,34,65, {doors: 'top'});
+                this.buildSmallRoomHall(8,42,65);
+                this.buildSmallRoomHall(8,55,65, {doors: 'top'});
+            */
+            //*
+                //Middle Class
+                this.buildMediumRoomHall(8,0,60);
+                this.buildMediumRoomHall(8,13,60, {doors: 'top'});
+                this.buildMediumRoomHall(8,21,60);
+                this.buildMediumRoomHall(8,34,60, {doors: 'top'});
+                this.buildMediumRoomHall(8,42,60);
+                this.buildMediumRoomHall(8,55,60, {doors: 'top'});
+            //*/
+            /*
+                //Upper Class
+                this.buildLargeRoomHall(8,0,60);
+                this.buildLargeRoomHall(8,13,60, {doors: 'top'});
+                this.buildLargeRoomHall(8,21,60);
+                this.buildLargeRoomHall(8,34,60, {doors: 'top'});
+                this.buildLargeRoomHall(8,42,60);
+                this.buildLargeRoomHall(8,55,60, {doors: 'top'});
+            */
+
+            //Span Gang
+            _.each(this.rooms, function(room){
+                var tile = this.map.getTile(room.cx, room.cy)
+                if (tile.metaData.gang == 'albert'){
+                    var total = sge.random.rangeInt(0,3);
+                    for (var i=0;i<total;i++){
+                        var enemy = room.spawn('enemy');
+                        this.state.addEntity(enemy);
+                    }
+                }
+            }.bind(this))
+
+        },
+
+
         buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){
                 var tile = this.map.getTile(x+sx, sy);
@@ -223,8 +235,8 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
             if (pc==null){
                 pc = Factory('pc', {
                     xform : {
-                        tx: (6 + 0.5) * this.map.tileSize,
-                        ty: (6 + 0.5) * this.map.tileSize,
+                        tx: (16 + 0.5) * this.map.tileSize,
+                        ty: (16 + 0.5) * this.map.tileSize,
                         vx : Math.random() * 10 - 5,
                         vy : Math.random() * 10 - 5
                     }});
@@ -251,60 +263,20 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
             return enemy;
         },
         createRoom : function(cx, cy, width, height, options){
-            this.rooms.push([cx, cy])
-            options = $.extend({doors:'bottom', open: true}, options || {});
-            /*
-            var cx = 16;  //sge.random.rangeInt(8,this.map.width-8);
-            var cy = 16; //sge.random.rangeInt(8,this.map.height-8);
-            */
-            var halfX = Math.floor((width-1)/2);
-            var halfY = Math.floor((height-1)/2);
-
-            var tile = null;
-            for (var y=(cy-halfY);y<=(cy+halfY);y++){
-                for (var x=(cx-halfX);x<=(cx+halfX);x++){
-                    tile = this.map.getTile(x,(cy+halfY)+1);
-                    tile.layers['layer0'] = FLOORTILE;
-                    tile.passable = true;
-                }
-            }
-            this.buildWall((cx-halfX),(cy-halfY)-2,width);
-            this.buildWall((cx-halfX)-1,(cy+halfY)+2,width+2);
-            for (x=(cx-halfX-1);x<=(cx+halfX+1);x++){
-                tile = this.map.getTile(x,(cy+halfY)+1);
-                tile.layers['layer0'] = CEILTILE;
-                tile.passable = false;
-                tile = this.map.getTile(x,(cy-halfY)-3);
-                tile.layers['layer0'] = CEILTILE;
-                tile.passable = false;
-            }
-            for (y=(cy-halfY-2);y<=(cy+halfY+1);y++){
-                tile = this.map.getTile((cx+halfX)+1,y);
-                tile.layers['layer0'] = CEILTILE;
-                tile.passable = false;
-                tile = this.map.getTile((cx-halfX)-1,y);
-                tile.layers['layer0'] = CEILTILE;
-                tile.passable = false;
-            }
-            if ((options.doors=='bottom')||(options.doors=='both')){
-                this.createDoor(cx, cy+halfY+3, options.open);
-            } 
-            if ((options.doors=='top')||(options.doors=='both')) {
-                this.createDoor(cx, cy-halfY-1, options.open);
-            }
-
-            if (Math.random()<0.65){
-                this.createEnemy(cx,cy);
-            }
-            
-            
+            options = $.extend({doors:'bottom', open: (Math.random() > 0.5)}, options || {});
+            var room = new Room(this, cx, cy, width, height, options);
+            room.plot();
+            this.rooms.push(room);
         },
         createDoor : function(cx, cy, open){
             var tile = null;
             var door = this.state.factory('door', {xform:{
                 tx: ((cx + 0.5) * 32),
                 ty: ((cy + 0.5) * 32),
-            }, door: {open: open}});
+            }, door: {open: open},
+            interact : {
+                targets: [[((cx + 0.5) * 32),((cy + 0.5) * 32)],[((cx + 0.5) * 32),((cy - 1.5) * 32)]]
+            }});
             door.tags.push('door');
             this.state.addEntity(door);
         }
