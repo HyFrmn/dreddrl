@@ -1,4 +1,4 @@
-define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory, Encounter){
+define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory, Encounters){
     var FLOORTILE =  { srcX : 0, srcY: 0, spritesheet: 'future2'};
     var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spritesheet: 'future2'}
     var DOOROPENTILE1 = { srcX : 1, srcY: 36, spritesheet: 'future2'}
@@ -26,6 +26,7 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
             this.width = width;
             this.height = height;
             this.spawned = [];
+            this.data = {};
         },
         plot : function(){
             var halfX = Math.floor((this.width-1)/2);
@@ -65,18 +66,22 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
             }
         },
         getTiles : function(){
+            console.log(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width, this.height);
             return this.level.map.getTiles(boxcoords(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width, this.height));
         },
         spawn : function(name, data){
             data = data || {};
             var tile = sge.random.item(this.getTiles());
-            while (tile.metaData.spawn!==undefined){
-                tile = sge.random.item(this.getTiles());
-            };
-            data['xform'] = {tx: tile.x * 32 + 16, ty: tile.y * 32 + 16};
-            tile.spawn = true;
-            var entity = Factory(name, data);
-            return entity;
+            if (tile){
+                while (tile.metaData.spawn!==undefined){
+
+                    tile = sge.random.item(this.getTiles());
+                };
+                data['xform'] = {tx: tile.x * 32 + 16, ty: tile.y * 32 + 16};
+                tile.spawn = true;
+                var entity = Factory(name, data);
+                return entity;
+            }
         }
     })
 
@@ -160,46 +165,70 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
                 tile.metaData.gang = 'albert';
             });
 
+            var eco = sge.random.item(['slum','middle','upper']);
+            switch (eco){
+                case 'upper':
+                    //Upper Class
+                    this.buildLargeRoomHall(8,0,60);
+                    this.buildLargeRoomHall(8,13,60, {doors: 'top'});
+                    this.buildLargeRoomHall(8,21,60);
+                    this.buildLargeRoomHall(8,34,60, {doors: 'top'});
+                    this.buildLargeRoomHall(8,42,60);
+                    this.buildLargeRoomHall(8,55,60, {doors: 'top'});
+                    break;
+
+                case 'middle':
+                    this.buildMediumRoomHall(8,0,60);
+                    this.buildMediumRoomHall(8,13,60, {doors: 'top'});
+                    this.buildMediumRoomHall(8,21,60);
+                    this.buildMediumRoomHall(8,34,60, {doors: 'top'});
+                    this.buildMediumRoomHall(8,42,60);
+                    this.buildMediumRoomHall(8,55,60, {doors: 'top'});
+                    break;
+
+                case 'slum':
+                default:
+                    this.buildSmallRoomHall(8,0,65);
+                    this.buildSmallRoomHall(8,13,65, {doors: 'top'});
+                    this.buildSmallRoomHall(8,21,65);
+                    this.buildSmallRoomHall(8,34,65, {doors: 'top'});
+                    this.buildSmallRoomHall(8,42,65);
+                    this.buildSmallRoomHall(8,55,65, {doors: 'top'});
+                    break;
+            }
             /*
                 //Slum
-                this.buildSmallRoomHall(8,0,65);
-                this.buildSmallRoomHall(8,13,65, {doors: 'top'});
-                this.buildSmallRoomHall(8,21,65);
-                this.buildSmallRoomHall(8,34,65, {doors: 'top'});
-                this.buildSmallRoomHall(8,42,65);
-                this.buildSmallRoomHall(8,55,65, {doors: 'top'});
+                
             */
             //*
                 //Middle Class
-                this.buildMediumRoomHall(8,0,60);
-                this.buildMediumRoomHall(8,13,60, {doors: 'top'});
-                this.buildMediumRoomHall(8,21,60);
-                this.buildMediumRoomHall(8,34,60, {doors: 'top'});
-                this.buildMediumRoomHall(8,42,60);
-                this.buildMediumRoomHall(8,55,60, {doors: 'top'});
+                
             //*/
             /*
-                //Upper Class
-                this.buildLargeRoomHall(8,0,60);
-                this.buildLargeRoomHall(8,13,60, {doors: 'top'});
-                this.buildLargeRoomHall(8,21,60);
-                this.buildLargeRoomHall(8,34,60, {doors: 'top'});
-                this.buildLargeRoomHall(8,42,60);
-                this.buildLargeRoomHall(8,55,60, {doors: 'top'});
+                
             */
 
-            //Span Gang
+            //Spawn Gang
             _.each(this.rooms, function(room){
                 var tile = this.map.getTile(room.cx, room.cy)
                 if (tile.metaData.gang == 'albert'){
                     var total = sge.random.rangeInt(0,3);
+                    room.data.gana = tile.metaData.gang;
                     for (var i=0;i<total;i++){
                         var enemy = room.spawn('enemy');
-                        this.state.addEntity(enemy);
+                        if (enemy){
+                            this.state.addEntity(enemy);
+                        }
                     }
                 }
-            }.bind(this))
+            }.bind(this));
 
+
+            //Create Encounters
+            var EncounterClass = sge.random.item([Encounters.ExecuteEncounter, Encounters.CheckupEncounter]);
+
+            var encounter = new EncounterClass(this);
+            console.log(encounter);
         },
 
 

@@ -107,11 +107,10 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
             
             for (var i = entities.length - 1; i >= 0; i--) {
                 entity = entities[i];
-                if (entity.get('interact.targets')){
+                if (entity.get('interact.targets')!==null){
                     coords = entity.get('interact.targets');
-                    //console.log(coords);
                 } else {
-                    coords = [entity.get('xform.tx'), entity.get('xform.ty')]
+                    coords = [[entity.get('xform.tx'), entity.get('xform.ty')]];
                 }
                 for (var j = coords.length - 1; j >= 0; j--) {
                     var dx = coords[j][0] - this.pc.get('xform.tx');
@@ -130,6 +129,7 @@ define(['sge', './blocklevelgenerator', './physics', './factory'], function(sge,
                     this._closest.fireEvent('focus.lose');
                 }
                 if (closest){
+                    console.log(closest.tags);
                     closest.fireEvent('focus.gain', ccord);
                 }
                 this._closest = closest;
