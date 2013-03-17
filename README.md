@@ -7,6 +7,7 @@ FILE STRUCTURE
 - server/ - Nodejs Server (only required for editing / saving);
 
 
+
 CREDITS
 =========================
 Hunk - AkaiSeigi (http://www.rpgmakervxace.net/gallery/image/243-hunk/)
