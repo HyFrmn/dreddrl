@@ -196,17 +196,6 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
                     this.buildSmallRoomHall(8,55,65, {doors: 'top'});
                     break;
             }
-            /*
-                //Slum
-                
-            */
-            //*
-                //Middle Class
-                
-            //*/
-            /*
-                
-            */
 
             //Spawn Gang
             _.each(this.rooms, function(room){
