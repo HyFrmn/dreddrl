@@ -6,7 +6,7 @@ requirejs.config({
         }
     },
     name: "dreddrl",
-    packages: ["sge","dreddrl"]
+    packages: ["dreddrl"]
 });
 // Start the main app logic.
 var game = null;
