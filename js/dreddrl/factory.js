@@ -8,7 +8,7 @@ define([
     './components/inventory',
     './components/interaction',
     './components/door',
-    './components/dialog',
+    './components/actions',
     './components/elevator',
     './components/quest',
     './components/encounter',
@@ -48,7 +48,7 @@ define([
                         map: this.map,
                         speed: 64
                     },
-                    health : {alignment:5, life: 1},
+                    health : {alignment:5, life: 10},
                     weapons: {},
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {

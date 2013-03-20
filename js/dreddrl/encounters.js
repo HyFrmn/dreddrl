@@ -19,11 +19,17 @@ define(['sge'], function(sge){
 			*
 			*/
 
+		},
+		update: function(status){
+			if (status>=this.total){
+				this.finish();
+			};
 		}
 	});
 
 	var CheckupEncounter = Encounter.extend({
 	        start: function(){
+	        	this.total = 3;
 	            //Create Mother
 	            var mothersRoom = sge.random.item(this.block.rooms);
 	            console.log(mothersRoom);
@@ -36,8 +42,8 @@ define(['sge'], function(sge){
 	                encounter: {
 	                    encounter : this,
 	                },
-	                dialog: {
-	                    dialog :
+	                actions: {
+	                    interact :
 	                        ['switch', '${encounter.status}', 
 	                            [
 	                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
@@ -68,8 +74,8 @@ define(['sge'], function(sge){
 	                encounter: {
 	                    encounter : this,
 	                },
-	                dialog: {
-	                   "dialog":
+	                actions: {
+	                   interact :
 	                        ['if', '${encounter.status}==1', 
 	                            [
 	                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
@@ -83,6 +89,9 @@ define(['sge'], function(sge){
 	            daughter.tags.push('daughter');
 	            this.block.state.addEntity(daughter);
 	        	console.log('Checkup')
+	        },
+	        finish: function(){
+	        	console.log('Complete Checkup Encounter');
 	        }
 	    });
 
@@ -94,10 +103,20 @@ define(['sge'], function(sge){
 	                xform: {
 	                    tx: gangBossRoom.cx * 32,
 	                    ty: gangBossRoom.cy * 32
+	                },
+	                encounter: {
+	                	encounter : this
+	                },
+	                actions : {
+	                	kill : 
+	                		['set', 'encounter.status',1]
 	                }
 	            });
 	            gangBoss.tags.push('gangboss');
 	            this.block.state.addEntity(gangBoss);
+	        },
+	        finish: function(){
+	        	console.log('Complete Execute Gang Boss');
 	        }
 	    });
 

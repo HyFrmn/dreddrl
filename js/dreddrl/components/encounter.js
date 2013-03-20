@@ -10,7 +10,7 @@ define(['sge'], function(sge){
 		},
 		_set_status : function(status){
 			this.encounter.status = status;
-			console.log('Encounter', this.encounter);
+			this.encounter.update(status);
 			return this.encounter.status;
 		}
 	});

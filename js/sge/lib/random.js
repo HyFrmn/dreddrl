@@ -10,7 +10,7 @@ define([],function(){
 		return Math.round(range(min, max));
 	}
 	var item = function(array){
-		var length = array.length;
+		var length = array.length-1;
 		return array[Math.round(Math.random() * length)];
 	}
 	return {

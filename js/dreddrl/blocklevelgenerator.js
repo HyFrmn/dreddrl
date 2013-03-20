@@ -66,7 +66,6 @@ define(['sge', 'jquery', './factory', './encounters'], function(sge, $, Factory,
             }
         },
         getTiles : function(){
-            console.log(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width, this.height);
             return this.level.map.getTiles(boxcoords(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width, this.height));
         },
         spawn : function(name, data){
