@@ -2,7 +2,12 @@ define(['jquery', './lib/class' , './vendor/state-machine','./engine','./gamesta
 function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, PxLoaderImage){
     var LoadState = GameState.extend({
         initState: function(){
-            this.elem = $('.loadscreen') || null;
+            this.elem = $('.loadscreen');
+            if (this.elem.length==0){
+                this.elem = $('<div/>').addClass("loadscreen gamestatescreen");
+                this.elem.append($('<img class="loader" src="js/sge/images/ajax-loader.gif"/>'));
+                this.game.elem.append(this.elem);
+            }
         },
         startState : function(){
             if (this.game._states['game'].loader){
@@ -21,7 +26,12 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
 
     var MainMenuState = GameState.extend({
         initState: function(){
-            this.elem = $('.mainmenuscreen') || null;
+            this.elem = $('.mainmenuscreen');
+            if (this.elem.length==0){
+                this.elem = $('<div/>').addClass("mainmenuscreen gamestatescreen");
+                this.elem.append($('<p>Press Enter to Start Game</p>'));
+                this.game.elem.append(this.elem);
+            }
             this.startGame = function(){
                 this.game._states['game'] = new this.game._gameState(this.game);
                 this.game.fsm.startGame();    
@@ -48,8 +58,12 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
     var GameOverState = GameState.extend({
         initState: function(){
             this.elem = $('.gameoverscreen') || null;
+            if (this.elem.length==0){
+                this.elem = $('<div/>').addClass("gameoverscreen gamestatescreen");
+                this.elem.append($('<h1>Game Over</h1><p>Press Enter to Continue.</p>'));
+                this.game.elem.append(this.elem);
+            }
             this.startGame = function(){
-                console.log('START')
                 this.game._states['game'] = new this.game._gameState(this.game);
                 this.game.fsm.loadMainMenu();
             }.bind(this);
@@ -73,7 +87,12 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
 
     var GameWinState = GameState.extend({
         initState: function(){
-            this.elem = $('.gamewinscreen') || null;
+            this.elem = $('.gamewinscreen');
+            if (this.elem.length==0){
+                this.elem = $('<div/>').addClass("gamewinscreen gamestatescreen");
+                this.elem.append($('<h1>You Win!</h1><p>Press Enter to Continue.</p>'));
+                this.game.elem.append(this.elem);
+            }
             this.startGame = function(){
                 console.log('START')
                 this.game._states['game'] = new this.game._gameState(this.game);
@@ -99,7 +118,12 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
 
     var PauseState = GameState.extend({
         initState: function(){
-            this.elem = $('.pausescreen') || null;
+            this.elem = $('.pausescreen');
+            if (this.elem.length==0){
+                this.elem = $('<div/>').addClass("pausescreen gamestatescreen");
+                this.elem.append($('<h1>Paused</h1>'));
+                this.game.elem.append(this.elem);
+            }
             this.unpause = function(){
                 this.game.fsm.unpause();
             }.bind(this);
@@ -124,15 +148,36 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
         }
     });
 
+    var DefaultGame = GameState.extend({
+        initState: function(){
+            setTimeout(function(){
+                this.game.fsm.finishLoad();
+                setTimeout(function(){
+                    this.game.fsm.gameWin();
+                }.bind(this), 5000);
+            }.bind(this), 1000)
+        }
+    })
+
     var Game = Class.extend({
         init: function(options){
+            this.options = $.extend({
+                elem: null
+            }, options || {});
             this.engine = new Engine();
             this.loader = new PxLoader();
             this.input = new Input();
             this._tick = 0;
             this._last = 0;
+            this._gameState = DefaultGame;
             this._debugElem = $('.fps');
-            this.renderer = new Renderer('#game');
+            if (this.options.elem!==null){
+                this.elem = $(this.options.elem);
+            } else {
+                console.log('[SGE ERROR] Need an element to render in. Use elem option to constructor.')
+                this.elem = null;
+            }
+            this.renderer = new Renderer(this.elem);
             this.engine.tick = function(delta){
                 this.tick(delta);
             }.bind(this);
