@@ -136,7 +136,6 @@ define([
                         this._closest.fireEvent('focus.lose');
                     }
                     if (closest){
-                        console.log(closest.tags);
                         closest.fireEvent('focus.gain', ccord);
                     }
                     this._closest = closest;

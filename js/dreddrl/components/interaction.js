@@ -24,7 +24,6 @@ define(['sge'], function(sge){
         activate: function(coord){
             this.activeCoord = coord;
             this.active = true;
-            console.log(this.entity.tags);
             this.state.input.addListener('keydown:enter', this.interact);
         },
         deactivate: function(){

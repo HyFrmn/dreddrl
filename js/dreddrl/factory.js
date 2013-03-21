@@ -12,6 +12,7 @@ define([
     './components/elevator',
     './components/quest',
     './components/encounter',
+    './components/stats',
 
     './actions/dialog',
     './actions/if',

@@ -1,12 +1,10 @@
 requirejs.config({
     baseUrl: 'js/',
-    shim: {
-        'sge/vendor/underscore': {
-          exports: '_'
-        }
-    },
     name: "dreddrl",
-    packages: ["dreddrl"]
+    packages: ["dreddrl"],
+    paths : {
+        'sge' : 'sge',
+    }
 });
 // Start the main app logic.
 var game = null;

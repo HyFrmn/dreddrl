@@ -73,7 +73,7 @@ define([
                 }
             },
             getTiles : function(){
-                return this.level.map.getTiles(boxcoords(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width, this.height));
+                return this.level.map.getTiles(boxcoords(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width-1, this.height-1));
             },
             spawn : function(name, data){
                 data = data || {};
@@ -216,10 +216,15 @@ define([
 
                 //Spawn Gang
                 _.each(this.rooms, function(room){
+
+                    if (room.options.doors==null){
+                        return;
+                    }
+                    console.log(room.options.doors);
                     var tile = this.map.getTile(room.cx, room.cy)
                     if (tile.metaData.gang == 'albert'){
                         var total = sge.random.rangeInt(0,3);
-                        room.data.gana = tile.metaData.gang;
+                        room.data.gang = tile.metaData.gang;
                         for (var i=0;i<total;i++){
                             var enemy = room.spawn('enemy');
                             if (enemy){
