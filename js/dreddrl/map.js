@@ -120,10 +120,16 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
         	var height = renderer.height;
         	renderer.width = 2048;
         	renderer.height = 2048;
+        	var colorR = Math.round(Math.random() * 255);
+        	var colorG = Math.round(Math.random() * 255);
+        	var colorB = Math.round(Math.random() * 255);
 			for (var i = coords.length - 1; i >= 0; i--) {
-				var x = coords[i][0];
-				var y = coords[i][1];
-				var tile = this.getTile(x,y);
+				var tile = coords[i];
+				if (tile.fade===undefined){
+					var x = coords[i][0];
+					var y = coords[i][1];
+					tile = this.getTile(x,y);
+				}
 				for (var j=0;j<this.layers.length;j++){
 					if (tile.fade<1){
 						var tx = (tile.x + 0.5) * this.tileSize;
@@ -136,8 +142,18 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 						}
 					}
 				}
+				console.log(tile.x, tile.y, tile.fade);
+				if (!tile.fade){
+					var style = 'rgba('+colorR+','+colorG+','+colorB+',0.1)';
+					console.log(style);
+					renderer.drawRect("canopy", tx-16, ty-16, this.tileSize, this.tileSize, {fillStyle: style, strokeStyle: 'none'}, 100000000);
+				} else {
+					renderer.drawRect("canopy", tx-16, ty-16, this.tileSize, this.tileSize, {fillStyle: 'none', strokeStyle: 'none'}, 100000000);
+				}
 			};
+			renderer.cacheUpdate('canopy');
 			renderer.cacheUpdate('base');
+			
 			renderer.width = width;
 			renderer.height = height;
 			renderer.tx = trackX;

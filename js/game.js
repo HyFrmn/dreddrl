@@ -1,9 +1,11 @@
 requirejs.config({
     baseUrl: 'js/',
     name: "dreddrl",
-    packages: ["dreddrl"],
-    paths : {
-        'sge' : 'sge',
+    packages: ["dreddrl","sge"],
+    shim : {
+    	'sge/vendor/underscore' : {
+    		exports: '_'
+    	}
     }
 });
 // Start the main app logic.

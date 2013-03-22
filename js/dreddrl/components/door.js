@@ -7,12 +7,14 @@ define(['sge'], function(sge){
     var Door = sge.Component.extend({
         init: function(entity, data){
             this._super(entity, data);
+            this.room = data.room;
             this.data.open = data.open===undefined ?  true : data.open;
             this.interact = this.interact.bind(this);
             this.entity.addListener('interact', this.interact);
         },
         interact: function(){
             this.set('open', !this.get('open'));
+            this.room.update();
             this.updateTiles();
         },
         updateTiles : function(){
@@ -37,7 +39,8 @@ define(['sge'], function(sge){
                 tile.layers['layer1'] = DOORCLOSEDTILE2;
                 tile.passable=false;
             }
-            this.map.renderTiles(this.state.game.renderer, [[tx,ty-2],[tx, ty-1],[tx,ty]]);
+            //this.map.renderTiles(this.state.game.renderer, [[tx,ty-2],[tx, ty-1],[tx,ty]]);
+            this.map.renderTiles(this.state.game.renderer, this.room.getTiles());
             
         },
 

@@ -34,6 +34,7 @@ define([
                 this.height = height;
                 this.spawned = [];
                 this.data = {};
+                this.doors = [];
             },
             plot : function(){
                 var halfX = Math.floor((this.width-1)/2);
@@ -66,11 +67,25 @@ define([
                     tile.passable = false;
                 }
                 if ((this.options.doors=='bottom')||(this.options.doors=='both')){
-                    this.level.createDoor(this.cx, this.cy+halfY+3, this.options.open);
+                    this.createDoor(this.cx, this.cy+halfY+3, this.options.open);
                 } 
                 if ((this.options.doors=='top')||(this.options.doors=='both')) {
-                    this.level.createDoor(this.cx, this.cy-halfY-1, this.options.open);
+                    this.createDoor(this.cx, this.cy-halfY-1, this.options.open);
                 }
+                this.update();
+            },
+            createDoor : function(cx, cy, open){
+                var tile = null;
+                var door = this.level.state.factory('door', {xform:{
+                    tx: ((cx + 0.5) * 32),
+                    ty: ((cy + 0.5) * 32),
+                }, door: {open: open, room: this},
+                interact : {
+                    targets: [[((cx + 0.5) * 32),((cy + 0.5) * 32)],[((cx + 0.5) * 32),((cy - 1.5) * 32)]]
+                }});
+                this.doors.push(door);
+                door.tags.push('door');
+                this.level.state.addEntity(door);
             },
             getTiles : function(){
                 return this.level.map.getTiles(boxcoords(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width-1, this.height-1));
@@ -87,6 +102,20 @@ define([
                     tile.spawn = true;
                     var entity = Factory(name, data);
                     return entity;
+                }
+            },
+            update: function(){
+                if (this.doors.length){
+                    console.log('Update',this.doors[0].get('door.open'));
+                    if (this.doors[0].get('door.open')){
+                        _.each(this.getTiles(), function(tile){
+                            tile.fade = 0;
+                        })
+                    } else {
+                        _.each(this.getTiles(), function(tile){
+                            tile.fade = 1;
+                        })
+                    }
                 }
             }
         })
@@ -308,18 +337,6 @@ define([
                 room.plot();
                 this.rooms.push(room);
             },
-            createDoor : function(cx, cy, open){
-                var tile = null;
-                var door = this.state.factory('door', {xform:{
-                    tx: ((cx + 0.5) * 32),
-                    ty: ((cy + 0.5) * 32),
-                }, door: {open: open},
-                interact : {
-                    targets: [[((cx + 0.5) * 32),((cy + 0.5) * 32)],[((cx + 0.5) * 32),((cy - 1.5) * 32)]]
-                }});
-                door.tags.push('door');
-                this.state.addEntity(door);
-            }
         });
         return LevelGenerator;
     }
