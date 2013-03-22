@@ -189,7 +189,7 @@ define(['jquery'], function($){
         }
         //var ctx = this.layers[layer].context;
         priority = priority || 0;
-        this.clear(layer, destRect[0],destRect[1],destRect[2],destRect[3])
+        this.clear(layer, destRect[0]-4,destRect[1]-4,destRect[2]+8,destRect[3]+8)
         this.draw(layer, function(ctx){
             ctx.save();
             var keys = Object.keys(style);

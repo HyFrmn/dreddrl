@@ -8,14 +8,19 @@ define(['sge'], function(sge){
         init: function(entity, data){
             this._super(entity, data);
             this.room = data.room;
+            this.data.locked = data.locked || false;
             this.data.open = data.open===undefined ?  true : data.open;
             this.interact = this.interact.bind(this);
             this.entity.addListener('interact', this.interact);
         },
         interact: function(){
-            this.set('open', !this.get('open'));
-            this.room.update();
-            this.updateTiles();
+            if (this.get('locked')){
+                console.log('Door is locked');
+            } else {
+                this.set('open', !this.get('open'));
+                this.room.update();
+                this.updateTiles();
+            }
         },
         updateTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32);
@@ -39,7 +44,7 @@ define(['sge'], function(sge){
                 tile.layers['layer1'] = DOORCLOSEDTILE2;
                 tile.passable=false;
             }
-            //this.map.renderTiles(this.state.game.renderer, [[tx,ty-2],[tx, ty-1],[tx,ty]]);
+            this.map.renderTiles(this.state.game.renderer, [[tx,ty-2],[tx, ty-1],[tx,ty]]);
             this.map.renderTiles(this.state.game.renderer, this.room.getTiles());
             
         },

@@ -160,12 +160,12 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
         	renderer.ty = trackY;
 		},
 		render : function(renderer){
-			renderer.tx = 0;
-			renderer.ty = 0;
+			//renderer.tx = 0;
+			//renderer.ty = 0;
 			var tmpW = renderer.width;
 			var tmpH = renderer.height;
-			renderer.width = this.width * this.tileSize;
-			renderer.height = this.height * this.tileSize;
+			//renderer.width = this.width * this.tileSize;
+			//renderer.height = this.height * this.tileSize;
 			for (var j=0;j<this.layers.length;j++){
 				for (var i = this._tiles.length - 1; i >= 0; i--) {
 					var tile = this._tiles[i];
@@ -188,10 +188,12 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 				tile.anim();
 				renderer.drawRect("canopy", tx, ty, this.tileSize, this.tileSize, {fillStyle: 'rgba(0,32,16,'+tile.fade+')', strokeStyle: 'none'});
 			}
+            /*
 			renderer.cache('base', this.width*this.tileSize, this.height*this.tileSize);
 			renderer.cache('canopy', this.width*this.tileSize, this.height*this.tileSize);
 			renderer.width = tmpW;
 			renderer.height = tmpH;
+            */
 		},
 		loadCallback : function(){
 

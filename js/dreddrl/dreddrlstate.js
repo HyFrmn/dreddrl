@@ -173,7 +173,7 @@ define([
 
                 this.game.renderer.track(this.pc);
                 //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
-                //this.map.render(this.game.renderer);
+                this.map.render(this.game.renderer);
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];
                     var tx = entity.get('xform.tx');
@@ -188,7 +188,7 @@ define([
             },
             _paused_tick : function(delta){
                 this.game.renderer.track(this.pc);
-                //this.map.render(this.game.renderer);
+                this.map.render(this.game.renderer);
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];
                     entity.componentCall('render', this.game.renderer, 'main');
