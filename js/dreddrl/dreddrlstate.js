@@ -16,8 +16,12 @@ define([
                 this._contactList = [];
 
                 this._intro = false;
-
                 this._killList = [];
+
+                this._logMsg = [];
+                this._logQueue = [];
+                this._logTimer = -1;
+
                 this.factory = Factory;
                 this.initUi();
                 this.map = new Map(65,66,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
@@ -93,17 +97,25 @@ define([
                 entity.addListener('kill', function(){
                         this._killList.push(entity);
                 }.bind(this));
+                entity.addListener('log', function(msg){
+                    this.logCallback(msg);
+                }.bind(this));
             },
             initUi : function(){
                 this._elem_ammo = $('span.ammo');
                 this._elem_health = $('span.health');
                 this._elem_quest = $('span.quest');
+                this._elem_log = $('ul.log');
             },
             updateUi : function(){
                 if (this.pc){
                     this._elem_ammo.text(this.pc.get('inventory.ammo'));
                     this._elem_health.text(this.pc.get('health.life'));
                 }
+            },
+            logCallback : function(msg){
+                var elem = $('<p/>').text(msg);
+                this._elem_log.prepend($('<li/>').append(elem));
             },
             _interaction_tick : function(delta){
 

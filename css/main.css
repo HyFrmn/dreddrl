@@ -191,6 +191,25 @@ html, body {
 .accent {
     color: orange;
 }
+
+ul.log {
+    height: 4em;
+    overflow-y: scroll;
+    padding: 0px;
+}
+
+ul.log li {
+    border-top: 1px solid black;
+    margin: 0px;
+    width: 100%;
+    list-style-type: none;
+}
+
+ul.log li p {
+    margin: 0px
+}
+
+
 /* ==========================================================================
    Media Queries
    ========================================================================== */

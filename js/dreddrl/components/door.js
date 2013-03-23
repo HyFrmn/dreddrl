@@ -15,7 +15,7 @@ define(['sge'], function(sge){
         },
         interact: function(){
             if (this.get('locked')){
-                console.log('Door is locked');
+                this.entity.fireEvent('log','Door is locked');
             } else {
                 this.set('open', !this.get('open'));
                 this.room.update();
