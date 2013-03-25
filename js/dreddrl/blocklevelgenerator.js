@@ -308,7 +308,7 @@ define([
                 var i = 0;
                 goodRoom = null;
                 for (var i=0;i<this.rooms.length;i++){
-                    var room = this.rooms[i];
+                    var room = sge.random.item(this.rooms);
                     if (_.include(excludeList, room)){
                         continue;
                     }
