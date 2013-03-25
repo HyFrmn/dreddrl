@@ -131,6 +131,10 @@ html, body {
     z-index:50;
 }
 
+.mainmenuscreen {
+    background: black;
+}
+
 .gamestatescreen h1 {
     color: white;
     text-align: center;

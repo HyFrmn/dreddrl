@@ -2,6 +2,7 @@ define(['sge'], function(sge){
     var FreeItem = sge.Component.extend({
         init: function(entity, data){
             this._super(entity, data);
+            this.data.name = data.name || "Item";
             var keys = Object.keys(data);
             for (var i = keys.length - 1; i >= 0; i--) {
                 this.data[keys[i]] = data[keys[i]];

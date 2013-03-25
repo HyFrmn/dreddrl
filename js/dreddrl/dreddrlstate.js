@@ -104,16 +104,20 @@ define([
             initUi : function(){
                 this._elem_ammo = $('span.ammo');
                 this._elem_health = $('span.health');
-                this._elem_quest = $('span.quest');
+                this._elem_xp = $('span.xp');
                 this._elem_log = $('ul.log');
             },
             updateUi : function(){
                 if (this.pc){
                     this._elem_ammo.text(this.pc.get('inventory.ammo'));
                     this._elem_health.text(this.pc.get('health.life'));
+                    this._elem_xp.text(this.pc.get('health.xp'));
                 }
             },
             logCallback : function(msg){
+                this.log(msg);
+            },
+            log : function(msg){
                 var elem = $('<p/>').text(msg);
                 this._elem_log.prepend($('<li/>').append(elem));
             },
@@ -177,11 +181,9 @@ define([
                     this.game.fsm.gameOver();
                 }
 
-                /*
-                if (this.getEntitiesWithTag('enemy').length<=0){
+                if (_.every(this.level.encounters, function(e){return e.isFinished()})){
                     this.game.fsm.gameWin();
                 }
-                */
 
                 this.game.renderer.track(this.pc);
                 //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));

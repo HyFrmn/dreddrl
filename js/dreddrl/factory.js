@@ -51,6 +51,7 @@ define([
                     },
                     health : {alignment:5, life: 10},
                     weapons: {},
+                    stats: {},
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     health : {alignment:0, life: 8},
@@ -87,7 +88,8 @@ define([
             }},
             gun : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
                 freeitem: {
-                    'inventory.ammo': 5
+                    'inventory.ammo': 5,
+                    'name' : 'Gun'
                 }
             })},
             rammen : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
@@ -95,7 +97,8 @@ define([
                         frame: 123
                     },
                 freeitem: {
-                    'health.life' : 5
+                    'health.life' : 5,
+                    'name' : 'Ramen'
                 }
             })},
             keycard : function(){return  deepExtend(FACTORYDATA['freeitem'](), {

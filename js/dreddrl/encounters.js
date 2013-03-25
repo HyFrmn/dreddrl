@@ -8,6 +8,9 @@ define(['sge'], function(sge){
 			this.total = 1;
 			this.start();
 		},
+		isFinished: function(){
+			return (this.status>=this.total);
+		},
 		start: function(){
 
 		},
@@ -20,8 +23,11 @@ define(['sge'], function(sge){
 			*/
 
 		},
+		getPC : function(){
+			return this.state.getEntityWithTag('pc');
+		},
 		update: function(status){
-			if (status>=this.total){
+			if (this.isFinished()){
 				this.finish();
 			};
 		}
@@ -31,7 +37,7 @@ define(['sge'], function(sge){
 	        start: function(){
 	        	this.total = 3;
 	            //Create Mother
-	            var mothersRoom = sge.random.item(this.block.rooms);
+	            var mothersRoom = this.block.getRandomEncounterRoom();
 	            console.log(mothersRoom);
 	            var mother = this.state.factory('women', {
 	                xform: {
@@ -64,7 +70,7 @@ define(['sge'], function(sge){
 	            
 
 	            //Create Daughter
-	            var daughtersRoom = sge.random.item(this.block.rooms);
+	            var daughtersRoom = this.block.getRandomEncounterRoom({exclude: [mothersRoom]});
 	            var daughter = this.state.factory('daughter', {
 	                xform: {
 	                    tx: daughtersRoom.cx * 32,
@@ -91,14 +97,16 @@ define(['sge'], function(sge){
 	        	console.log('Checkup')
 	        },
 	        finish: function(){
-	        	console.log('Complete Checkup Encounter');
+	        	var pc = this.getPC();
+	        	pc.set('stats.xp', 50, 'add');
+	        	this.state.log('Completed Checkup Encounter');
 	        }
 	    });
 
 	    var ExecuteEncounter = Encounter.extend({
 	        start: function(){
 	            //Create Mother
-	            var gangBossRoom = sge.random.item(this.block.rooms);
+	            var gangBossRoom = this.block.getRandomEncounterRoom();
 	            var gangBoss = this.state.factory('gangboss', {
 	                xform: {
 	                    tx: gangBossRoom.cx * 32,
@@ -116,7 +124,9 @@ define(['sge'], function(sge){
 	            this.block.state.addEntity(gangBoss);
 	        },
 	        finish: function(){
-	        	console.log('Complete Execute Gang Boss');
+	        	var pc = this.getPC();
+	        	pc.set('stats.xp', 50, 'add');
+	        	this.state.log('Completed Execute Gang Boss');
 	        }
 	    });
 

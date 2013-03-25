@@ -142,13 +142,11 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 						}
 					}
 				}
-				console.log(tile.x, tile.y, tile.fade);
 				if (!tile.fade){
 					var style = 'rgba('+colorR+','+colorG+','+colorB+',0.1)';
-					console.log(style);
-					renderer.drawRect("canopy", tx-16, ty-16, this.tileSize, this.tileSize, {fillStyle: style, strokeStyle: 'none'}, 100000000);
+					//renderer.drawRect("canopy", tx-16, ty-16, this.tileSize, this.tileSize, {fillStyle: style, strokeStyle: 'none'}, 100000000);
 				} else {
-					renderer.drawRect("canopy", tx-16, ty-16, this.tileSize, this.tileSize, {fillStyle: 'none', strokeStyle: 'none'}, 100000000);
+					//renderer.drawRect("canopy", tx-16, ty-16, this.tileSize, this.tileSize, {fillStyle: 'none', strokeStyle: 'none'}, 100000000);
 				}
 			};
 			renderer.cacheUpdate('canopy');
@@ -162,10 +160,10 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 		render : function(renderer){
 			//renderer.tx = 0;
 			//renderer.ty = 0;
-			var tmpW = renderer.width;
-			var tmpH = renderer.height;
 			//renderer.width = this.width * this.tileSize;
 			//renderer.height = this.height * this.tileSize;
+			var tmpW = renderer.width;
+			var tmpH = renderer.height;
 			for (var j=0;j<this.layers.length;j++){
 				for (var i = this._tiles.length - 1; i >= 0; i--) {
 					var tile = this._tiles[i];

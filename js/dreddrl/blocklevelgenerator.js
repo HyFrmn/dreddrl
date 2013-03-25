@@ -36,6 +36,13 @@ define([
                 this.data = {};
                 this.doors = [];
             },
+            isLocked : function(){
+                var locked = false;
+                _.each(this.doors, function(door){
+                    locked = door.get('door.locked');
+                });
+                return locked;
+            },
             plot : function(){
                 var halfX = Math.floor((this.width-1)/2);
                 var halfY = Math.floor((this.height-1)/2);
@@ -106,7 +113,7 @@ define([
             },
             update: function(){
                 if (this.doors.length){
-                    console.log('Update',this.doors[0].get('door.open'));
+                    //console.log('Update',this.doors[0].get('door.open'));
                     if (this.doors[0].get('door.open')){
                         _.each(this.getTiles(), function(tile){
                             tile.fade = 0;
@@ -261,17 +268,6 @@ define([
                         this.buildSmallRoomHall(8,55,65, {doors: 'top'});
                         break;
                 }
-                /*
-                    //Slum
-                    
-                */
-                //*
-                    //Middle Class
-                    
-                //*/
-                /*
-                    
-                */
 
                 //Spawn Gang
                 _.each(this.rooms, function(room){
@@ -279,8 +275,10 @@ define([
                         return;
                     }
                     _.each(room.doors, function(door){
-                        if (sge.random.unit() > 0.5){
-                            door.set('door.locked', true);
+                        if (!door.get('door.open')){
+                            if (sge.random.unit() > 0.5){
+                                door.set('door.locked', true);
+                            }
                         }
                     })
                     var tile = this.map.getTile(room.cx, room.cy)
@@ -300,10 +298,31 @@ define([
                 //Create Encounters
                 var EncounterClass = sge.random.item([Encounters.ExecuteEncounter, Encounters.CheckupEncounter]);
 
+                this.encounters = [];
                 var encounter = new EncounterClass(this);
-                console.log(encounter);
+                this.encounters.push(encounter);
             },
-
+            getRandomEncounterRoom : function(options){
+                options = options || {};
+                var excludeList = options.exclude || [];
+                var i = 0;
+                goodRoom = null;
+                for (var i=0;i<this.rooms.length;i++){
+                    var room = this.rooms[i];
+                    if (_.include(excludeList, room)){
+                        continue;
+                    }
+                    console.log(room.options.doors!=null, !room.isLocked())
+                    if (room.options.doors!=null){
+                        if (!room.isLocked()){
+                             console.log('Found ROOM', i)
+                            goodRoom = room;
+                            break;
+                        }
+                    }
+                }
+                return goodRoom;
+            },
 
             buildWall: function(sx, sy, length, ceil){
                 for (var x=0;x<length;x++){
@@ -325,8 +344,8 @@ define([
                 }
             },
             createPC : function(){
+                var room = this.getRandomEncounterRoom();
                 var pc = null;
-                
                 if (this.state.options.persist){
                     if (this.state.options.persist['pc']!==undefined){
                         pc = this.state.options.persist['pc'];
@@ -337,8 +356,8 @@ define([
                 if (pc==null){
                     pc = Factory('pc', {
                         xform : {
-                            tx: (16 + 0.5) * this.map.tileSize,
-                            ty: (16 + 0.5) * this.map.tileSize,
+                            tx: (room.cx + 0.5) * this.map.tileSize,
+                            ty: (room.cy + 0.5) * this.map.tileSize,
                             vx : Math.random() * 10 - 5,
                             vy : Math.random() * 10 - 5
                         }});

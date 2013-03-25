@@ -13,6 +13,8 @@ define(['sge','jquery'],function(sge, $){
 			var freeitem = entity.get('freeitem');
 			var newAmmo = freeitem.get('inventory.ammo');
 			var keys = Object.keys(freeitem.data);
+			this.entity.fireEvent('log', 'Picked up ' + freeitem.get('name'));
+			keys = _.without(keys,'name');
 			for (var i = keys.length - 1; i >= 0; i--) {
 				var key = keys[i];
 				if (key=='inventory.add'){
@@ -21,7 +23,8 @@ define(['sge','jquery'],function(sge, $){
 					console.log(key, freeitem.data[key])
 					this.entity.set(key, freeitem.data[key], 'add');
 				}
-			};
+			}
+
 		},
 		subtractProperty: function(prop, value){
 			value = value || 1;

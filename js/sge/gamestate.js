@@ -90,8 +90,8 @@ define(['sge/lib/class', 'sge/vendor/underscore'],
 		},
 		getEntityWithTag: function(tag){
 			return _.filter(this.getEntities(), function(e){
-				return _.include(e.tags, tag)[0];
-			});
+				return _.include(e.tags, tag);
+			})[0];
 		},
 
 		getEntitiesWithComponent: function(comp){
