@@ -111,7 +111,7 @@ define([
                 if (this.pc){
                     this._elem_ammo.text(this.pc.get('inventory.ammo'));
                     this._elem_health.text(this.pc.get('health.life'));
-                    this._elem_xp.text(this.pc.get('health.xp'));
+                    this._elem_xp.text(this.pc.get('stats.xp'));
                 }
             },
             logCallback : function(msg){

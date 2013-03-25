@@ -51,7 +51,7 @@ define(['jquery'], function($){
     }
 
     Renderer.prototype.clear = function(layer, x, y, width, height){
-        if (this._clearListNew[layer]==undefined){
+        if (this._clearListNew[layer]===undefined){
             this._clearListNew[layer] = [[x, y, width, height],];
         } else {
             this._clearListNew[layer].push([x, y, width, height]);
@@ -87,12 +87,16 @@ define(['jquery'], function($){
      Renderer.prototype.cacheUpdate = function(layerName){
         var layer = this.layers[layerName];
         if (!layer.cacheCanvas){
+            console.log('Missing Canvas:', layerName);
             return;
         }
         var drawList = this._drawList[layerName];
         if (drawList===undefined){
+            console.log('Missing Draw List:', layerName);
             return;
-        } 
+        } else {
+            console.log(drawList);
+        }
         var trackX = this.tx;
         var trackY = this.ty;
         this.tx = 0;
