@@ -291,6 +291,19 @@ define([
                                 this.state.addEntity(enemy);
                             }
                         }
+                    } else {
+                        var total = sge.random.rangeInt(0,3);
+                        room.data.gang = tile.metaData.gang;
+                        for (var i=0;i<total;i++){
+                            var npcType = sge.random.item(['daughter', 'women', 'oldwomen']);
+                            var enemy = room.spawn(npcType);
+                            if (enemy){
+                                this.state.addEntity(enemy);
+                            }
+                            _.each(room.doors, function(door){
+                                door.set('door.locked', false) 
+                            })
+                        }
                     }
                 }.bind(this));
 

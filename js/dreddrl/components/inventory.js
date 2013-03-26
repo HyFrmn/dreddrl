@@ -3,7 +3,7 @@ define(['sge','jquery'],function(sge, $){
 	var InventoryComponent = sge.Component.extend({
 		init: function(entity, data){
 			this._super(entity, data);
-			this.data.ammo = data.ammo || 20;
+			this.data.ammo = data.ammo || 100;
 			this.data.items = []
 			this.data.objects = {};
 			this._elem_ammo = $('span.ammo');

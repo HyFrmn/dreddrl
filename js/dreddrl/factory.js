@@ -91,7 +91,7 @@ define([
             }},
             gun : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
                 freeitem: {
-                    'inventory.ammo': 5,
+                    'inventory.ammo': 10,
                     'name' : 'Gun'
                 }
             })},
