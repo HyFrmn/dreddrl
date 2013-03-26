@@ -58,6 +58,7 @@ define(['sge'], function(sge){
 	                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
 	                            ],[
 	                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
+	                                ['set','@(pc).stats.xp', 50, 'add'],
 	                                ['set', 'encounter.status', 3]
 	                            ],[
 	                                ['dialog', "Welcome to Peach Trees. "]
@@ -117,7 +118,12 @@ define(['sge'], function(sge){
 	                },
 	                actions : {
 	                	kill : 
-	                		['set', 'encounter.status',1]
+		                	['if', true, 
+		                		[
+		                			['set','@(pc).stats.xp', 5, 'add'],
+	                				['set', 'encounter.status',1]
+	                			]
+	                		]
 	                }
 	            });
 	            gangBoss.tags.push('gangboss');

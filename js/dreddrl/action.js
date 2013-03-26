@@ -84,7 +84,7 @@ define(['sge'], function(sge){
 	        }
 	        return _ctx.get(path);
 	    },
-	    setAttr : function(path, value) {
+	    setAttr : function(path, value, method) {
 	    	_ctx = this.entity;
 	    	console.log('PATH', path)
 	        if (path.match(/^@/)){
@@ -97,7 +97,7 @@ define(['sge'], function(sge){
 		        }
 	            path = path.replace('@(' + name + ').', '');
 	        }
-	        return _ctx.set(path, value);
+	        return _ctx.set(path, value, method);
 	    },
 	});
 

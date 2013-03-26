@@ -66,7 +66,10 @@ define([
                 },
                 health : {alignment:-10, life: 3},
                 simpleai : {},
-                deaddrop: {}
+                deaddrop: {},
+                actions: {
+                    kill : ['set','@(pc).stats.xp', 5, 'add']
+                }
             })},
             gangboss : function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
