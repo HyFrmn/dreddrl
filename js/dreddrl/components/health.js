@@ -36,7 +36,7 @@ define(['sge/component'], function(Component){
             return this.data.life
         },
         render : function(renderer, layer){
-            if (!this.get('visible')){
+            if (!this.get('visible') || this.get('alignment')===0){
                 return;
             }
             var life = this.data.life / this.data.maxLife;

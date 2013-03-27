@@ -13,6 +13,7 @@ define([
     './components/quest',
     './components/encounter',
     './components/stats',
+    './components/health',
 
     './actions/dialog',
     './actions/if',

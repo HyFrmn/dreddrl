@@ -300,7 +300,8 @@ define([
                             } else {
                                 var type = sge.random.item(['woman', 'woman.young', 'woman.old'])
                             }
-                            var enemy = room.spawn(type);
+                            var npcData = { actions:{ interact: ['dialog', "Hi, I'm an npc."]}, interact: {}}; 
+                            var enemy = room.spawn(type, npcData);
                             if (enemy){
                                 this.state.addEntity(enemy);
                             }
