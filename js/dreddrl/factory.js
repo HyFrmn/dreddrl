@@ -20,6 +20,21 @@ define([
     './actions/switch'
 	], 
 	function(sge){
+        var NPCSHEETS = [
+            'gang_1',
+            'gang_2',
+            'gang_6',
+            'women_1',
+            'women_2',
+            'women_3',
+            'women_4',
+            'women_5',
+            'women_6',
+            'women_7',
+            'women_8',
+        ];
+
+
 		var FACTORYDATA = {
             chara : function(){return{
                 xform : {},
@@ -36,7 +51,6 @@ define([
                             walk_left : [3,4,5]
                         },
                     },
-                    health : {alignment:5, life: 8},
                     physics : {},
                     inventory : {},
             }},
@@ -54,10 +68,13 @@ define([
                     stats: {},
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
-                    health : {alignment:0, life: 8},
                     movement : {
                         map: this.map,
                         speed: 16
+                    },
+                    health : {alignment:0, life: 1},
+                    sprite : {
+                        src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
                     },
                 })},
             enemy : function(){return deepExtend(FACTORYDATA['npc'](), {
@@ -122,19 +139,24 @@ define([
                 interact : {},
                 elevator: {}
             }},
-            women : function(){return deepExtend(FACTORYDATA['npc'](), {
+            man: function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
-                    src : 'assets/sprites/women_8.png',
+                    src : 'assets/sprites/gang_' + sge.random.item([1,2,6]) +'.png',
                 },
             })},
-            oldwomen : function(){return deepExtend(FACTORYDATA['npc'](), {
+            'woman.old' : function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
-                    src : 'assets/sprites/women_4.png',
+                    src : 'assets/sprites/women_' + sge.random.item([4,8]) +'.png',
                 },
             })},
-            daughter : function(){return deepExtend(FACTORYDATA['npc'](), {
+            'woman' : function(){return deepExtend(FACTORYDATA['npc'](), {
                 sprite : {
-                    src : 'assets/sprites/women_1.png',
+                    src : 'assets/sprites/women_' + sge.random.item([2,3,6,7]) +'.png',
+                },
+            })},
+            'woman.young' : function(){return deepExtend(FACTORYDATA['npc'](), {
+                sprite : {
+                    src : 'assets/sprites/women_' + sge.random.item([1,5]) +'.png',
                 },
             })}
 		}

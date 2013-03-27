@@ -295,8 +295,12 @@ define([
                         var total = sge.random.rangeInt(0,3);
                         room.data.gang = tile.metaData.gang;
                         for (var i=0;i<total;i++){
-                            var npcType = sge.random.item(['daughter', 'women', 'oldwomen']);
-                            var enemy = room.spawn(npcType);
+                            if (Math.random() > 0.5){
+                                var type = 'man';
+                            } else {
+                                var type = sge.random.item(['woman', 'woman.young', 'woman.old'])
+                            }
+                            var enemy = room.spawn(type);
                             if (enemy){
                                 this.state.addEntity(enemy);
                             }

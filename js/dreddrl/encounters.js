@@ -39,7 +39,7 @@ define(['sge'], function(sge){
 	            //Create Mother
 	            var mothersRoom = this.block.getRandomEncounterRoom();
 	            console.log(mothersRoom);
-	            var mother = this.state.factory('women', {
+	            var mother = this.state.factory('woman', {
 	                xform: {
 	                    tx: mothersRoom.cx * 32,
 	                    ty: mothersRoom.cy * 32
@@ -72,7 +72,7 @@ define(['sge'], function(sge){
 
 	            //Create Daughter
 	            var daughtersRoom = this.block.getRandomEncounterRoom({exclude: [mothersRoom]});
-	            var daughter = this.state.factory('daughter', {
+	            var daughter = this.state.factory('woman.young', {
 	                xform: {
 	                    tx: daughtersRoom.cx * 32,
 	                    ty: daughtersRoom.cy * 32

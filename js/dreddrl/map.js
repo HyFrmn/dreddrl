@@ -149,8 +149,8 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 					//renderer.drawRect("canopy", tx-16, ty-16, this.tileSize, this.tileSize, {fillStyle: 'none', strokeStyle: 'none'}, 100000000);
 				}
 			};
-			renderer.cacheUpdate('canopy');
-			renderer.cacheUpdate('base');
+			//renderer.cacheUpdate('canopy');
+			//enderer.cacheUpdate('base');
 			
 			renderer.width = width;
 			renderer.height = height;

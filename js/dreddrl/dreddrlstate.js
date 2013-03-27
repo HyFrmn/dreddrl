@@ -40,6 +40,9 @@ define([
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/judge.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_1.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_2.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_6.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_1.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_2.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_3.png');
