@@ -2,6 +2,7 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
 	var SimpleAIComponent = Component.extend({
 		init: function(entity, data){
             this._super(entity, data);
+            this.data.tracking = data.tracking || null;
             this.fsm = StateMachine.create({
                 initial: 'idle',
                 events: [
@@ -14,7 +15,7 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
 
         },
         getPC: function(){
-            return this.entity.state.getEntitiesWithTag('pc')[0] || null;
+            return this.entity.state.getEntitiesWithTag(this.get('tracking'))[0] || null;
         },
         getPCPosition: function(){
             var pc = this.getPC();
@@ -53,12 +54,16 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             }
         },
         tick_idle: function(delta){
-            var pcData = this.getPCPosition();
-            var dx = pcData[1]
-            var dy = pcData[2]
-            var dist = pcData[3]
-            if (pcData[3] <= this.data.radius){
-                this.fsm.seePlayer();
+            if (this.get('tracking')!==null){
+                var pcData = this.getPCPosition();
+                var dx = pcData[1]
+                var dy = pcData[2]
+                var dist = pcData[3]
+                if (pcData[3] <= this.data.radius){
+                    this.fsm.seePlayer();
+                } else {
+                    this.wander();
+                }
             } else {
                 this.wander();
             }

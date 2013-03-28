@@ -6,7 +6,7 @@ define(['sge'], function(sge){
 			this.label = null;
 
 			if(data.type === undefined) {
-            data.type = 'action';
+                data.type = 'action';
 	        }
 	        if(data.label === undefined) {
 	            data.label = data.type;

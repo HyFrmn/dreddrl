@@ -67,11 +67,6 @@ define([
                 this.loader.start();
             },
 
-            log : function(msg){
-                this._log.push(msg);
-                
-            },
-
             initGame : function(){
                 this.level = new BlockLevelGenerator(this, this.options);
                 setTimeout(function() {

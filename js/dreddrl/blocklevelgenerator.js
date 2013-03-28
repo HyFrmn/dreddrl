@@ -314,7 +314,7 @@ define([
 
 
                 //Create Encounters
-                var EncounterClass = sge.random.item([Encounters.ExecuteEncounter, Encounters.CheckupEncounter]);
+                var EncounterClass = Encounters.CheckupEncounter; //sge.random.item([Encounters.ExecuteEncounter, Encounters.CheckupEncounter]);
 
                 this.encounters = [];
                 var encounter = new EncounterClass(this);
@@ -363,6 +363,12 @@ define([
             },
             createPC : function(){
                 var room = this.getRandomEncounterRoom();
+                _.each(room.doors, function(door){
+                    console.log(door)
+                    door.set('door.open', true);
+                    door.get('door').updateTiles()
+                });
+                room.update()
                 var pc = null;
                 if (this.state.options.persist){
                     if (this.state.options.persist['pc']!==undefined){

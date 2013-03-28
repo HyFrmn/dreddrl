@@ -53,7 +53,8 @@ define(['sge'], function(sge){
 	                        ['switch', '${encounter.status}', 
 	                            [
 	                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
-	                                ['set', 'encounter.status', 1]
+	                                ['set', 'encounter.status', 1],
+                                    ['event', 'daughter', 'target.set']
 	                            ],[
 	                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
 	                            ],[
@@ -87,7 +88,8 @@ define(['sge'], function(sge){
 	                        ['if', '${encounter.status}==1', 
 	                            [
 	                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
-	                                ['set', 'encounter.status', 2]
+	                                ['set', 'encounter.status', 2],
+                                    ['event', 'mother', 'target.set']
 	                            ],[
 	                                ['dialog', "Hey there. Haven't seen you around the block before."]
 	                            ]

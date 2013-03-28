@@ -19,7 +19,8 @@ define([
     './actions/dialog',
     './actions/if',
     './actions/set',
-    './actions/switch'
+    './actions/switch',
+    './actions/event'
 	], 
 	function(sge){
         var NPCSHEETS = [
@@ -84,18 +85,17 @@ define([
                     src : 'assets/sprites/albert.png',
                 },
                 health : {alignment:-10, life: 3},
-                simpleai : {},
+                simpleai : { tracking: 'pc'},
                 deaddrop: {},
                 actions: {
                     kill : ['set','@(pc).stats.xp', 5, 'add']
                 }
             })},
-            gangboss : function(){return deepExtend(FACTORYDATA['npc'](), {
+            gangboss : function(){return deepExtend(FACTORYDATA['enemy'](), {
                 sprite : {
                     src : 'assets/sprites/albertbrownhair.png',
                 },
                 health : {alignment:-10, life: 6},
-                simpleai : {},
                 deaddrop: {}
             })},
             freeitem : function(){ return {
