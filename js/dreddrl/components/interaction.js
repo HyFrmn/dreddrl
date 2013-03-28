@@ -7,6 +7,7 @@ define(['sge'], function(sge){
             this.data.targets = data.targets || null;
             this.data.width = data.width || 32;
             this.data.height = data.height || 32;
+            this.data.dist = data.dist || 96;
             this.active = false;
             this.interact = this.interact.bind(this);
             this.entity.addListener('focus.gain', this.activate.bind(this));

@@ -103,6 +103,9 @@ define([
                 entity.addListener('log', function(msg){
                     this.logCallback(msg);
                 }.bind(this));
+                entity.addListener('target.set', function(){
+                    this._target_entity = entity;
+                }.bind(this));
             },
             initUi : function(){
                 this._elem_ammo = $('span.ammo');
@@ -124,6 +127,19 @@ define([
                 var elem = $('<p/>').text(msg);
                 this._elem_log.prepend($('<li/>').append(elem));
             },
+            _quest_tick : function(delta){
+                var entity = this._target_entity;
+                if (entity){
+                    coord = [entity.get('xform.tx'), entity.get('xform.ty')];
+                    var dx = coord[0] - this.pc.get('xform.tx');
+                    var dy = coord[1] - this.pc.get('xform.ty');
+                    var dist = Math.sqrt((dx*dx)+(dy*dy));
+                    var len = Math.min(dist, 64);
+                    var tx = ((dx/dist) * len) + this.pc.get('xform.tx');
+                    var ty = ((dy/dist) * len) + this.pc.get('xform.ty');
+                    this.game.renderer.drawRect('canopy', tx-4, ty-4, 8, 8, {fillStyle: 'yellow'}, 1000000);
+                }
+            },
             _interaction_tick : function(delta){
 
                 var closest = null;
@@ -142,10 +158,12 @@ define([
                         var dx = coords[j][0] - this.pc.get('xform.tx');
                         var dy = coords[j][1] - this.pc.get('xform.ty');
                         var dist = Math.sqrt((dx*dx)+(dy*dy));
-                        if (dist < cdist){
-                            closest = entity;
-                            cdist = dist;
-                            ccord = coords[j];
+                        if (dist <= entity.get('interact.dist')){
+                            if (dist < cdist){
+                                closest = entity;
+                                cdist = dist;
+                                ccord = coords[j];
+                            }
                         }
                     };
                     
@@ -172,6 +190,7 @@ define([
                     this.startDialog(INTRO)
                 }
                 this._interaction_tick(delta);
+                this._quest_tick(delta);
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];
                     entity.componentCall('tick', delta);

@@ -4,7 +4,7 @@ define(['sge', '../action'], function(sge, Action){
             this._super(entity, data);
             var keys = Object.keys(data);
             for (var i = keys.length - 1; i >= 0; i--) {
-                console.log(data[keys[i]])
+                //console.log(data[keys[i]])
                 var callbackData = data[keys[i]].slice(0);
                 var callback = function(){
                     var actionData = callbackData.slice(0);

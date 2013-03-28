@@ -14,6 +14,7 @@ define([
     './components/encounter',
     './components/stats',
     './components/health',
+    './components/simpleai',
 
     './actions/dialog',
     './actions/if',

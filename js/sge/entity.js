@@ -8,7 +8,6 @@ define([
 	'sge/components/movement',
 	'sge/components/controls',
 	'sge/components/debug',
-	'sge/components/simpleai',
 	'sge/components/eventmgr'
 	], function(Class, Observable, Component){
 

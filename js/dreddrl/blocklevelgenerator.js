@@ -300,7 +300,7 @@ define([
                             } else {
                                 var type = sge.random.item(['woman', 'woman.young', 'woman.old'])
                             }
-                            var npcData = { actions:{ interact: ['dialog', "Hi, I'm an npc."]}, interact: {}}; 
+                            var npcData = { actions:{ interact: ['dialog', "Hi, I'm an npc."]}, interact: { dist: 48}}; 
                             var enemy = room.spawn(type, npcData);
                             if (enemy){
                                 this.state.addEntity(enemy);
@@ -330,10 +330,10 @@ define([
                     if (_.include(excludeList, room)){
                         continue;
                     }
-                    console.log(room.options.doors!=null, !room.isLocked())
+                    //console.log(room.options.doors!=null, !room.isLocked())
                     if (room.options.doors!=null){
                         if (!room.isLocked()){
-                             console.log('Found ROOM', i)
+                            //console.log('Found ROOM', i)
                             goodRoom = room;
                             break;
                         }

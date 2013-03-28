@@ -68,6 +68,7 @@ define(['sge'], function(sge){
 	            });
 	            mother.tags.push('mother');
 	            this.block.state.addEntity(mother);
+	            mother.fireEvent('target.set');
 	            
 
 	            //Create Daughter
@@ -128,6 +129,7 @@ define(['sge'], function(sge){
 	            });
 	            gangBoss.tags.push('gangboss');
 	            this.block.state.addEntity(gangBoss);
+	            gangBoss.fireEvent('target.set');
 	        },
 	        finish: function(){
 	        	var pc = this.getPC();
