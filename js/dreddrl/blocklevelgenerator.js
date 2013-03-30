@@ -364,7 +364,6 @@ define([
             createPC : function(){
                 var room = this.getRandomEncounterRoom();
                 _.each(room.doors, function(door){
-                    console.log(door)
                     door.set('door.open', true);
                     door.get('door').updateTiles()
                 });

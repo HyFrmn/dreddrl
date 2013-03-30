@@ -38,7 +38,6 @@ define(['sge'], function(sge){
 	        	this.total = 3;
 	            //Create Mother
 	            var mothersRoom = this.block.getRandomEncounterRoom();
-	            console.log(mothersRoom);
 	            var mother = this.state.factory('woman', {
 	                xform: {
 	                    tx: mothersRoom.cx * 32,
@@ -98,7 +97,6 @@ define(['sge'], function(sge){
 	            });
 	            daughter.tags.push('daughter');
 	            this.block.state.addEntity(daughter);
-	        	console.log('Checkup')
 	        },
 	        finish: function(){
 	        	var pc = this.getPC();

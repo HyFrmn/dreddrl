@@ -22,6 +22,12 @@ define([
                 this._logQueue = [];
                 this._logTimer = -1;
 
+                this._track_x = null;
+                this._track_y = null;
+                this._debug_count = 0;
+                this._debug_tick = false;
+
+
                 this.factory = Factory;
                 this.initUi();
                 this.map = new Map(65,66,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
@@ -59,6 +65,7 @@ define([
                 this.pause = function(){
                     this.game.fsm.pause()
                 }.bind(this);
+                this.input.addListener('keydown:space', this.pause);
 
                 this.toggleShadows = function(){
                     this.shadows.toggle()
@@ -81,15 +88,16 @@ define([
                     this.initGame();
                 }
             },
-
+            /*
             startState : function(){
-                this.input.addListener('keydown:space', this.pause);
+                
                 //this.input.addListener('keydown:F', this.toggleShadows);
             },
             endState : function(){
                 this.input.removeListener('keydown:space', this.pause)
                 //this.input.removeListener('keydown:F', this.toggleShadows)        
             },
+            */
             addEntity: function(entity){
                 this._super(entity);
                 entity.addListener('kill', function(){
@@ -123,20 +131,76 @@ define([
                 this._elem_log.prepend($('<li/>').append(elem));
             },
             _quest_tick : function(delta){
+                function lineIntersect(x1,y1,x2,y2, x3,y3,x4,y4) {
+                    var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+                    var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+                    if (isNaN(x)||isNaN(y)) {
+                        return false;
+                    } else {
+                        if (x1>=x2) {
+                            if (!(x2<=x&&x<=x1)) {return false;}
+                        } else {
+                            if (!(x1<=x&&x<=x2)) {return false;}
+                        }
+                        if (y1>=y2) {
+                            if (!(y2<=y&&y<=y1)) {return false;}
+                        } else {
+                            if (!(y1<=y&&y<=y2)) {return false;}
+                        }
+                        if (x3>=x4) {
+                            if (!(x4<=x&&x<=x3)) {return false;}
+                        } else {
+                            if (!(x3<=x&&x<=x4)) {return false;}
+                        }
+                        if (y3>=y4) {
+                            if (!(y4<=y&&y<=y3)) {return false;}
+                        } else {
+                            if (!(y3<=y&&y<=y4)) {return false;}
+                        }
+                    }
+                    return [x,y];
+                }
+
                 var entity = this._target_entity;
                 if (entity){
                     coord = [entity.get('xform.tx'), entity.get('xform.ty')];
                     var dx = coord[0] - this.pc.get('xform.tx');
                     var dy = coord[1] - this.pc.get('xform.ty');
                     var dist = Math.sqrt((dx*dx)+(dy*dy));
-                    var len = Math.min(dist, 64);
-                    var tx = ((dx/dist) * len) + this.pc.get('xform.tx');
-                    var ty = ((dy/dist) * len) + this.pc.get('xform.ty');
+                    var len = 640; //Math.min(dist, 640);
+                    var x1 = (this.pc.get('xform.tx') - this.game.renderer.tx);
+                    var y1 = (this.pc.get('xform.ty') - this.game.renderer.ty); 
+                    var x2 = (dx + this.pc.get('xform.tx')) - this.game.renderer.tx;
+                    var y2 = (dy + this.pc.get('xform.ty')) - this.game.renderer.ty;
+                    var top = 32;
+                    var bottom = 448;
+                    var left = 32;
+                    var right = 608;
+                    coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
+                    var intersection = false;
+                    for (var i = coords.length - 1; i >= 0; i--) {
+                        var coord = coords[i];
+                        if (this._debug_tick){
+                            console.log(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
+                        }
+                        intersection = lineIntersect(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
+                        if (intersection){
+                            console.log(intersection);
+                            break;
+                        }
+                    }; 
+                    if (intersection){
+                        tx = intersection[0] + this.game.renderer.tx;
+                        ty = intersection[1] + this.game.renderer.ty;
+                    } else {
+                        tx =  entity.get('xform.tx');
+                        ty =  entity.get('xform.ty');
+                    }
+
                     this.game.renderer.drawRect('canopy', tx-4, ty-4, 8, 8, {fillStyle: 'yellow'}, 1000000);
                 }
             },
             _interaction_tick : function(delta){
-
                 var closest = null;
                 var cdist = 64;
                 var ccord = null;
@@ -178,6 +242,13 @@ define([
                 this.game.fsm.startDialog();
             },
             tick : function(delta){
+                this._debug_count++;
+                if (this._debug_count>30){
+                    this._debug_count = 0;
+                    this._debug_tick = true;
+                } else {
+                    this._debug_tick = false
+                }
                 this.tickTimeouts(delta);
                 this.physics.resolveCollisions(delta);
                 if (this._intro==false){

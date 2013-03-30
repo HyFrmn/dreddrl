@@ -3,16 +3,16 @@ define(['sge'], function(sge){
 		initState: function(){
             this.elem = $('.dialogscreen') || null;
             this.interact = this.interact.bind(this);
+            this.input.addListener('keydown:enter', this.interact);
         },
         startState : function(){
-            this.input.addListener('keydown:enter', this.interact);
+            this._super();
             if (this.elem){
                 this.elem.fadeIn();
             }
         },
         endState : function(){
-            this.input.removeListener('keydown:enter', this.interact);
-            
+            this._super();
         },
         interact: function(){
             if (this.elem){
