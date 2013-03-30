@@ -109,11 +109,29 @@ define(['sge/lib/class', 'sge/observable'], function(Class, Observable){
         REVERSE_KEYCODES[value] = key;
     }
 
+    var InputProxy = Observable.extend({
+        init: function(input){
+            this._super();
+            this._input = input
+            this.enable = false;
+        },
+        fireEvent: function(){
+            var args = Array.prototype.slice.call(arguments);
+            if (this.enable){
+                this._super.apply(this, args);
+            }
+        },
+        isPressed: function(keyCode){
+            return this._input.isPressed(keyCode);
+        }
+    });
+
 	var Input = Observable.extend({
 		init: function(){
             this._super()
 			this._isNewKeyDown = {}
             this._isKeyDown = {};
+            this._proxies = [];
             document.onkeydown = this.keyDownCallback.bind(this);
             document.onkeyup = this.keyUpCallback.bind(this);
         },
@@ -139,6 +157,19 @@ define(['sge/lib/class', 'sge/observable'], function(Class, Observable){
 
                 this.fireEvent('keydown:' + REVERSE_KEYCODES[keyCode])
            };
+        },
+        createProxy: function(){
+            var proxy = new InputProxy(this);
+            this._proxies.push(proxy);
+            return proxy;
+        },
+        fireEvent: function(){
+            var args = Array.prototype.slice.call(arguments);
+            this._super.apply(this, args);
+            var proxies = _.filter(this._proxies, function(p){return p.enable});
+            for (var i = proxies.length - 1; i >= 0; i--) {
+                proxies[i].fireEvent.apply(proxies[i], args);
+            };
         }
 	});
 

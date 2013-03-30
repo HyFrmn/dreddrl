@@ -10,6 +10,7 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
             }
         },
         startState : function(){
+            this._super();
             if (this.game._states['game'].loader){
                 this.game._states['game'].loader.start();
             }
@@ -18,6 +19,7 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
             }
         },
         endState : function(){
+            this._super();
             if (this.elem){
                 this.elem.fadeOut();
             }
@@ -33,19 +35,20 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
                 this.game.elem.append(this.elem);
             }
             this.startGame = function(){
-                this.game._states['game'] = new this.game._gameState(this.game);
+                this.game._states['game'] = new this.game._gameState(this.game, 'Game');
                 this.game.fsm.startGame();    
             }.bind(this);
-            this.startState()
+            this.startState();
+            this.input.addListener('keydown:enter', this.startGame);
         },
         startState : function(){
-            this.input.addListener('keydown:enter', this.startGame);
+            this._super();
             if (this.elem){
                 this.elem.fadeIn();
             }
         },
         endState : function(){
-            this.input.removeListener('keydown:enter', this.startGame);
+            this._super();
             if (this.elem){
                 this.elem.fadeOut();
             }
@@ -67,15 +70,17 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
                 this.game._states['game'] = new this.game._gameState(this.game);
                 this.game.fsm.loadMainMenu();
             }.bind(this);
+            this.input.addListener('keydown:enter', this.startGame);
         },
         startState : function(){
-            this.input.addListener('keydown:enter', this.startGame);
+            this._super();
             if (this.elem){
                 this.elem.fadeIn();
             }
         },
         endState : function(){
-            this.input.removeListener('keydown:enter', this.startGame);
+            this._super();
+            //this.input.removeListener('keydown:enter', this.startGame);
             if (this.elem){
                 this.elem.fadeOut();
             }
@@ -94,19 +99,19 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
                 this.game.elem.append(this.elem);
             }
             this.startGame = function(){
-                console.log('START')
                 this.game._states['game'] = new this.game._gameState(this.game);
                 this.game.fsm.loadMainMenu();
             }.bind(this);
+            this.input.addListener('keydown:enter', this.startGame);
         },
         startState : function(){
-            this.input.addListener('keydown:enter', this.startGame);
+            this._super();
             if (this.elem){
                 this.elem.fadeIn();
             }
         },
         endState : function(){
-            this.input.removeListener('keydown:enter', this.startGame);
+            this._super();
             if (this.elem){
                 this.elem.fadeOut();
             }
@@ -127,15 +132,16 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
             this.unpause = function(){
                 this.game.fsm.unpause();
             }.bind(this);
+            this.input.addListener('keydown:space', this.unpause);
         },
         startState : function(){
-            this.input.addListener('keydown:space', this.unpause);
+            this._super();
             if (this.elem){
                 this.elem.fadeIn();
             }
         },
         endState : function(){
-            this.input.removeListener('keydown:space', this.unpause);
+            this._super();
             if (this.elem){
                 this.elem.fadeOut();
             }
@@ -213,11 +219,11 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
 
             this._states = {
                 'game' : null,
-                'mainmenu' : new MainMenuState(this),
-                'loading' : new LoadState(this),
-                'paused' : new PauseState(this),
-                'gameover' : new GameOverState(this),
-                'gamewin' : new GameWinState(this)
+                'mainmenu' : new MainMenuState(this, 'Main Menu'),
+                'loading' : new LoadState(this, 'Loading'),
+                'paused' : new PauseState(this, 'Paused'),
+                'gameover' : new GameOverState(this, 'Game Over'),
+                'gamewin' : new GameWinState(this, 'Game Win')
             }
             this.state = this._states['loading'];
             this.initGame(options);

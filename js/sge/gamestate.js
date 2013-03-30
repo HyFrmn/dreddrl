@@ -18,9 +18,10 @@ define(['sge/lib/class', 'sge/vendor/underscore'],
 
 
 	var GameState = Class.extend({
-		init: function(game, options){
+		init: function(game, name, options){
 			this.game = game;
-			this.input = game.input;
+			this._name = name;
+			this.input = game.input.createProxy();
 			this.entities = {};
 			this._entity_ids = [];
 			this.initState(options);
@@ -37,10 +38,15 @@ define(['sge/lib/class', 'sge/vendor/underscore'],
 
         },
         startState : function(){
-
+        	console.log('Start:', this._name);
+        	this.input.enable = true;
         },
         endState : function(){
-
+        	console.log('End:', this._name);
+        	this.input.enable = false;
+        },
+        destroyState : function(){
+        	
         },
         tick : function(){
         	_.each(this._entity_ids, function(id){
