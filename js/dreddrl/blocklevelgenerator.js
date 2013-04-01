@@ -2,7 +2,6 @@ define([
     'sge',
     'jquery',
     './factory',
-    './encounters',
     './map'
     ],
     function(sge, $, Factory, Encounters, Map){
@@ -101,7 +100,7 @@ define([
                 data = data || {};
                 var tile = sge.random.item(this.getTiles());
                 if (tile){
-                    while (tile.metaData.spawn!==undefined){
+                    while (tile.data.spawn!==undefined){
 
                         tile = sge.random.item(this.getTiles());
                     };
@@ -234,7 +233,7 @@ define([
 
                 var tiles = this.map.getTiles(boxcoords(32, 0, 32, 32));
                 _.each(tiles, function(tile){
-                    tile.metaData.gang = 'albert';
+                    tile.data.territory = 'albert';
                 });
 
                 var eco = sge.random.item(['slum','middle','upper']);
@@ -282,9 +281,9 @@ define([
                         }
                     })
                     var tile = this.map.getTile(room.cx, room.cy)
-                    if (tile.metaData.gang == 'albert'){
+                    if (tile.data.territory == 'albert'){
                         var total = sge.random.rangeInt(0,3);
-                        room.data.gang = tile.metaData.gang;
+                        room.data.gang = tile.data.territory;
                         for (var i=0;i<total;i++){
                             var enemy = room.spawn('enemy');
                             if (enemy){
@@ -293,7 +292,7 @@ define([
                         }
                     } else {
                         var total = sge.random.rangeInt(0,3);
-                        room.data.gang = tile.metaData.gang;
+                        room.data.territory = tile.data.territory;
                         for (var i=0;i<total;i++){
                             if (Math.random() > 0.5){
                                 var type = 'man';
@@ -311,14 +310,6 @@ define([
                         }
                     }
                 }.bind(this));
-
-
-                //Create Encounters
-                var EncounterClass = Encounters.CheckupEncounter; //sge.random.item([Encounters.ExecuteEncounter, Encounters.CheckupEncounter]);
-
-                this.encounters = [];
-                var encounter = new EncounterClass(this);
-                this.encounters.push(encounter);
             },
             getRandomEncounterRoom : function(options){
                 options = options || {};
@@ -330,14 +321,19 @@ define([
                     if (_.include(excludeList, room)){
                         continue;
                     }
-                    //console.log(room.options.doors!=null, !room.isLocked())
-                    if (room.options.doors!=null){
-                        if (!room.isLocked()){
-                            //console.log('Found ROOM', i)
-                            goodRoom = room;
-                            break;
+                    if (room.options.doors==null){
+                        continue;
+                    }
+                    if (room.isLocked()){
+                        continue;
+                    }
+                    if (options.territory!==undefined){
+                        if (room.data.territory!=options.territory){
+                            continue;
                         }
                     }
+                    var goodRoom = room;
+                    break;
                 }
                 return goodRoom;
             },
@@ -409,6 +405,8 @@ define([
             createRoom : function(cx, cy, width, height, options){
                 options = $.extend({doors:'bottom', open: (Math.random() > 0.5)}, options || {});
                 var room = new Room(this, cx, cy, width, height, options);
+                var tile = this.map.getTile(cx, cy);
+                room.data.territory = tile.data.territory;
                 room.plot();
                 this.rooms.push(room);
             },

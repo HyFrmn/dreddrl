@@ -38,11 +38,11 @@ define(['sge/lib/class', 'sge/vendor/underscore'],
 
         },
         startState : function(){
-        	console.log('Start:', this._name);
+        	//console.log('Start:', this._name);
         	this.input.enable = true;
         },
         endState : function(){
-        	console.log('End:', this._name);
+        	//console.log('End:', this._name);
         	this.input.enable = false;
         },
         destroyState : function(){

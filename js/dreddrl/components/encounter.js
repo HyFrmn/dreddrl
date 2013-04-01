@@ -2,7 +2,7 @@ define(['sge'], function(sge){
 	var EncounterComponent = sge.Component.extend({
 		init: function(entity, data){
 			this._super(entity, data);
-			this.encounter = data.encounter
+			this.encounter = data.encounter.add(this);
 			this.data.status = data.status || 0;
 		},
 		_get_status : function(){

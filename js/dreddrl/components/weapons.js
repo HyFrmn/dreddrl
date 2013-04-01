@@ -32,8 +32,8 @@ define(['sge', './bullet'],function(sge){
 			}
 			var bullet = new sge.Entity({
 				xform: {
-					tx: this.entity.get('xform.tx') + (vx * 24),
-					ty: this.entity.get('xform.ty') + (vy * 24),
+					tx: this.entity.get('xform.tx') + (vx * 24 * 0),
+					ty: this.entity.get('xform.ty') + (vy * 24 * 0),
 					vx: vx * speed,
 					vy: vy * speed
 				},

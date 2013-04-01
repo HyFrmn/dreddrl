@@ -16389,8 +16389,8 @@ define('dreddrl/components/weapons',['sge', './bullet'],function(sge){
 			}
 			var bullet = new sge.Entity({
 				xform: {
-					tx: this.entity.get('xform.tx') + (vx * 24),
-					ty: this.entity.get('xform.ty') + (vy * 24),
+					tx: this.entity.get('xform.tx') + (vx * 24 * 0),
+					ty: this.entity.get('xform.ty') + (vy * 24 * 0),
 					vx: vx * speed,
 					vy: vy * speed
 				},
@@ -16715,7 +16715,7 @@ define('dreddrl/action',['sge'], function(sge){
 			this.label = null;
 
 			if(data.type === undefined) {
-            data.type = 'action';
+                data.type = 'action';
 	        }
 	        if(data.label === undefined) {
 	            data.label = data.type;
@@ -16939,7 +16939,7 @@ define('dreddrl/components/encounter',['sge'], function(sge){
 	var EncounterComponent = sge.Component.extend({
 		init: function(entity, data){
 			this._super(entity, data);
-			this.encounter = data.encounter
+			this.encounter = data.encounter.add(this);
 			this.data.status = data.status || 0;
 		},
 		_get_status : function(){
@@ -17026,10 +17026,13 @@ define('dreddrl/components/health',['sge/component'], function(Component){
 
     return HealthComponent;
 });
+
 define('dreddrl/components/simpleai',['sge/component', 'sge/vendor/state-machine'], function(Component, StateMachine){
 	var SimpleAIComponent = Component.extend({
 		init: function(entity, data){
             this._super(entity, data);
+            this.data.tracking = data.tracking || null;
+            this.data.territory = data.territory;
             this.fsm = StateMachine.create({
                 initial: 'idle',
                 events: [
@@ -17041,8 +17044,12 @@ define('dreddrl/components/simpleai',['sge/component', 'sge/vendor/state-machine
             this._idleCounter = 0;
 
         },
+        register: function(state){
+            this._super(state);
+            this.map = this.state.map;
+        },
         getPC: function(){
-            return this.entity.state.getEntitiesWithTag('pc')[0] || null;
+            return this.entity.state.getEntitiesWithTag(this.get('tracking'))[0] || null;
         },
         getPCPosition: function(){
             var pc = this.getPC();
@@ -17081,12 +17088,16 @@ define('dreddrl/components/simpleai',['sge/component', 'sge/vendor/state-machine
             }
         },
         tick_idle: function(delta){
-            var pcData = this.getPCPosition();
-            var dx = pcData[1]
-            var dy = pcData[2]
-            var dist = pcData[3]
-            if (pcData[3] <= this.data.radius){
-                this.fsm.seePlayer();
+            if (this.get('tracking')!==null){
+                var pcData = this.getPCPosition();
+                var dx = pcData[1]
+                var dy = pcData[2]
+                var dist = pcData[3]
+                if (pcData[3] <= this.data.radius){
+                    this.fsm.seePlayer();
+                } else {
+                    this.wander();
+                }
             } else {
                 this.wander();
             }
@@ -17094,11 +17105,28 @@ define('dreddrl/components/simpleai',['sge/component', 'sge/vendor/state-machine
         wander: function(){
             if (this._idleCounter<0){
                 this._idleCounter=30 + (Math.random() * 30);
+                var hasDir = false;
+                var tx = this.entity.get('xform.tx');
+                var ty = this.entity.get('xform.ty');
                 var vx = 0;
                 var vy = 0;
-                if (Math.random() > 0.5){
-                    var vx = 64 * ((Math.random() * 2) - 1);
-                    var vy = 64 * ((Math.random() * 2) - 1);
+                for (var i=0;i<5;i++){
+                    if (Math.random() > 0.5){
+                        var vx = 64 * ((Math.random() * 2) - 1);
+                        var vy = 64 * ((Math.random() * 2) - 1);
+                    }
+                    if (this.data.territory!==undefined){
+                        var tile = this.map.getTile(Math.floor((tx+vx)/32),Math.floor((ty+vy)/32))
+                        if (tile){
+                            if (tile.data.territory==this.data.territory){
+                                break;
+                            }
+                        }
+                        vx = 0;
+                        vy = 0;
+                    } else {
+                        break;
+                    }
                 }
                 this.entity.set('xform.vx', vx);
                 this.entity.set('xform.vy', vy);
@@ -17191,6 +17219,23 @@ define('dreddrl/actions/switch',['sge','../action'], function(sge, Action){
 	Action.register('switch', SwitchAction);
 	return SwitchAction
 });
+define('dreddrl/actions/event',['sge','../action'], function(sge, Action){
+    var EventAction = Action.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.async = true;
+		},
+		start: function(){
+            var args = Array.prototype.slice.call(arguments);
+            var entityId = args.shift();
+            var eventName = args.shift();
+			var entity = this.state.getEntityWithTag(entityId);
+            entity.fireEvent(eventName);
+		}
+	});
+	Action.register('event', EventAction);
+	return EventAction
+});
 define('dreddrl/factory',[
 	'sge',
 	'./components/weapons',
@@ -17212,7 +17257,8 @@ define('dreddrl/factory',[
     './actions/dialog',
     './actions/if',
     './actions/set',
-    './actions/switch'
+    './actions/switch',
+    './actions/event'
 	], 
 	function(sge){
         var NPCSHEETS = [
@@ -17233,21 +17279,21 @@ define('dreddrl/factory',[
 		var FACTORYDATA = {
             chara : function(){return{
                 xform : {},
-                    sprite : {
-                        width: 32,
-                        offsetY: -8,
-                        scale: 2
+                sprite : {
+                    width: 32,
+                    offsetY: -8,
+                    scale: 2
+                },
+                anim : {
+                    frames: {
+                        walk_down : [0,1,2],
+                        walk_up : [9,10,11],
+                        walk_right : [6,7,8],
+                        walk_left : [3,4,5]
                     },
-                    anim : {
-                        frames: {
-                            walk_down : [0,1,2],
-                            walk_up : [9,10,11],
-                            walk_right : [6,7,8],
-                            walk_left : [3,4,5]
-                        },
-                    },
-                    physics : {},
-                    inventory : {},
+                },
+                physics : {},
+                inventory : {},
             }},
 			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     controls : {},
@@ -17267,6 +17313,7 @@ define('dreddrl/factory',[
                         map: this.map,
                         speed: 16
                     },
+                    simpleai: {territory: 'neutral'},
                     health : {alignment:0, life: 1},
                     sprite : {
                         src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
@@ -17277,18 +17324,17 @@ define('dreddrl/factory',[
                     src : 'assets/sprites/albert.png',
                 },
                 health : {alignment:-10, life: 3},
-                simpleai : {},
+                simpleai : { tracking: 'pc', territory: 'albert'},
                 deaddrop: {},
                 actions: {
                     kill : ['set','@(pc).stats.xp', 5, 'add']
                 }
             })},
-            gangboss : function(){return deepExtend(FACTORYDATA['npc'](), {
+            gangboss : function(){return deepExtend(FACTORYDATA['enemy'](), {
                 sprite : {
                     src : 'assets/sprites/albertbrownhair.png',
                 },
                 health : {alignment:-10, life: 6},
-                simpleai : {},
                 deaddrop: {}
             })},
             freeitem : function(){ return {
@@ -17378,160 +17424,6 @@ define('dreddrl/factory',[
 		return Factory
 	}
 );
-define('dreddrl/encounters',['sge'], function(sge){
-	var Encounter = sge.Class.extend({
-		init: function(block){
-			this.block = block;
-			this.state = block.state;
-			this.factory = block.factory;
-			this.status = 0;
-			this.total = 1;
-			this.start();
-		},
-		isFinished: function(){
-			return (this.status>=this.total);
-		},
-		start: function(){
-
-		},
-		finish: function(){
-
-		},
-		tick: function(){
-			/**
-			*
-			*/
-
-		},
-		getPC : function(){
-			return this.state.getEntityWithTag('pc');
-		},
-		update: function(status){
-			if (this.isFinished()){
-				this.finish();
-			};
-		}
-	});
-
-	var CheckupEncounter = Encounter.extend({
-	        start: function(){
-	        	this.total = 3;
-	            //Create Mother
-	            var mothersRoom = this.block.getRandomEncounterRoom();
-	            console.log(mothersRoom);
-	            var mother = this.state.factory('woman', {
-	                xform: {
-	                    tx: mothersRoom.cx * 32,
-	                    ty: mothersRoom.cy * 32
-	                },
-	                interact : {},
-	                encounter: {
-	                    encounter : this,
-	                },
-	                actions: {
-	                    interact :
-	                        ['switch', '${encounter.status}', 
-	                            [
-	                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
-	                                ['set', 'encounter.status', 1]
-	                            ],[
-	                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
-	                            ],[
-	                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
-	                                ['set','@(pc).stats.xp', 50, 'add'],
-	                                ['set', 'encounter.status', 3]
-	                            ],[
-	                                ['dialog', "Welcome to Peach Trees. "]
-	                            ]
-	                        ]
-	                }
-	            });
-	            mother.tags.push('mother');
-	            this.block.state.addEntity(mother);
-	            mother.fireEvent('target.set');
-	            
-
-	            //Create Daughter
-	            var daughtersRoom = this.block.getRandomEncounterRoom({exclude: [mothersRoom]});
-	            var daughter = this.state.factory('woman.young', {
-	                xform: {
-	                    tx: daughtersRoom.cx * 32,
-	                    ty: daughtersRoom.cy * 32
-	                },
-	                interact : {},
-	                encounter: {
-	                    encounter : this,
-	                },
-	                actions: {
-	                   interact :
-	                        ['if', '${encounter.status}==1', 
-	                            [
-	                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
-	                                ['set', 'encounter.status', 2]
-	                            ],[
-	                                ['dialog', "Hey there. Haven't seen you around the block before."]
-	                            ]
-	                        ] 
-	                }
-	            });
-	            daughter.tags.push('daughter');
-	            this.block.state.addEntity(daughter);
-	        	console.log('Checkup')
-	        },
-	        finish: function(){
-	        	var pc = this.getPC();
-	        	pc.set('stats.xp', 50, 'add');
-	        	this.state.log('Completed Checkup Encounter');
-	        }
-	    });
-
-	    var ExecuteEncounter = Encounter.extend({
-	        start: function(){
-	            //Create Mother
-	            var gangBossRoom = this.block.getRandomEncounterRoom();
-	            var gangBoss = this.state.factory('gangboss', {
-	                xform: {
-	                    tx: gangBossRoom.cx * 32,
-	                    ty: gangBossRoom.cy * 32
-	                },
-	                encounter: {
-	                	encounter : this
-	                },
-	                actions : {
-	                	kill : 
-		                	['if', true, 
-		                		[
-		                			['set','@(pc).stats.xp', 5, 'add'],
-	                				['set', 'encounter.status',1]
-	                			]
-	                		]
-	                }
-	            });
-	            gangBoss.tags.push('gangboss');
-	            this.block.state.addEntity(gangBoss);
-	            gangBoss.fireEvent('target.set');
-	        },
-	        finish: function(){
-	        	var pc = this.getPC();
-	        	pc.set('stats.xp', 50, 'add');
-	        	this.state.log('Completed Execute Gang Boss');
-	        }
-	    });
-
-	var RescueEncounter = Encounter.extend({
-		start: function(){
-
-		}
-	});
-
-
-
-	return {
-		Encounter : Encounter,
-		ExecuteEncounter : ExecuteEncounter,
-		CheckupEncounter : CheckupEncounter,
-	}
-});
 define('dreddrl/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, SpriteSheet, config){
 	var Tile = Class.extend({
 		init: function(x, y){
@@ -17545,7 +17437,9 @@ define('dreddrl/map',['sge/lib/class', 'sge/spritesheet', 'sge/config'], functio
 			this.fade = 1;
 			this.animate = false;
 			this.fadeDelta = 0.1;
-			this.metaData = {};
+			this.data = {
+				territory: 'neutral'
+			};
 		},
 		hide: function(){
 			//this.fade=1
@@ -17742,7 +17636,6 @@ define('dreddrl/blocklevelgenerator',[
     'sge',
     'jquery',
     './factory',
-    './encounters',
     './map'
     ],
     function(sge, $, Factory, Encounters, Map){
@@ -17841,7 +17734,7 @@ define('dreddrl/blocklevelgenerator',[
                 data = data || {};
                 var tile = sge.random.item(this.getTiles());
                 if (tile){
-                    while (tile.metaData.spawn!==undefined){
+                    while (tile.data.spawn!==undefined){
 
                         tile = sge.random.item(this.getTiles());
                     };
@@ -17974,7 +17867,7 @@ define('dreddrl/blocklevelgenerator',[
 
                 var tiles = this.map.getTiles(boxcoords(32, 0, 32, 32));
                 _.each(tiles, function(tile){
-                    tile.metaData.gang = 'albert';
+                    tile.data.territory = 'albert';
                 });
 
                 var eco = sge.random.item(['slum','middle','upper']);
@@ -18022,9 +17915,9 @@ define('dreddrl/blocklevelgenerator',[
                         }
                     })
                     var tile = this.map.getTile(room.cx, room.cy)
-                    if (tile.metaData.gang == 'albert'){
+                    if (tile.data.territory == 'albert'){
                         var total = sge.random.rangeInt(0,3);
-                        room.data.gang = tile.metaData.gang;
+                        room.data.gang = tile.data.territory;
                         for (var i=0;i<total;i++){
                             var enemy = room.spawn('enemy');
                             if (enemy){
@@ -18033,7 +17926,7 @@ define('dreddrl/blocklevelgenerator',[
                         }
                     } else {
                         var total = sge.random.rangeInt(0,3);
-                        room.data.gang = tile.metaData.gang;
+                        room.data.territory = tile.data.territory;
                         for (var i=0;i<total;i++){
                             if (Math.random() > 0.5){
                                 var type = 'man';
@@ -18051,14 +17944,6 @@ define('dreddrl/blocklevelgenerator',[
                         }
                     }
                 }.bind(this));
-
-
-                //Create Encounters
-                var EncounterClass = sge.random.item([Encounters.ExecuteEncounter, Encounters.CheckupEncounter]);
-
-                this.encounters = [];
-                var encounter = new EncounterClass(this);
-                this.encounters.push(encounter);
             },
             getRandomEncounterRoom : function(options){
                 options = options || {};
@@ -18070,14 +17955,19 @@ define('dreddrl/blocklevelgenerator',[
                     if (_.include(excludeList, room)){
                         continue;
                     }
-                    //console.log(room.options.doors!=null, !room.isLocked())
-                    if (room.options.doors!=null){
-                        if (!room.isLocked()){
-                            //console.log('Found ROOM', i)
-                            goodRoom = room;
-                            break;
+                    if (room.options.doors==null){
+                        continue;
+                    }
+                    if (room.isLocked()){
+                        continue;
+                    }
+                    if (options.territory!==undefined){
+                        if (room.data.territory!=options.territory){
+                            continue;
                         }
                     }
+                    var goodRoom = room;
+                    break;
                 }
                 return goodRoom;
             },
@@ -18103,6 +17993,11 @@ define('dreddrl/blocklevelgenerator',[
             },
             createPC : function(){
                 var room = this.getRandomEncounterRoom();
+                _.each(room.doors, function(door){
+                    door.set('door.open', true);
+                    door.get('door').updateTiles()
+                });
+                room.update()
                 var pc = null;
                 if (this.state.options.persist){
                     if (this.state.options.persist['pc']!==undefined){
@@ -18144,6 +18039,8 @@ define('dreddrl/blocklevelgenerator',[
             createRoom : function(cx, cy, width, height, options){
                 options = $.extend({doors:'bottom', open: (Math.random() > 0.5)}, options || {});
                 var room = new Room(this, cx, cy, width, height, options);
+                var tile = this.map.getTile(cx, cy);
+                room.data.territory = tile.data.territory;
                 room.plot();
                 this.rooms.push(room);
             },
@@ -18332,14 +18229,273 @@ define('dreddrl/physics',['sge'], function(sge){
 	});
 	return RPGPhysics;
 });
+define('dreddrl/encounters',['sge'], function(sge){
+	var Encounter = sge.Class.extend({
+		init: function(system){
+			this.system = system;
+			this.block = system.state.level;
+			this.state = system.state;
+			this.factory = this.block.factory;
+			this.status = 0;
+			this.total = 1;
+			this.targetEntity = null;
+			this.start();
+		},
+		isFinished: function(){
+			return (this.status>=this.total);
+		},
+		start: function(){
+
+		},
+		finish: function(){
+
+		},
+		tick: function(){
+			/**
+			*
+			*/
+
+		},
+		getPC : function(){
+			return this.state.getEntityWithTag('pc');
+		},
+		update: function(status){
+			if (this.isFinished()){
+				this.finish();
+			};
+		},
+		add : function(comp){
+			var entity = comp.entity;
+			entity.addListener('target.set', function(){
+				this.targetEntity = entity;
+			}.bind(this));
+			entity.addListener('target.remove', function(){
+				this.targetEntity = null;
+			}.bind(this));
+			return this;
+		}
+	});
+
+	var EncounterSystem = sge.Class.extend({
+		init: function(state){
+			this.state = state;
+			this.encounters = [];
+			this.active = null;
+		},
+		create : function(klass){
+			var encounter = new klass(this);
+			this.encounters.push(encounter);
+			if (!this.active){
+				this.active = encounter;
+			}
+			return encounter;
+		},
+		getTargetEntity : function(){
+			var entity = null;
+			if (this.active){
+				entity = this.active.targetEntity;
+			}
+			return entity;
+		},
+		_compass_tick : function(delta){
+            var entity = this.getTargetEntity();
+            if (entity){
+            	var pc = this.state.getEntityWithTag('pc');
+                coord = [entity.get('xform.tx'), entity.get('xform.ty')];
+                var dx = coord[0] - pc.get('xform.tx');
+                var dy = coord[1] - pc.get('xform.ty');
+                var dist = Math.sqrt((dx*dx)+(dy*dy));
+                var len = 640; //Math.min(dist, 640);
+                var x1 = (pc.get('xform.tx'));
+                var y1 = (pc.get('xform.ty')); 
+                var x2 = (dx + pc.get('xform.tx'));
+                var y2 = (dy + pc.get('xform.ty'));
+                var top = 32 + this.state.game.renderer.ty;
+                var bottom = 448 + this.state.game.renderer.ty;
+                var left = 32 + this.state.game.renderer.tx;
+                var right = 608 + this.state.game.renderer.tx;
+                coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
+                var intersection = false;
+                for (var i = coords.length - 1; i >= 0; i--) {
+                    var coord = coords[i];
+                    if (this._debug_tick){
+                        var x3 = coord[0];
+                        var y3 = coord[1];
+                        var x4 = coord[2];
+                        var y4 = coord[3];
+                        var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+                        var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+                        console.log(x,y);
+                        console.log(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
+                    }
+                    intersection = sge.collision.lineIntersect(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
+                    if (intersection){
+                        //console.log(intersection);
+                        break;
+                    }
+                }; 
+                if (intersection){
+                    tx = intersection[0];
+                    ty = intersection[1];
+                    
+                } else {
+                    tx =  entity.get('xform.tx');
+                    ty =  entity.get('xform.ty');
+                }
+                view = {
+                    top : top,
+                    bottom : bottom,
+                    left : left,
+                    right : right
+                }
+                if (sge.collision.pointRectIntersect(tx, ty, view)){
+                    console.log('WTF!!!');
+                }
+                this.state.game.renderer.drawRect('canopy', tx-4, ty-4, 8, 8, {fillStyle: 'blue'}, 1000000);
+            }
+        },
+		tick: function(){
+			if (this.state.getEntitiesWithTag('pc').length<=0){
+                    this.state.game.fsm.gameOver();
+            }
+
+            if (_.every(this.encounters, function(e){return e.isFinished()})){
+                this.state.game.fsm.gameWin();
+            }
+
+            this._compass_tick();
+		}
+	})
+
+	var CheckupEncounter = Encounter.extend({
+	        start: function(){
+	        	this.total = 3;
+	            //Create Mother
+	            var mothersRoom = this.block.getRandomEncounterRoom({territory: 'neutral'});
+	            var mother = this.state.factory('woman', {
+	                xform: {
+	                    tx: mothersRoom.cx * 32,
+	                    ty: mothersRoom.cy * 32
+	                },
+	                interact : {},
+	                encounter: {
+	                    encounter : this,
+	                },
+	                actions: {
+	                    interact :
+	                        ['switch', '${encounter.status}', 
+	                            [
+	                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
+	                                ['set', 'encounter.status', 1],
+                                    ['event', 'daughter', 'target.set']
+	                            ],[
+	                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
+	                            ],[
+	                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
+	                                ['set','@(pc).stats.xp', 50, 'add'],
+	                                ['set', 'encounter.status', 3]
+	                            ],[
+	                                ['dialog', "Welcome to Peach Trees. "]
+	                            ]
+	                        ]
+	                }
+	            });
+	            mother.tags.push('mother');
+	            this.block.state.addEntity(mother);
+	            this.targetEntity = mother;
+	            
+
+	            //Create Daughter
+	            var daughtersRoom = this.block.getRandomEncounterRoom({exclude: [mothersRoom], territory: 'neutral'});
+	            var daughter = this.state.factory('woman.young', {
+	                xform: {
+	                    tx: daughtersRoom.cx * 32,
+	                    ty: daughtersRoom.cy * 32
+	                },
+	                interact : {},
+	                encounter: {
+	                    encounter : this,
+	                },
+	                actions: {
+	                   interact :
+	                        ['if', '${encounter.status}==1', 
+	                            [
+	                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
+	                                ['set', 'encounter.status', 2],
+                                    ['event', 'mother', 'target.set']
+	                            ],[
+	                                ['dialog', "Hey there. Haven't seen you around the block before."]
+	                            ]
+	                        ] 
+	                }
+	            });
+	            daughter.tags.push('daughter');
+	            this.block.state.addEntity(daughter);
+	        },
+	        finish: function(){
+	        	var pc = this.getPC();
+	        	pc.set('stats.xp', 50, 'add');
+	        	this.state.log('Completed Checkup Encounter');
+	        }
+	    });
+
+	    var ExecuteEncounter = Encounter.extend({
+	        start: function(){
+	            //Create Mother
+	            var gangBossRoom = this.block.getRandomEncounterRoom({territory: 'albert'});
+	            var gangBoss = this.state.factory('gangboss', {
+	                xform: {
+	                    tx: gangBossRoom.cx * 32,
+	                    ty: gangBossRoom.cy * 32
+	                },
+	                encounter: {
+	                	encounter : this
+	                },
+	                actions : {
+	                	kill : 
+		                	['if', true, 
+		                		[
+		                			['set','@(pc).stats.xp', 5, 'add'],
+	                				['set', 'encounter.status',1]
+	                			]
+	                		]
+	                }
+	            });
+	            gangBoss.tags.push('gangboss');
+	            this.block.state.addEntity(gangBoss);
+	            this.targetEntity = gangBoss;
+	        },
+	        finish: function(){
+	        	var pc = this.getPC();
+	        	pc.set('stats.xp', 50, 'add');
+	        	this.state.log('Completed Execute Gang Boss');
+	        }
+	    });
+
+	var RescueEncounter = Encounter.extend({
+		start: function(){
+
+		}
+	});
+
+
+
+	return {
+		Encounter : Encounter,
+		EncounterSystem : EncounterSystem,
+		ExecuteEncounter : ExecuteEncounter,
+		CheckupEncounter : CheckupEncounter,
+	}
+});
 define('dreddrl/dreddrlstate',[
         'sge',
         './blocklevelgenerator',
         './physics',
         './factory',
-        './map'
+        './map',
+        './encounters',
     ],
-    function(sge, BlockLevelGenerator, Physics, Factory, Map){
+    function(sge, BlockLevelGenerator, Physics, Factory, Map, encounters){
 
         INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is you responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
@@ -18356,6 +18512,12 @@ define('dreddrl/dreddrlstate',[
                 this._logQueue = [];
                 this._logTimer = -1;
 
+                this._track_x = null;
+                this._track_y = null;
+                this._debug_count = 0;
+                this._debug_tick = false;
+
+
                 this.factory = Factory;
                 this.initUi();
                 this.map = new Map(65,66,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
@@ -18364,7 +18526,7 @@ define('dreddrl/dreddrlstate',[
                 this.game.renderer.createLayer('main');
                 this.game.renderer.createLayer('canopy');
                 // Load Game "Plugins"
-                this.physics = new Physics(this);
+
                 this.loader = new sge.vendor.PxLoader();
                 this.loader.addProgressListener(this.progressListener.bind(this));
                 this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future1.png');
@@ -18393,6 +18555,7 @@ define('dreddrl/dreddrlstate',[
                 this.pause = function(){
                     this.game.fsm.pause()
                 }.bind(this);
+                this.input.addListener('keydown:space', this.pause);
 
                 this.toggleShadows = function(){
                     this.shadows.toggle()
@@ -18401,13 +18564,15 @@ define('dreddrl/dreddrlstate',[
                 this.loader.start();
             },
 
-            log : function(msg){
-                this._log.push(msg);
-                
-            },
-
             initGame : function(){
+                //Load Game Plugins
+                this.physics = new Physics(this);
                 this.level = new BlockLevelGenerator(this, this.options);
+                this.encounterSystem = new encounters.EncounterSystem(this);
+                //this.encounterSystem.create(encounters.ExecuteEncounter);
+                this.encounterSystem.create(encounters.CheckupEncounter);
+
+
                 setTimeout(function() {
                         this.game.fsm.finishLoad();
                 }.bind(this), 1000);
@@ -18420,15 +18585,16 @@ define('dreddrl/dreddrlstate',[
                     this.initGame();
                 }
             },
-
+            /*
             startState : function(){
-                this.input.addListener('keydown:space', this.pause);
+                
                 //this.input.addListener('keydown:F', this.toggleShadows);
             },
             endState : function(){
                 this.input.removeListener('keydown:space', this.pause)
                 //this.input.removeListener('keydown:F', this.toggleShadows)        
             },
+            */
             addEntity: function(entity){
                 this._super(entity);
                 entity.addListener('kill', function(){
@@ -18436,9 +18602,6 @@ define('dreddrl/dreddrlstate',[
                 }.bind(this));
                 entity.addListener('log', function(msg){
                     this.logCallback(msg);
-                }.bind(this));
-                entity.addListener('target.set', function(){
-                    this._target_entity = entity;
                 }.bind(this));
             },
             initUi : function(){
@@ -18461,21 +18624,7 @@ define('dreddrl/dreddrlstate',[
                 var elem = $('<p/>').text(msg);
                 this._elem_log.prepend($('<li/>').append(elem));
             },
-            _quest_tick : function(delta){
-                var entity = this._target_entity;
-                if (entity){
-                    coord = [entity.get('xform.tx'), entity.get('xform.ty')];
-                    var dx = coord[0] - this.pc.get('xform.tx');
-                    var dy = coord[1] - this.pc.get('xform.ty');
-                    var dist = Math.sqrt((dx*dx)+(dy*dy));
-                    var len = Math.min(dist, 64);
-                    var tx = ((dx/dist) * len) + this.pc.get('xform.tx');
-                    var ty = ((dy/dist) * len) + this.pc.get('xform.ty');
-                    this.game.renderer.drawRect('canopy', tx-4, ty-4, 8, 8, {fillStyle: 'yellow'}, 1000000);
-                }
-            },
             _interaction_tick : function(delta){
-
                 var closest = null;
                 var cdist = 64;
                 var ccord = null;
@@ -18517,29 +18666,36 @@ define('dreddrl/dreddrlstate',[
                 this.game.fsm.startDialog();
             },
             tick : function(delta){
+                this._debug_count++;
+                if (this._debug_count>30){
+                    this._debug_count = 0;
+                    this._debug_tick = true;
+                } else {
+                    this._debug_tick = false
+                }
                 this.tickTimeouts(delta);
                 this.physics.resolveCollisions(delta);
                 if (this._intro==false){
                     this._intro = true;
                     this.startDialog(INTRO)
                 }
+                
+                //Update Interaction System
                 this._interaction_tick(delta);
-                this._quest_tick(delta);
+                
+                //Update Component System
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];
                     entity.componentCall('tick', delta);
                 }.bind(this));
+
+                //Prune entities
                 _.each(this._killList, function(e){
                     this.removeEntity(e);
                 }.bind(this))
 
-                if (this.getEntitiesWithTag('pc').length<=0){
-                    this.game.fsm.gameOver();
-                }
-
-                if (_.every(this.level.encounters, function(e){return e.isFinished()})){
-                    this.game.fsm.gameWin();
-                }
+                //Tick Encounter System
+                this.encounterSystem.tick(delta);
 
                 this.game.renderer.track(this.pc);
                 //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
@@ -18574,16 +18730,16 @@ define('dreddrl/dialogstate',['sge'], function(sge){
 		initState: function(){
             this.elem = $('.dialogscreen') || null;
             this.interact = this.interact.bind(this);
+            this.input.addListener('keydown:enter', this.interact);
         },
         startState : function(){
-            this.input.addListener('keydown:enter', this.interact);
+            this._super();
             if (this.elem){
                 this.elem.fadeIn();
             }
         },
         endState : function(){
-            this.input.removeListener('keydown:enter', this.interact);
-            
+            this._super();
         },
         interact: function(){
             if (this.elem){

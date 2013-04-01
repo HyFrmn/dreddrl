@@ -3,9 +3,10 @@ define([
         './blocklevelgenerator',
         './physics',
         './factory',
-        './map'
+        './map',
+        './encounters',
     ],
-    function(sge, BlockLevelGenerator, Physics, Factory, Map){
+    function(sge, BlockLevelGenerator, Physics, Factory, Map, encounters){
 
         INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is you responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
@@ -36,7 +37,7 @@ define([
                 this.game.renderer.createLayer('main');
                 this.game.renderer.createLayer('canopy');
                 // Load Game "Plugins"
-                this.physics = new Physics(this);
+
                 this.loader = new sge.vendor.PxLoader();
                 this.loader.addProgressListener(this.progressListener.bind(this));
                 this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future1.png');
@@ -75,7 +76,14 @@ define([
             },
 
             initGame : function(){
+                //Load Game Plugins
+                this.physics = new Physics(this);
                 this.level = new BlockLevelGenerator(this, this.options);
+                this.encounterSystem = new encounters.EncounterSystem(this);
+                //this.encounterSystem.create(encounters.ExecuteEncounter);
+                this.encounterSystem.create(encounters.CheckupEncounter);
+
+
                 setTimeout(function() {
                         this.game.fsm.finishLoad();
                 }.bind(this), 1000);
@@ -106,9 +114,6 @@ define([
                 entity.addListener('log', function(msg){
                     this.logCallback(msg);
                 }.bind(this));
-                entity.addListener('target.set', function(){
-                    this._target_entity = entity;
-                }.bind(this));
             },
             initUi : function(){
                 this._elem_ammo = $('span.ammo');
@@ -129,76 +134,6 @@ define([
             log : function(msg){
                 var elem = $('<p/>').text(msg);
                 this._elem_log.prepend($('<li/>').append(elem));
-            },
-            _quest_tick : function(delta){
-                function lineIntersect(x1,y1,x2,y2, x3,y3,x4,y4) {
-                    var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
-                    var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
-                    if (isNaN(x)||isNaN(y)) {
-                        return false;
-                    } else {
-                        if (x1>=x2) {
-                            if (!(x2<=x&&x<=x1)) {return false;}
-                        } else {
-                            if (!(x1<=x&&x<=x2)) {return false;}
-                        }
-                        if (y1>=y2) {
-                            if (!(y2<=y&&y<=y1)) {return false;}
-                        } else {
-                            if (!(y1<=y&&y<=y2)) {return false;}
-                        }
-                        if (x3>=x4) {
-                            if (!(x4<=x&&x<=x3)) {return false;}
-                        } else {
-                            if (!(x3<=x&&x<=x4)) {return false;}
-                        }
-                        if (y3>=y4) {
-                            if (!(y4<=y&&y<=y3)) {return false;}
-                        } else {
-                            if (!(y3<=y&&y<=y4)) {return false;}
-                        }
-                    }
-                    return [x,y];
-                }
-
-                var entity = this._target_entity;
-                if (entity){
-                    coord = [entity.get('xform.tx'), entity.get('xform.ty')];
-                    var dx = coord[0] - this.pc.get('xform.tx');
-                    var dy = coord[1] - this.pc.get('xform.ty');
-                    var dist = Math.sqrt((dx*dx)+(dy*dy));
-                    var len = 640; //Math.min(dist, 640);
-                    var x1 = (this.pc.get('xform.tx') - this.game.renderer.tx);
-                    var y1 = (this.pc.get('xform.ty') - this.game.renderer.ty); 
-                    var x2 = (dx + this.pc.get('xform.tx')) - this.game.renderer.tx;
-                    var y2 = (dy + this.pc.get('xform.ty')) - this.game.renderer.ty;
-                    var top = 32;
-                    var bottom = 448;
-                    var left = 32;
-                    var right = 608;
-                    coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
-                    var intersection = false;
-                    for (var i = coords.length - 1; i >= 0; i--) {
-                        var coord = coords[i];
-                        if (this._debug_tick){
-                            console.log(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
-                        }
-                        intersection = lineIntersect(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
-                        if (intersection){
-                            console.log(intersection);
-                            break;
-                        }
-                    }; 
-                    if (intersection){
-                        tx = intersection[0] + this.game.renderer.tx;
-                        ty = intersection[1] + this.game.renderer.ty;
-                    } else {
-                        tx =  entity.get('xform.tx');
-                        ty =  entity.get('xform.ty');
-                    }
-
-                    this.game.renderer.drawRect('canopy', tx-4, ty-4, 8, 8, {fillStyle: 'yellow'}, 1000000);
-                }
             },
             _interaction_tick : function(delta){
                 var closest = null;
@@ -255,23 +190,23 @@ define([
                     this._intro = true;
                     this.startDialog(INTRO)
                 }
+                
+                //Update Interaction System
                 this._interaction_tick(delta);
-                this._quest_tick(delta);
+                
+                //Update Component System
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];
                     entity.componentCall('tick', delta);
                 }.bind(this));
+
+                //Prune entities
                 _.each(this._killList, function(e){
                     this.removeEntity(e);
                 }.bind(this))
 
-                if (this.getEntitiesWithTag('pc').length<=0){
-                    this.game.fsm.gameOver();
-                }
-
-                if (_.every(this.level.encounters, function(e){return e.isFinished()})){
-                    this.game.fsm.gameWin();
-                }
+                //Tick Encounter System
+                this.encounterSystem.tick(delta);
 
                 this.game.renderer.track(this.pc);
                 //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));

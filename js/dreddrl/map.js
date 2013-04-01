@@ -11,7 +11,9 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 			this.fade = 1;
 			this.animate = false;
 			this.fadeDelta = 0.1;
-			this.metaData = {};
+			this.data = {
+				territory: 'neutral'
+			};
 		},
 		hide: function(){
 			//this.fade=1

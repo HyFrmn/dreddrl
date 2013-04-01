@@ -1,8 +1,10 @@
+
 define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateMachine){
 	var SimpleAIComponent = Component.extend({
 		init: function(entity, data){
             this._super(entity, data);
             this.data.tracking = data.tracking || null;
+            this.data.territory = data.territory;
             this.fsm = StateMachine.create({
                 initial: 'idle',
                 events: [
@@ -13,6 +15,10 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             this.data.radius = 96;
             this._idleCounter = 0;
 
+        },
+        register: function(state){
+            this._super(state);
+            this.map = this.state.map;
         },
         getPC: function(){
             return this.entity.state.getEntitiesWithTag(this.get('tracking'))[0] || null;
@@ -71,11 +77,28 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
         wander: function(){
             if (this._idleCounter<0){
                 this._idleCounter=30 + (Math.random() * 30);
+                var hasDir = false;
+                var tx = this.entity.get('xform.tx');
+                var ty = this.entity.get('xform.ty');
                 var vx = 0;
                 var vy = 0;
-                if (Math.random() > 0.5){
-                    var vx = 64 * ((Math.random() * 2) - 1);
-                    var vy = 64 * ((Math.random() * 2) - 1);
+                for (var i=0;i<5;i++){
+                    if (Math.random() > 0.5){
+                        var vx = 64 * ((Math.random() * 2) - 1);
+                        var vy = 64 * ((Math.random() * 2) - 1);
+                    }
+                    if (this.data.territory!==undefined){
+                        var tile = this.map.getTile(Math.floor((tx+vx)/32),Math.floor((ty+vy)/32))
+                        if (tile){
+                            if (tile.data.territory==this.data.territory){
+                                break;
+                            }
+                        }
+                        vx = 0;
+                        vy = 0;
+                    } else {
+                        break;
+                    }
                 }
                 this.entity.set('xform.vx', vx);
                 this.entity.set('xform.vy', vy);

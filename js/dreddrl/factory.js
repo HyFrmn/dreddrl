@@ -41,21 +41,21 @@ define([
 		var FACTORYDATA = {
             chara : function(){return{
                 xform : {},
-                    sprite : {
-                        width: 32,
-                        offsetY: -8,
-                        scale: 2
+                sprite : {
+                    width: 32,
+                    offsetY: -8,
+                    scale: 2
+                },
+                anim : {
+                    frames: {
+                        walk_down : [0,1,2],
+                        walk_up : [9,10,11],
+                        walk_right : [6,7,8],
+                        walk_left : [3,4,5]
                     },
-                    anim : {
-                        frames: {
-                            walk_down : [0,1,2],
-                            walk_up : [9,10,11],
-                            walk_right : [6,7,8],
-                            walk_left : [3,4,5]
-                        },
-                    },
-                    physics : {},
-                    inventory : {},
+                },
+                physics : {},
+                inventory : {},
             }},
 			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     controls : {},
@@ -75,6 +75,7 @@ define([
                         map: this.map,
                         speed: 16
                     },
+                    simpleai: {territory: 'neutral'},
                     health : {alignment:0, life: 1},
                     sprite : {
                         src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
@@ -85,7 +86,7 @@ define([
                     src : 'assets/sprites/albert.png',
                 },
                 health : {alignment:-10, life: 3},
-                simpleai : { tracking: 'pc'},
+                simpleai : { tracking: 'pc', territory: 'albert'},
                 deaddrop: {},
                 actions: {
                     kill : ['set','@(pc).stats.xp', 5, 'add']

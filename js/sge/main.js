@@ -8,7 +8,9 @@ define(['sge/config',
         'sge/vendor/pxloader',
         'sge/lib/class',
         'sge/lib/random',
-        'sge/spritesheet'],
+        'sge/lib/collision',
+        'sge/spritesheet'
+        ],
 function(
       config,
       Renderer,
@@ -20,6 +22,7 @@ function(
       PxLoader,
       Class,
       random,
+      collision,
       SpriteSheet
         ){
    return {
@@ -35,6 +38,7 @@ function(
         },
         Class : Class,
         random : random,
+        collision : collision,
         SpriteSheet : SpriteSheet
    };
 });
