@@ -77,8 +77,8 @@ define(['sge'], function(sge){
                 var len = 640; //Math.min(dist, 640);
                 var x1 = (pc.get('xform.tx'));
                 var y1 = (pc.get('xform.ty')); 
-                var x2 = (dx + pc.get('xform.tx'));
-                var y2 = (dy + pc.get('xform.ty'));
+                var x2 = entity.get('xform.tx')
+                var y2 = entity.get('xform.ty')
                 var top = 32 + this.state.game.renderer.ty;
                 var bottom = 448 + this.state.game.renderer.ty;
                 var left = 32 + this.state.game.renderer.tx;
@@ -133,6 +133,14 @@ define(['sge'], function(sge){
             }
 
             this._compass_tick();
+		},
+		next: function(){
+			var activeEncounters = _.filter(this.encounters, function(e){return !e.isFinished()});
+			if (activeEncounters.length){
+				this.active = activeEncounters[0];
+			} else {
+				this.active = null;
+			}
 		}
 	})
 
@@ -205,6 +213,7 @@ define(['sge'], function(sge){
 	        	var pc = this.getPC();
 	        	pc.set('stats.xp', 50, 'add');
 	        	this.state.log('Completed Checkup Encounter');
+	        	this.system.next();
 	        }
 	    });
 
@@ -238,6 +247,7 @@ define(['sge'], function(sge){
 	        	var pc = this.getPC();
 	        	pc.set('stats.xp', 50, 'add');
 	        	this.state.log('Completed Execute Gang Boss');
+	        	this.system.next();
 	        }
 	    });
 

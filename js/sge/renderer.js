@@ -12,9 +12,12 @@ define(['jquery'], function($){
         this._clearListNew = {};
         this._drawList = {};
         this._layers = [];
-
-
+        this._enabled = false;
     };
+
+    Renderer.prototype.start = function(){
+        this._enabled = true;
+    }
 
     Renderer.prototype.track = function(entity, options){
         options = {
@@ -157,6 +160,7 @@ define(['jquery'], function($){
                 this._drawList[layerName]=undefined;
             }
         }
+        this._enabled = false;
     }
 
     Renderer.prototype.createLayer = function(name) {

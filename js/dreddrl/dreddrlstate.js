@@ -80,9 +80,9 @@ define([
                 this.physics = new Physics(this);
                 this.level = new BlockLevelGenerator(this, this.options);
                 this.encounterSystem = new encounters.EncounterSystem(this);
-                //this.encounterSystem.create(encounters.ExecuteEncounter);
+                
                 this.encounterSystem.create(encounters.CheckupEncounter);
-
+                this.encounterSystem.create(encounters.ExecuteEncounter);
 
                 setTimeout(function() {
                         this.game.fsm.finishLoad();
@@ -211,6 +211,7 @@ define([
                 this.game.renderer.track(this.pc);
                 //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
                 this.map.render(this.game.renderer);
+
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];
                     var tx = entity.get('xform.tx');

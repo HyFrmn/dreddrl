@@ -9,7 +9,7 @@ define(['sge/lib/class',], function(Class){
 
 		run: function(fps) {
 			if (fps==undefined){
-				fps = 15.0;
+				fps = 30.0;
 			};
 			this._lastTick = Date.now();
 			this.interval = setInterval(this.tickCallback.bind(this), 1000.0 / fps);

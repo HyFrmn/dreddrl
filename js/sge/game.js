@@ -175,6 +175,7 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
             this.input = new Input();
             this._tick = 0;
             this._last = 0;
+            this._lastRender = 0;
             this._gameState = DefaultGame;
             this._debugElem = $('.fps');
             if (this.options.elem!==null){
@@ -246,6 +247,7 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
                 //Do Something;
             }
             this.renderer.render();
+            
             this._tick++;
             if (this._tick>10){
                 this._tick = 0;
