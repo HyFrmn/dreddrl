@@ -83,7 +83,10 @@ define([
                 
                 this.encounterSystem.create(encounters.CheckupEncounter);
                 this.encounterSystem.create(encounters.ExecuteEncounter);
-
+                this.input.addListener('keydown:Q', function(){
+                    console.log('Next Quest');
+                    this.encounterSystem.switch();
+                }.bind(this));
                 setTimeout(function() {
                         this.game.fsm.finishLoad();
                 }.bind(this), 1000);

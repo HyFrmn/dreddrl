@@ -17,7 +17,7 @@ define(['sge'], function(sge){
 
 		},
 		finish: function(){
-
+			this.system.complete(this);
 		},
 		tick: function(){
 			/**
@@ -50,6 +50,7 @@ define(['sge'], function(sge){
 			this.state = state;
 			this.encounters = [];
 			this.active = null;
+			this._index = 0;
 		},
 		create : function(klass){
 			var encounter = new klass(this);
@@ -134,13 +135,20 @@ define(['sge'], function(sge){
 
             this._compass_tick();
 		},
+		complete: function(encounter){
+			this._next = -1;
+			this.switch();
+		},
 		next: function(){
 			var activeEncounters = _.filter(this.encounters, function(e){return !e.isFinished()});
-			if (activeEncounters.length){
-				this.active = activeEncounters[0];
-			} else {
-				this.active = null;
+			this._index++;
+			if (this._index>=activeEncounters.length){
+				this._index=0;
 			}
+			return activeEncounters[this._index];
+		},
+		switch: function(){
+			this.active = this.next();
 		}
 	})
 
@@ -210,10 +218,10 @@ define(['sge'], function(sge){
 	            this.block.state.addEntity(daughter);
 	        },
 	        finish: function(){
+	        	this._super();
 	        	var pc = this.getPC();
 	        	pc.set('stats.xp', 50, 'add');
 	        	this.state.log('Completed Checkup Encounter');
-	        	this.system.next();
 	        }
 	    });
 
@@ -244,10 +252,10 @@ define(['sge'], function(sge){
 	            this.targetEntity = gangBoss;
 	        },
 	        finish: function(){
+	        	this._super();
 	        	var pc = this.getPC();
 	        	pc.set('stats.xp', 50, 'add');
 	        	this.state.log('Completed Execute Gang Boss');
-	        	this.system.next();
 	        }
 	    });
 
