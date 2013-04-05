@@ -81,9 +81,9 @@ define(['sge'], function(sge){
                 var x2 = entity.get('xform.tx')
                 var y2 = entity.get('xform.ty')
                 var top = 32 + this.state.game.renderer.ty;
-                var bottom = 448 + this.state.game.renderer.ty;
+                var bottom = (this.state.game.renderer.height-32) + this.state.game.renderer.ty;
                 var left = 32 + this.state.game.renderer.tx;
-                var right = 608 + this.state.game.renderer.tx;
+                var right = (this.state.game.renderer.width-32) + this.state.game.renderer.tx;
                 coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
                 var intersection = false;
                 for (var i = coords.length - 1; i >= 0; i--) {

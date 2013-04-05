@@ -210,6 +210,36 @@ define(['jquery'], function($){
         }, priority + (y+x));
     }
 
+    Renderer.prototype.drawText = function(layer, x, y, text, style, priority){
+        /*
+        var destRect = [
+            Math.round(x - this.tx),
+            Math.round(y - this.ty),
+            Math.round(width),
+            Math.round(height)
+        ];
+        if ((destRect[0]>this.width) || (destRect[1]>this.height)|| (destRect[2]+destRect[0]<0) || (destRect[1]+destRect[3]<0)){
+            return;
+        }
+        */
+        //var ctx = this.layers[layer].context;
+        priority = priority || 0;
+        //this.clear(layer, destRect[0]-4,destRect[1]-4,destRect[2]+8,destRect[3]+8)
+        var dx = Math.round(x - this.tx);
+        var dy = Math.round(y - this.ty);
+        this.draw(layer, function(ctx){
+            ctx.save();
+            var keys = Object.keys(style);
+            for (var j = keys.length - 1; j >= 0; j--) {
+                var key = keys[j];
+                ctx[key] = style[key];
+            };
+            ctx.beginPath()
+            ctx.fillText(text, dx, dy);
+            ctx.restore();
+        }, priority + (y+x));
+    }
+
     Renderer.prototype.drawSprite = function(layer, spriteSheet, sprite, x, y, scale, clear, priority){
         if (scale===undefined){
             scale=[1,1];

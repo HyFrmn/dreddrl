@@ -17139,6 +17139,34 @@ define('dreddrl/components/simpleai',['sge/component', 'sge/vendor/state-machine
 
     return SimpleAIComponent;
 });
+define('dreddrl/components/emote',['sge'], function(sge){
+	var Emote = sge.Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this._visible = false;
+			this.data.text = data.text || "";
+			this.entity.addListener('emote.msg', function(msg){
+				this.set('text', msg);
+				this._visible = true;
+				this.entity.state.createTimeout(1, function(){
+					this._visible = false;
+				}.bind(this));
+			}.bind(this))
+		},
+		render: function(renderer, layer){
+			if (this._visible){
+				var tx = this.entity.get('xform.tx');
+	            var ty = this.entity.get('xform.ty');
+				renderer.drawRect(layer, tx+12,ty-48,64,16, {fillStyle: 'black'}, 150);
+				renderer.drawText(layer, tx+16,ty-36, this.get('text'), {fillStyle: 'white', fontSize: '16px', baseline:'top'}, 180);
+			}
+		}
+	});
+
+	sge.Component.register('emote', Emote);
+
+	return Emote;
+});
 define('dreddrl/actions/dialog',['sge','../action'], function(sge, Action){
 	var DialogAction = Action.extend({
 		init: function(entity, data){
@@ -17228,9 +17256,8 @@ define('dreddrl/actions/event',['sge','../action'], function(sge, Action){
 		start: function(){
             var args = Array.prototype.slice.call(arguments);
             var entityId = args.shift();
-            var eventName = args.shift();
 			var entity = this.state.getEntityWithTag(entityId);
-            entity.fireEvent(eventName);
+            entity.fireEvent.apply(entity, args);
 		}
 	});
 	Action.register('event', EventAction);
@@ -17253,6 +17280,7 @@ define('dreddrl/factory',[
     './components/stats',
     './components/health',
     './components/simpleai',
+    './components/emote',
 
     './actions/dialog',
     './actions/if',
@@ -17307,6 +17335,7 @@ define('dreddrl/factory',[
                     health : {alignment:5, life: 10},
                     weapons: {},
                     stats: {},
+                    emote: {},
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     movement : {
@@ -17319,17 +17348,25 @@ define('dreddrl/factory',[
                         src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
                     },
                 })},
-            enemy : function(){return deepExtend(FACTORYDATA['npc'](), {
-                sprite : {
-                    src : 'assets/sprites/albert.png',
-                },
-                health : {alignment:-10, life: 3},
-                simpleai : { tracking: 'pc', territory: 'albert'},
-                deaddrop: {},
-                actions: {
-                    kill : ['set','@(pc).stats.xp', 5, 'add']
+            enemy : function(){
+                var msgs = [
+                    'I am the law.',
+                    'Objection noted.',
+                    'Sentence. Execution!',
+                    "You've been found guilt.",
+                ]
+                return deepExtend(FACTORYDATA['npc'](), {
+                    sprite : {
+                        src : 'assets/sprites/albert.png',
+                    },
+                    health : {alignment:-10, life: 3},
+                    simpleai : { tracking: 'pc', territory: 'albert'},
+                    deaddrop: {},
+                    actions: {
+                        kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs)]]]
+                    }
                 }
-            })},
+            )},
             gangboss : function(){return deepExtend(FACTORYDATA['enemy'](), {
                 sprite : {
                     src : 'assets/sprites/albertbrownhair.png',
@@ -17933,7 +17970,7 @@ define('dreddrl/blocklevelgenerator',[
                             } else {
                                 var type = sge.random.item(['woman', 'woman.young', 'woman.old'])
                             }
-                            var npcData = { actions:{ interact: ['dialog', "Hi, I'm an npc."]}, interact: { dist: 48}}; 
+                            var npcData = { actions:{ interact: ['emote.msg', "Hi, I'm an npc."]}, interact: { dist: 48}}; 
                             var enemy = room.spawn(type, npcData);
                             if (enemy){
                                 this.state.addEntity(enemy);
@@ -18248,7 +18285,7 @@ define('dreddrl/encounters',['sge'], function(sge){
 
 		},
 		finish: function(){
-
+			this.system.complete(this);
 		},
 		tick: function(){
 			/**
@@ -18281,6 +18318,7 @@ define('dreddrl/encounters',['sge'], function(sge){
 			this.state = state;
 			this.encounters = [];
 			this.active = null;
+			this._index = 0;
 		},
 		create : function(klass){
 			var encounter = new klass(this);
@@ -18308,12 +18346,12 @@ define('dreddrl/encounters',['sge'], function(sge){
                 var len = 640; //Math.min(dist, 640);
                 var x1 = (pc.get('xform.tx'));
                 var y1 = (pc.get('xform.ty')); 
-                var x2 = (dx + pc.get('xform.tx'));
-                var y2 = (dy + pc.get('xform.ty'));
+                var x2 = entity.get('xform.tx')
+                var y2 = entity.get('xform.ty')
                 var top = 32 + this.state.game.renderer.ty;
-                var bottom = 448 + this.state.game.renderer.ty;
+                var bottom = (this.state.game.renderer.height-32) + this.state.game.renderer.ty;
                 var left = 32 + this.state.game.renderer.tx;
-                var right = 608 + this.state.game.renderer.tx;
+                var right = (this.state.game.renderer.width-32) + this.state.game.renderer.tx;
                 coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
                 var intersection = false;
                 for (var i = coords.length - 1; i >= 0; i--) {
@@ -18364,6 +18402,21 @@ define('dreddrl/encounters',['sge'], function(sge){
             }
 
             this._compass_tick();
+		},
+		complete: function(encounter){
+			this._next = -1;
+			this.switch();
+		},
+		next: function(){
+			var activeEncounters = _.filter(this.encounters, function(e){return !e.isFinished()});
+			this._index++;
+			if (this._index>=activeEncounters.length){
+				this._index=0;
+			}
+			return activeEncounters[this._index];
+		},
+		switch: function(){
+			this.active = this.next();
 		}
 	})
 
@@ -18433,6 +18486,7 @@ define('dreddrl/encounters',['sge'], function(sge){
 	            this.block.state.addEntity(daughter);
 	        },
 	        finish: function(){
+	        	this._super();
 	        	var pc = this.getPC();
 	        	pc.set('stats.xp', 50, 'add');
 	        	this.state.log('Completed Checkup Encounter');
@@ -18466,6 +18520,7 @@ define('dreddrl/encounters',['sge'], function(sge){
 	            this.targetEntity = gangBoss;
 	        },
 	        finish: function(){
+	        	this._super();
 	        	var pc = this.getPC();
 	        	pc.set('stats.xp', 50, 'add');
 	        	this.state.log('Completed Execute Gang Boss');
@@ -18569,10 +18624,13 @@ define('dreddrl/dreddrlstate',[
                 this.physics = new Physics(this);
                 this.level = new BlockLevelGenerator(this, this.options);
                 this.encounterSystem = new encounters.EncounterSystem(this);
-                //this.encounterSystem.create(encounters.ExecuteEncounter);
+                
                 this.encounterSystem.create(encounters.CheckupEncounter);
-
-
+                this.encounterSystem.create(encounters.ExecuteEncounter);
+                this.input.addListener('keydown:Q', function(){
+                    console.log('Next Quest');
+                    this.encounterSystem.switch();
+                }.bind(this));
                 setTimeout(function() {
                         this.game.fsm.finishLoad();
                 }.bind(this), 1000);
@@ -18700,6 +18758,7 @@ define('dreddrl/dreddrlstate',[
                 this.game.renderer.track(this.pc);
                 //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
                 this.map.render(this.game.renderer);
+
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];
                     var tx = entity.get('xform.tx');

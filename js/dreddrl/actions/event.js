@@ -7,9 +7,8 @@ define(['sge','../action'], function(sge, Action){
 		start: function(){
             var args = Array.prototype.slice.call(arguments);
             var entityId = args.shift();
-            var eventName = args.shift();
 			var entity = this.state.getEntityWithTag(entityId);
-            entity.fireEvent(eventName);
+            entity.fireEvent.apply(entity, args);
 		}
 	});
 	Action.register('event', EventAction);

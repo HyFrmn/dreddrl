@@ -15,6 +15,7 @@ define([
     './components/stats',
     './components/health',
     './components/simpleai',
+    './components/emote',
 
     './actions/dialog',
     './actions/if',
@@ -69,6 +70,7 @@ define([
                     health : {alignment:5, life: 10},
                     weapons: {},
                     stats: {},
+                    emote: {},
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     movement : {
@@ -81,17 +83,25 @@ define([
                         src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
                     },
                 })},
-            enemy : function(){return deepExtend(FACTORYDATA['npc'](), {
-                sprite : {
-                    src : 'assets/sprites/albert.png',
-                },
-                health : {alignment:-10, life: 3},
-                simpleai : { tracking: 'pc', territory: 'albert'},
-                deaddrop: {},
-                actions: {
-                    kill : ['set','@(pc).stats.xp', 5, 'add']
+            enemy : function(){
+                var msgs = [
+                    'I am the law.',
+                    'Objection noted.',
+                    'Sentence. Execution!',
+                    "You've been found guilt.",
+                ]
+                return deepExtend(FACTORYDATA['npc'](), {
+                    sprite : {
+                        src : 'assets/sprites/albert.png',
+                    },
+                    health : {alignment:-10, life: 3},
+                    simpleai : { tracking: 'pc', territory: 'albert'},
+                    deaddrop: {},
+                    actions: {
+                        kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs)]]]
+                    }
                 }
-            })},
+            )},
             gangboss : function(){return deepExtend(FACTORYDATA['enemy'](), {
                 sprite : {
                     src : 'assets/sprites/albertbrownhair.png',
