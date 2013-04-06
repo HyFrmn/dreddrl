@@ -7,7 +7,11 @@ define(['sge','../action'], function(sge, Action){
 		start: function(){
             var args = Array.prototype.slice.call(arguments);
             var entityId = args.shift();
-			var entity = this.state.getEntityWithTag(entityId);
+            if (entityId=='this'){
+            	var entity = this.entity;
+            } else {
+				var entity = this.state.getEntityWithTag(entityId);
+			}
             entity.fireEvent.apply(entity, args);
 		}
 	});
