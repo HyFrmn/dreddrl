@@ -20,9 +20,16 @@ define(['sge/lib/class', 'sge/vendor/underscore'],
 	var GameState = Class.extend({
 		init: function(game, name, options){
 			this.game = game;
-			this._name = name;
+			this._sceneIndex = game.renderer.scenes.length;
+			var scene = game.renderer.createScene();
+			this.scene = new CAAT.ActorContainer();
+			scene.addChild(this.scene);
+			this.scene.setBounds(0,0,640,480);
+			console.log(name, this._sceneIndex, game.renderer)
 			this.input = game.input.createProxy();
 			this.entities = {};
+
+			this._name = name;
 			this._entity_ids = [];
 			this.initState(options);
 			this._timeouts = [];
@@ -40,6 +47,7 @@ define(['sge/lib/class', 'sge/vendor/underscore'],
         startState : function(){
         	//console.log('Start:', this._name);
         	this.input.enable = true;
+        	this.game.renderer.setScene(this._sceneIndex);
         },
         endState : function(){
         	//console.log('End:', this._name);

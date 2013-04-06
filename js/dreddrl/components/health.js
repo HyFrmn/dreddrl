@@ -36,14 +36,16 @@ define(['sge/component'], function(Component){
             return this.data.life
         },
         render : function(renderer, layer){
+            
             if (!this.get('visible') || this.get('alignment')===0){
                 return;
             }
             var life = this.data.life / this.data.maxLife;
             var tx = this.entity.get('xform.tx');
             var ty = this.entity.get('xform.ty');
-            renderer.drawRect(layer, tx - 16, ty - 48, 32, 4, {fillStyle: 'black', strokeStyle: 'black'}, 10);
-            renderer.drawRect(layer, tx - 16, ty - 48, 32 * life, 4, {fillStyle: 'green', strokeStyle: 'none'}, 100);
+            //TODO:  CAAT
+            //renderer.drawRect(layer, tx - 16, ty - 48, 32, 4, {fillStyle: 'black', strokeStyle: 'black'}, 10);
+            //renderer.drawRect(layer, tx - 16, ty - 48, 32 * life, 4, {fillStyle: 'green', strokeStyle: 'none'}, 100);
         }
 	})
 	Component.register('health', HealthComponent);

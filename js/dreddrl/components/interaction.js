@@ -50,7 +50,8 @@ define(['sge'], function(sge){
                 var ty = this.entity.get('xform.ty');
                 var width = this.get('width'); //this.entity.get('physics.width');
                 var height = this.get('height'); //this.entity.get('physics.height');
-                renderer.drawRect(layer, tx - width/2, ty - height/2, width, height, {fillStyle: this.get('fillStyle'), strokeStyle: this.get('strokeStyle')})
+                //TODO: CAAT
+                //renderer.drawRect(layer, tx - width/2, ty - height/2, width, height, {fillStyle: this.get('fillStyle'), strokeStyle: this.get('strokeStyle')})
             }
         },
         deregister: function(){

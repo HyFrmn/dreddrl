@@ -12,11 +12,12 @@ define([
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
     	var DreddRLState = sge.GameState.extend({
     		initState: function(options){
+                this.scene.setBounds(0,0,2048,2048);
                 // Tile Map
                 this.options = options || {};
                 this._contactList = [];
 
-                this._intro = false;
+                this._intro = true;
                 this._killList = [];
 
                 this._logMsg = [];
@@ -33,9 +34,6 @@ define([
                 this.initUi();
                 this.map = new Map(65,66,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
                 this.map.defaultSheet = 'future2';
-                this.game.renderer.createLayer('base');
-                this.game.renderer.createLayer('main');
-                this.game.renderer.createLayer('canopy');
                 // Load Game "Plugins"
 
                 this.loader = new sge.vendor.PxLoader();
@@ -78,11 +76,13 @@ define([
             initGame : function(){
                 //Load Game Plugins
                 this.physics = new Physics(this);
+                this.map.setup(this.scene);
                 this.level = new BlockLevelGenerator(this, this.options);
                 this.encounterSystem = new encounters.EncounterSystem(this);
                 
                 this.encounterSystem.create(encounters.CheckupEncounter);
                 this.encounterSystem.create(encounters.ExecuteEncounter);
+                this.map.render();
                 this.input.addListener('keydown:Q', function(){
                     console.log('Next Quest');
                     this.encounterSystem.switch();
@@ -94,7 +94,10 @@ define([
             },
 
             progressListener : function(e){
-                sge.SpriteSheet.SpriteSheetImages[e.resource.getName()] = e.resource.img;
+                var subpath = e.resource.getName().split('/');
+                var name = subpath[subpath.length-1].split('.')[0];
+                console.log(name, e.resource.img, e.resource.img.width / 32, e.resource.img.height / 32)
+                this.map.spriteSheets[name] = new CAAT.SpriteImage().initialize(e.resource.img, e.resource.img.height / 32, e.resource.img.width / 32);
                 if (e.completedCount == e.totalCount){
                     this.initGame();
                 }
@@ -211,9 +214,12 @@ define([
                 //Tick Encounter System
                 this.encounterSystem.tick(delta);
 
-                this.game.renderer.track(this.pc);
+                //this.game.renderer.track(this.pc);
+                var tx = this.pc.get('xform.tx');
+                var ty = this.pc.get('xform.ty');
+                this.scene.setLocation(-tx+320,-ty+240);
                 //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
-                this.map.render(this.game.renderer);
+                
 
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];
@@ -228,7 +234,7 @@ define([
             
             },
             _paused_tick : function(delta){
-                this.game.renderer.track(this.pc);
+                //this.game.renderer.track(this.pc);
                 this.map.render(this.game.renderer);
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];

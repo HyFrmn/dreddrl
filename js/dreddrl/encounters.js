@@ -121,7 +121,8 @@ define(['sge'], function(sge){
                 if (sge.collision.pointRectIntersect(tx, ty, view)){
                     console.log('WTF!!!');
                 }
-                this.state.game.renderer.drawRect('canopy', tx-4, ty-4, 8, 8, {fillStyle: 'blue'}, 1000000);
+                //TODO: CAAT 
+                //this.state.game.renderer.drawRect('canopy', tx-4, ty-4, 8, 8, {fillStyle: 'blue'}, 1000000);
             }
         },
 		tick: function(){

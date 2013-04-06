@@ -7,20 +7,12 @@ define(['sge'], function(sge){
         },
         startState : function(){
             this._super();
-            if (this.elem){
-                this.elem.fadeIn();
-            }
         },
         endState : function(){
             this._super();
         },
         interact: function(){
-            if (this.elem){
-                this.elem.fadeOut(400, function(){
-                    this.game.fsm.endDialog();
-                }.bind(this));
-            }
-        	
+            this.game.fsm.endDialog();        	
         },
 		tick: function(){
 			this.game._states['game']._paused_tick();

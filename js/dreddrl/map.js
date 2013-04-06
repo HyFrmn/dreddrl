@@ -1,16 +1,14 @@
-define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, SpriteSheet, config){
+define(['sge/lib/class', 'sge/vendor/caat','sge/spritesheet', 'sge/config'], function(Class, CAAT, SpriteSheet, config){
 	var Tile = Class.extend({
 		init: function(x, y){
 			this.x = x;
 			this.y = y;
             this.passable = true;
             this.hidden = false;
-			this.layers = {
+            this.layers = {
 				'layer0' : { srcX : 14, srcY: 8}
 			};
-			this.fade = 1;
-			this.animate = false;
-			this.fadeDelta = 0.1;
+            this.actor = new CAAT.Actor();
 			this.data = {
 				territory: 'neutral'
 			};
@@ -53,6 +51,9 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
                     src: 'assets/quest/img/2/tilesheet.png'
                 }
             }
+            this.options = options;
+            this.container = new CAAT.ActorContainer();
+            this.container.setBounds(0,0,2048,2048)
 			this.width = width;
 			this.height = height;
 			this.tileSize = 32;
@@ -62,6 +63,11 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 			this.tileSheet = null;
 			this.defaultSheet = 'default';
 			this.spriteSheets = {};
+		},
+
+		setup: function(scene){
+			/*
+			var options = this.options
 			if (typeof options.src == "string"){
 				this.spriteSheets['default'] = new SpriteSheet(options.src, 32, 32)
 			} else {
@@ -69,19 +75,23 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 					var src = options.src[i];
 					var subpath = src.split('/');
 					var name = subpath[subpath.length-1].split('.')[0];
-					this.spriteSheets[name] = new SpriteSheet(src, 32, 32);
+					var image = new Image();
+					image.src = src;
+					this.spriteSheets[name] = new CAAT.SpriteImage().initialize(src, image.width / 32, image.height / 32);
 				};
 			}
-
+			*/
             var total = this.width * this.height;
             var x = 0;
 			var y = 0;
+			console.log(this.spriteSheets)
 			for (var i=0; i<total; i++){
 				var tile = new Tile(x, y);
-                if ((x===0) || (x==this.width-1) || (y===0) || (y==this.height-1)){
-                    tile.layers['layer0'] = {srcX: 3, srcY: 0};
-                    tile.passable = false;
-                }
+           		this.container.addChild(tile.actor);
+           		//tile.actor.setSize(60,60).setFillStyle('#00ff00');
+           		//console.log(this.spriteSheets[tile.layers.layer0.spriteSheet)
+           		tile.actor.setBackgroundImage(this.spriteSheets['future2']).setSpriteIndex( 0 )
+           		tile.actor.setLocation(x*32+16,y*32+16);
 				this._tiles.push(tile);
 				x++;
 				if (x>=this.width){
@@ -89,7 +99,7 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 					y++;
 				}
 			}
-
+			scene.addChild(this.container);
 			//this.tileset.onload =  this.loadCallback.bind(this);
 			//this.tileset.src = options.src;
 			//this.tileSheet = new SpriteSheet(this.tileset.src, 32, 32);
@@ -114,6 +124,7 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 			return tiles;
 		},
 		renderTiles : function(renderer, coords){
+			/*
 			var trackX = renderer.tx;
         	var trackY = renderer.ty;
         	renderer.tx = 0;
@@ -158,42 +169,14 @@ define(['sge/lib/class', 'sge/spritesheet', 'sge/config'], function(Class, Sprit
 			renderer.height = height;
 			renderer.tx = trackX;
         	renderer.ty = trackY;
+        	*/
 		},
 		render : function(renderer){
-			//renderer.tx = 0;
-			//renderer.ty = 0;
-			//renderer.width = this.width * this.tileSize;
-			//renderer.height = this.height * this.tileSize;
-			var tmpW = renderer.width;
-			var tmpH = renderer.height;
-			for (var j=0;j<this.layers.length;j++){
-				for (var i = this._tiles.length - 1; i >= 0; i--) {
-					var tile = this._tiles[i];
-					if (tile.fade<1){
-						var tx = (tile.x + 0.5) * this.tileSize;
-						var ty = (tile.y + 0.5) * this.tileSize;
-						var tileData = tile.layers[this.layers[j]];
-						if (tileData){
-							var layer = tileData.layer || "base"
-							var spriteSheet = tileData.spritesheet || this.defaultSheet;
-							renderer.drawSprite(layer, this.spriteSheets[spriteSheet], [tileData.srcX, tileData.srcY], tx, ty, [1,1], false, j*10);
-						}
-					}
-				};
-			}
-			for (var k = this._tiles.length - 1; k >= 0; k--) {
-				var tile = this._tiles[k];
-				var tx = (tile.x) * this.tileSize;
-				var ty = (tile.y) * this.tileSize;
-				tile.anim();
-				renderer.drawRect("canopy", tx, ty, this.tileSize, this.tileSize, {fillStyle: 'rgba(0,32,16,'+tile.fade+')', strokeStyle: 'none'});
-			}
-            /*
-			renderer.cache('base', this.width*this.tileSize, this.height*this.tileSize);
-			renderer.cache('canopy', this.width*this.tileSize, this.height*this.tileSize);
-			renderer.width = tmpW;
-			renderer.height = tmpH;
-            */
+			_.each(this._tiles, function(t){
+				var frame = t.layers.layer0.srcY * 8 + t.layers.layer0.srcX;
+				t.actor.setSpriteIndex(frame);
+			});
+			this.container.cacheAsBitmap();
 		},
 		loadCallback : function(){
 

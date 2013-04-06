@@ -16,8 +16,8 @@ define(['sge'], function(sge){
 			if (this._visible){
 				var tx = this.entity.get('xform.tx');
 	            var ty = this.entity.get('xform.ty');
-				var m = renderer.drawText('canopy', tx+16,ty-36, this.get('text'), {fillStyle: 'white', fontSize: '16px', baseline:'top'}, 180);
-				renderer.drawRect('canopy', tx+12,ty-48,m.width+4,16, {fillStyle: 'black'}, 150);
+				//var m = renderer.drawText('canopy', tx+16,ty-36, this.get('text'), {fillStyle: 'white', fontSize: '16px', baseline:'top'}, 180);
+				//renderer.drawRect('canopy', tx+12,ty-48,m.width+4,16, {fillStyle: 'black'}, 150);
 				
 			}
 		}

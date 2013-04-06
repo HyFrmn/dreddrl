@@ -5,7 +5,10 @@ requirejs.config({
     shim : {
     	'sge/vendor/underscore' : {
     		exports: '_'
-    	}
+    	},
+        'sge/vendor/caat' : {
+            exports: 'CAAT'
+        }
     }
 });
 // Start the main app logic.

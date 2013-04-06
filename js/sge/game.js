@@ -1,13 +1,11 @@
-define(['jquery', 'sge/lib/class' , 'sge/vendor/state-machine','sge/engine','sge/gamestate', 'sge/input','sge/renderer', 'sge/vendor/pxloader'],
-function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, PxLoaderImage){
+define(['jquery', 'sge/lib/class' ,'sge/vendor/caat', 'sge/vendor/state-machine','sge/engine','sge/gamestate', 'sge/input','sge/renderer', 'sge/vendor/pxloader'],
+function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoader, PxLoaderImage){
     var LoadState = GameState.extend({
         initState: function(){
-            this.elem = $('.loadscreen');
-            if (this.elem.length==0){
-                this.elem = $('<div/>').addClass("loadscreen gamestatescreen");
-                this.elem.append($('<img class="loader" src="js/sge/images/ajax-loader.gif"/>'));
-                this.game.elem.append(this.elem);
-            }
+            var title = new CAAT.TextActor().setText('Loading').setLocation(320,240);
+            //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            this.scene.addChild(title);
+            //this.scene.addChild(instruct);
         },
         startState : function(){
             this._super();
@@ -28,12 +26,10 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
 
     var MainMenuState = GameState.extend({
         initState: function(){
-            this.elem = $('.mainmenuscreen');
-            if (this.elem.length==0){
-                this.elem = $('<div/>').addClass("mainmenuscreen gamestatescreen");
-                this.elem.append($('<p>Press Enter to Start Game</p>'));
-                this.game.elem.append(this.elem);
-            }
+            var title = new CAAT.TextActor().setText('DreddRL').setLocation(320,240);
+            var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            this.scene.addChild(title);
+            this.scene.addChild(instruct);
             this.startGame = function(){
                 this.game._states['game'] = new this.game._gameState(this.game, 'Game');
                 this.game.fsm.startGame();    
@@ -184,7 +180,9 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
                 console.log('[SGE ERROR] Need an element to render in. Use elem option to constructor.')
                 this.elem = null;
             }
-            this.renderer = new Renderer(this.elem);
+            this.renderer = new CAAT.Director().initialize(640,480, $('#game')[0]);
+            this.renderer.onRenderStart= function(director_time) {console.log('tick',this.renderer.scenes.indexOf(this.renderer.currentScene))}.bind(this)
+            console.log(this.renderer)
             this.engine.tick = function(delta){
                 this.tick(delta);
             }.bind(this);
@@ -246,7 +244,7 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
             } else {
                 //Do Something;
             }
-            this.renderer.render();
+            //this.renderer.render();
             
             this._tick++;
             if (this._tick>10){
@@ -258,7 +256,8 @@ function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, P
             window.onblur = function(){
                 this.fsm.pause();
             }.bind(this);
-            this.engine.run()
+            this.engine.run(60);
+            CAAT.loop(30);
         }
     });
 
