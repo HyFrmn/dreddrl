@@ -77,7 +77,7 @@ define([
                         map: this.map,
                         speed: 16
                     },
-                    simpleai: {territory: 'neutral'},
+                    //simpleai: {territory: 'neutral'},
                     health : {alignment:0, life: 1},
                     sprite : {
                         src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
@@ -95,7 +95,7 @@ define([
                         src : 'assets/sprites/albert.png',
                     },
                     health : {alignment:-10, life: 3},
-                    simpleai : { tracking: 'pc', territory: 'albert'},
+                    //simpleai : { tracking: 'pc', territory: 'albert'},
                     deaddrop: {},
                     actions: {
                         kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs)]]]
@@ -113,11 +113,13 @@ define([
                 xform: {},
                 physics: {},
                 sprite : {
-                        src : 'assets/sprites/scifi_icons_1.png',
-                        width: 24,
-                        offsetY: 0,
-                        scale: 2,
-                    },
+                    src : 'assets/sprites/scifi_icons_1.png',
+                    width: 24,
+                    offsetY: 0,
+                    scale: 2,
+                    frame: 1
+                },
+
             }},
             gun : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
                 freeitem: {
@@ -128,7 +130,7 @@ define([
             rammen : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
                 sprite : {
                         frame: 123
-                    },
+                },
                 freeitem: {
                     'health.life' : 5,
                     'name' : 'Ramen'

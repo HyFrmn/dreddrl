@@ -7,6 +7,34 @@ define(['sge/component'], function(Component){
 			this.data.vx = data.vx || 0;
 			this.data.vy = data.vy || 0;
 			this.data.dir = data.dir || 'down';
+			this.container = new CAAT.ActorContainer();
+		},
+		_get_container: function(){
+			return this.container;
+		},
+		_set_tx : function(tx, method){
+			this.data.tx = this.__set_value('tx', tx, method);
+			this.entity.fireEvent('xform.move');
+			return this.data.tx;
+		},
+		_set_ty : function(ty, method){
+			this.data.ty = this.__set_value('ty', ty, method);
+			this.entity.fireEvent('xform.move');
+			return this.data.ty;
+		},
+		register: function(state){
+            this._super(state);
+            this.scene = this.state.scene;
+            this.scene.addChild(this.container);
+        },
+        deregister: function(state){
+            this.scene.removeChild(this.container);
+            this._super(state);
+        },
+		render: function(renderer, layer){
+			var tx = this.entity.get('xform.tx');
+            var ty = this.entity.get('xform.ty');
+			this.container.setLocation(tx, ty);
 		}
 	});
 	Component.register('xform', XFormComponent);

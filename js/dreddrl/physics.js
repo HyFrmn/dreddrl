@@ -52,8 +52,12 @@ define(['sge'], function(sge){
 		        }
 
 		    }
-		    entity.set('xform.tx', nx);
-		    entity.set('xform.ty', ny);
+		    if (nx!=tx){
+			    entity.set('xform.tx', nx);
+			}
+			if (ny!=ty){
+			    entity.set('xform.ty', ny);
+			}
 		    
 		    return [dx,dy];
 		},

@@ -17,20 +17,16 @@ define(['sge'], function(sge){
                 for (var x=0;x<3;x++){
                     tile = this.map.getTile(tx+x,ty+y);
                     //tile.passable=true;
-                    tile.layers['layer1'] = {srcX: x,srcY: 32+y, spritesheet:"future1"}
+                    tile.layers['layer1'] = {srcX: x,srcY: 32+y, spriteSheet:"future1"}
                 }
             }
         },
 
     	register: function(state){
-			this.state = state;
+			this._super(state);
             this.map = state.map;
             this.updateTiles();
 		},
-		unregister: function(){
-			this.state = null;
-            this.map = null;
-		}
     });
     sge.Component.register('elevator', Elevator);
     return Elevator

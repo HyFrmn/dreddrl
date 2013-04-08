@@ -21,7 +21,7 @@ define(['sge/component'], function(Component){
                 if ((alignA>0)&&(alignB>0)){
                     return
                 }
-            	this.data.life--;
+            	this.set('life', -1, 'add');
                 if (this.data.life <= 0){
                     this.data.life = 0;
                     this.entity.fireEvent('kill', 'Ran out of health.');
@@ -30,22 +30,27 @@ define(['sge/component'], function(Component){
                 }
             }.bind(this));
         },
+        register: function(state){
+            this._super(state);
+            this.scene = this.state.scene;
+            this.container = new CAAT.ActorContainer().setLocation(0,-24);;
+            bg = new CAAT.Actor().setSize(32,6).setFillStyle('black');
+            this.container.addChild(bg);
+            this.lifebar = new CAAT.Actor().setSize(30,4).setFillStyle('green').setLocation(1,1);
+            this.container.addChild(this.lifebar);
+            this.container.setVisible(this.get('alignment')!=0)
+            this.entity.get('xform.container').addChild(this.container);
+        },
+        deregister: function(state){
+            this.entity.get('xform.container').removeChild(this.container);
+            this._super(state);
+        },
         _set_life : function(value, method){
             var life = this.__set_value('life', value, method);
             this.data.life = Math.min(life, this.get('maxLife'));
+            console.log(this.data.life)
+            this.lifebar.setSize(30*(this.data.life/this.get('maxLife')),4)
             return this.data.life
-        },
-        render : function(renderer, layer){
-            
-            if (!this.get('visible') || this.get('alignment')===0){
-                return;
-            }
-            var life = this.data.life / this.data.maxLife;
-            var tx = this.entity.get('xform.tx');
-            var ty = this.entity.get('xform.ty');
-            //TODO:  CAAT
-            //renderer.drawRect(layer, tx - 16, ty - 48, 32, 4, {fillStyle: 'black', strokeStyle: 'black'}, 10);
-            //renderer.drawRect(layer, tx - 16, ty - 48, 32 * life, 4, {fillStyle: 'green', strokeStyle: 'none'}, 100);
         }
 	})
 	Component.register('health', HealthComponent);

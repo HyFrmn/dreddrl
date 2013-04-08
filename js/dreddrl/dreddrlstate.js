@@ -27,14 +27,20 @@ define([
                 this._track_x = null;
                 this._track_y = null;
                 this._debug_count = 0;
-                this._debug_tick = false;
+                this._debugTick = false;
+
 
 
                 this.factory = Factory;
-                this.initUi();
                 this.map = new Map(65,66,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
                 this.map.defaultSheet = 'future2';
                 // Load Game "Plugins"
+
+                //Hash ID to Entity ID
+                this._spatialHash = {};
+                this._spatialHashReverse = {};
+                this._spatialHashWidth = ((this.map.width * 32) / 4);
+                this._spatialHashHeight = ((this.map.height * 32) / 4);
 
                 this.loader = new sge.vendor.PxLoader();
                 this.loader.addProgressListener(this.progressListener.bind(this));
@@ -77,14 +83,26 @@ define([
                 //Load Game Plugins
                 this.physics = new Physics(this);
                 this.map.setup(this.scene);
+                this._interaction_actor = new CAAT.Actor().setFillStyle('green').setStrokeStyle('black').setSize(32,32).setVisible(false);
+                this.scene.addChild(this._interaction_actor);
                 this.level = new BlockLevelGenerator(this, this.options);
-                this.encounterSystem = new encounters.EncounterSystem(this);
+                pc = Factory('pc', {
+                    xform : {
+                        tx: 96,
+                        ty: 384,
+                    }});
+                pc.tags.push('pc');
+                pc.addListener('kill', function(){
+                    this.state._killList.push(pc);
+                }.bind(pc));
+                this.addEntity(pc);
+                this.pc = pc;
+                //this.encounterSystem = new encounters.EncounterSystem(this);
                 
-                this.encounterSystem.create(encounters.CheckupEncounter);
-                this.encounterSystem.create(encounters.ExecuteEncounter);
+                //this.encounterSystem.create(encounters.CheckupEncounter);
+                //this.encounterSystem.create(encounters.ExecuteEncounter);
                 this.map.render();
                 this.input.addListener('keydown:Q', function(){
-                    console.log('Next Quest');
                     this.encounterSystem.switch();
                 }.bind(this));
                 setTimeout(function() {
@@ -96,8 +114,12 @@ define([
             progressListener : function(e){
                 var subpath = e.resource.getName().split('/');
                 var name = subpath[subpath.length-1].split('.')[0];
-                console.log(name, e.resource.img, e.resource.img.width / 32, e.resource.img.height / 32)
-                this.map.spriteSheets[name] = new CAAT.SpriteImage().initialize(e.resource.img, e.resource.img.height / 32, e.resource.img.width / 32);
+                var spriteSize = 32;
+                if (name.match(/icons/)){
+                    spriteSize = 24;
+                }
+                console.log(name, e.resource.img.height / spriteSize, e.resource.img.width / spriteSize)
+                sge.Renderer.SPRITESHEETS[name] = new CAAT.SpriteImage().initialize(e.resource.img, e.resource.img.height / spriteSize, e.resource.img.width / spriteSize);
                 if (e.completedCount == e.totalCount){
                     this.initGame();
                 }
@@ -120,35 +142,50 @@ define([
                 entity.addListener('log', function(msg){
                     this.logCallback(msg);
                 }.bind(this));
-            },
-            initUi : function(){
-                this._elem_ammo = $('span.ammo');
-                this._elem_health = $('span.health');
-                this._elem_xp = $('span.xp');
-                this._elem_log = $('ul.log');
-            },
-            updateUi : function(){
-                if (this.pc){
-                    this._elem_ammo.text(this.pc.get('inventory.ammo'));
-                    this._elem_health.text(this.pc.get('health.life'));
-                    this._elem_xp.text(this.pc.get('stats.xp'));
-                }
+                entity.addListener('xform.move', function(){
+                    this._updateHash(entity);
+                }.bind(this));
+                this._updateHash(entity);
             },
             logCallback : function(msg){
                 this.log(msg);
             },
             log : function(msg){
                 var elem = $('<p/>').text(msg);
-                this._elem_log.prepend($('<li/>').append(elem));
+                //this._elem_log.prepend($('<li/>').append(elem));
+            },
+            _updateHash : function(entity){
+                var cx = Math.floor(entity.get('xform.tx') / this._spatialHashWidth);
+                var cy = Math.floor(entity.get('xform.ty') / this._spatialHashHeight);
+                if (this._spatialHashReverse[entity.id]!==undefined){
+                    var hash = this._spatialHashReverse[entity.id];
+                    this._spatialHashReverse[entity.id]=undefined;
+                    this._spatialHash[hash] = _.without(this._spatialHash[hash], entity.id);
+                }
+                var hash = cx + '.' + cy;
+                if (this._spatialHash[hash]==undefined){
+                    this._spatialHash[hash]=[];
+                }
+                this._spatialHash[hash].push(entity.id);
+                this._spatialHashReverse[entity.id] = hash;
             },
             _interaction_tick : function(delta){
                 var closest = null;
                 var cdist = 64;
                 var ccord = null;
-                var entities = this.getEntitiesWithComponent('interact');
-                
+                var pcHash = this._spatialHashReverse[this.pc.id];
+                var entities = _.map(this._spatialHash[pcHash], function(id){
+                    return this.getEntity(id);
+                }.bind(this))
+                if (this._debugTick) console.log('Interact', entities);
                 for (var i = entities.length - 1; i >= 0; i--) {
                     entity = entities[i];
+                    if (entity.get('interact')==undefined){
+                        continue;
+                    }
+                    if (entity==this.pc){
+                        continue;
+                    }
                     if (entity.get('interact.targets')!==null){
                         coords = entity.get('interact.targets');
                     } else {
@@ -171,9 +208,12 @@ define([
                 if (closest!=this._closest){
                     if (this._closest){
                         this._closest.fireEvent('focus.lose');
+                        this._interaction_actor.setVisible(false);
                     }
                     if (closest){
                         closest.fireEvent('focus.gain', ccord);
+                        this._interaction_actor.setLocation(ccord[0],ccord[1]);
+                        this._interaction_actor.setVisible(true);
                     }
                     this._closest = closest;
                 }
@@ -183,59 +223,59 @@ define([
                 this.game.fsm.startDialog();
             },
             tick : function(delta){
-                this._debug_count++;
-                if (this._debug_count>30){
-                    this._debug_count = 0;
-                    this._debug_tick = true;
-                } else {
-                    this._debug_tick = false
-                }
+                this._debugTick = this.game.engine._debugTick;
+                var debugTime = Date.now();
                 this.tickTimeouts(delta);
+                if (this._debugTick){ var t=Date.now(); console.log('Timeout Time:', t-debugTime); debugTime=t};
                 this.physics.resolveCollisions(delta);
+                if (this._debugTick){ var t=Date.now(); console.log('Physics Time:', t-debugTime); debugTime=t};
+
+
+                /*
                 if (this._intro==false){
                     this._intro = true;
                     this.startDialog(INTRO)
                 }
+                */
                 
                 //Update Interaction System
                 this._interaction_tick(delta);
-                
+                if (this._debugTick){ var t=Date.now(); console.log('Interaction Time:', t-debugTime); debugTime=t};
                 //Update Component System
-                _.each(this._entity_ids, function(id){
-                    var entity = this.entities[id];
-                    entity.componentCall('tick', delta);
-                }.bind(this));
-
+                for (var i = this._entity_ids.length - 1; i >= 0; i--) {
+                    //var c = Date.now();
+                    this.entities[this._entity_ids[i]].componentCall('tick', delta);
+                    //if (this._debugTick){ var t=Date.now(); console.log('Time:', i, t-c);};
+                };
+                if (this._debugTick){ var t=Date.now(); console.log('Component Time:', t-debugTime, this._entity_ids.length); debugTime=t};
                 //Prune entities
                 _.each(this._killList, function(e){
                     this.removeEntity(e);
                 }.bind(this))
-
+                if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
                 //Tick Encounter System
-                this.encounterSystem.tick(delta);
-
+                //this.encounterSystem.tick(delta);
+                if (this._debugTick){ var t=Date.now(); console.log('Encounter Time:', t-debugTime); debugTime=t};
                 //this.game.renderer.track(this.pc);
                 var tx = this.pc.get('xform.tx');
                 var ty = this.pc.get('xform.ty');
                 this.scene.setLocation(-tx+320,-ty+240);
                 //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
-                
+                if (this._debugTick){ var t=Date.now(); console.log('Scene Time:', t-debugTime); debugTime=t};
 
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];
                     var tx = entity.get('xform.tx');
                     var ty = entity.get('xform.ty');
                     var tile = this.map.getTile(Math.floor(tx / 32), Math.floor(ty / 32));
-                    if (tile.fade<1){
+                    if (tile.fade<1||true){
                         entity.componentCall('render', this.game.renderer, 'main');
                     }
                 }.bind(this));
-                this.updateUi();
-            
+                if (this._debugTick){ var t=Date.now(); console.log('Render Time:', t-debugTime); debugTime=t};
             },
             _paused_tick : function(delta){
                 //this.game.renderer.track(this.pc);
-                this.map.render(this.game.renderer);
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];
                     entity.componentCall('render', this.game.renderer, 'main');

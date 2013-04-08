@@ -7,7 +7,6 @@ define(['sge','../action'], function(sge, Action){
 		start: function(expr, trueActions, falseActions){
 	        var parsedExpr = this.parseExpr(expr, this.entity);
 	        var result = Boolean(this.evalExpr(parsedExpr, this.entity));
-	        console.log(result);
 	        var actionList = [];
 	        if(result) {
 	            actionList = trueActions.slice(0);
@@ -16,7 +15,6 @@ define(['sge','../action'], function(sge, Action){
 	        }
 	        _.each(actionList, function(actionData) {
 	        	actionData = actionData.slice(0);
-	        	console.log(actionData);
 	            var type = actionData.shift();
                 var action = Action.Load(this.entity, {type: type, args: actionData});
                 action.run(this.state);

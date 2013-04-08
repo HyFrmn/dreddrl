@@ -5,12 +5,12 @@ define([
     './map'
     ],
     function(sge, $, Factory, Encounters, Map){
-        var FLOORTILE =  { srcX : 0, srcY: 0, spritesheet: 'future2'};
-        var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spritesheet: 'future2'}
-        var DOOROPENTILE1 = { srcX : 1, srcY: 36, spritesheet: 'future2'}
-        var DOOROPENTILE2 = { srcX : 1, srcY: 37, spritesheet: 'future2'}
-        var DOORCLOSEDTILE1 = { srcX : 2, srcY: 36, spritesheet: 'future2'}
-        var DOORCLOSEDTILE2 = { srcX : 2, srcY: 37, spritesheet: 'future2'}
+        var FLOORTILE =  { srcX : 0, srcY: 0, spriteSheet: 'future2'};
+        var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spriteSheet: 'future2'}
+        var DOOROPENTILE1 = { srcX : 1, srcY: 36, spriteSheet: 'future2'}
+        var DOOROPENTILE2 = { srcX : 1, srcY: 37, spriteSheet: 'future2'}
+        var DOORCLOSEDTILE1 = { srcX : 2, srcY: 36, spriteSheet: 'future2'}
+        var DOORCLOSEDTILE2 = { srcX : 2, srcY: 37, spriteSheet: 'future2'}
 
 
         var boxcoords = function(sx, sy, width, height){
@@ -72,12 +72,14 @@ define([
                     tile.layers['layer0'] = CEILTILE;
                     tile.passable = false;
                 }
+                
                 if ((this.options.doors=='bottom')||(this.options.doors=='both')){
                     this.createDoor(this.cx, this.cy+halfY+3, this.options.open);
                 } 
                 if ((this.options.doors=='top')||(this.options.doors=='both')) {
                     this.createDoor(this.cx, this.cy-halfY-1, this.options.open);
                 }
+
                 this.update();
             },
             createDoor : function(cx, cy, open){
@@ -164,7 +166,7 @@ define([
 
                 this.buildWall(0,this.map.height-2,this.map.width, true);
 
-                this.state.pc = this.createPC();
+                //this.state.pc = this.createPC();
             },
 
             buildSmallRoomHall : function(sx, sy, ex, options){
@@ -269,6 +271,7 @@ define([
                 }
 
                 //Spawn Gang
+                //*
                 _.each(this.rooms, function(room){
                     if (room.options.doors==null){
                         return;
@@ -310,6 +313,7 @@ define([
                         }
                     }
                 }.bind(this));
+                //*/
             },
             getRandomEncounterRoom : function(options){
                 options = options || {};

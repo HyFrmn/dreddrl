@@ -1,4 +1,4 @@
-define(['sge/lib/class', 'sge/vendor/caat','sge/spritesheet', 'sge/config'], function(Class, CAAT, SpriteSheet, config){
+define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], function(Class, CAAT, Renderer, config){
 	var Tile = Class.extend({
 		init: function(x, y){
 			this.x = x;
@@ -6,9 +6,11 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/spritesheet', 'sge/config'], fun
             this.passable = true;
             this.hidden = false;
             this.layers = {
-				'layer0' : { srcX : 14, srcY: 8}
+				'layer0' : { srcX : 14, srcY: 8},
 			};
-            this.actor = new CAAT.Actor();
+            this.actors = {
+
+            };
 			this.data = {
 				territory: 'neutral'
 			};
@@ -52,17 +54,21 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/spritesheet', 'sge/config'], fun
                 }
             }
             this.options = options;
-            this.container = new CAAT.ActorContainer();
-            this.container.setBounds(0,0,2048,2048)
 			this.width = width;
 			this.height = height;
 			this.tileSize = 32;
+			this.container = new CAAT.ActorContainer();
+            this.container.setBounds(0,0,width*32,height*32);
 			this._tiles = [];
-			this.layers = ['layer0','layer1','layer2'];
+			this.layers = ['layer0','layer1'];
+			this.layerContainers = {};
+			_.each(this.layers, function(layerName){
+				this.layerContainers[layerName] = new CAAT.ActorContainer().setBounds(0,0,width*32,height*32);;
+				this.container.addChild(this.layerContainers[layerName]);
+			}.bind(this));
 			this.tileset = new Image();
 			this.tileSheet = null;
 			this.defaultSheet = 'default';
-			this.spriteSheets = {};
 		},
 
 		setup: function(scene){
@@ -84,14 +90,14 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/spritesheet', 'sge/config'], fun
             var total = this.width * this.height;
             var x = 0;
 			var y = 0;
-			console.log(this.spriteSheets)
 			for (var i=0; i<total; i++){
 				var tile = new Tile(x, y);
-           		this.container.addChild(tile.actor);
-           		//tile.actor.setSize(60,60).setFillStyle('#00ff00');
-           		//console.log(this.spriteSheets[tile.layers.layer0.spriteSheet)
-           		tile.actor.setBackgroundImage(this.spriteSheets['future2']).setSpriteIndex( 0 )
-           		tile.actor.setLocation(x*32+16,y*32+16);
+				_.each(this.layers, function(layerName){
+					tile.actors[layerName] = new CAAT.Actor().setLocation(x*32+16,y*32+16).setFillStyle('#FF0000').setSize(30,30);
+					tile.actors[layerName].setBackgroundImage(Renderer.SPRITESHEETS['future2']).setSpriteIndex( 15 )//.setLocation(x*32+16,y*32+16);
+					//this.container.addChild(tile.actors[layerName]);
+					this.layerContainers[layerName].addChild(tile.actors[layerName]);
+				}.bind(this));
 				this._tiles.push(tile);
 				x++;
 				if (x>=this.width){
@@ -173,10 +179,17 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/spritesheet', 'sge/config'], fun
 		},
 		render : function(renderer){
 			_.each(this._tiles, function(t){
-				var frame = t.layers.layer0.srcY * 8 + t.layers.layer0.srcX;
-				t.actor.setSpriteIndex(frame);
-			});
-			this.container.cacheAsBitmap();
+				_.each(this.layers, function(layerName){
+					if (t.layers[layerName]){
+						var frame = t.layers[layerName].srcY * 8 + t.layers[layerName].srcX;
+						var spriteSheet= t.layers[layerName].spriteSheet || this.defaultSheet;
+						t.actors[layerName].setBackgroundImage(Renderer.SPRITESHEETS[spriteSheet]).setSpriteIndex(frame);
+					} else {
+						t.actors[layerName].setVisible(false);
+					}
+				}.bind(this));
+			}.bind(this));
+			this.container.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
 		},
 		loadCallback : function(){
 

@@ -56,12 +56,10 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
 
     var GameOverState = GameState.extend({
         initState: function(){
-            this.elem = $('.gameoverscreen') || null;
-            if (this.elem.length==0){
-                this.elem = $('<div/>').addClass("gameoverscreen gamestatescreen");
-                this.elem.append($('<h1>Game Over</h1><p>Press Enter to Continue.</p>'));
-                this.game.elem.append(this.elem);
-            }
+            var title = new CAAT.TextActor().setText('Game Over').setLocation(320,240);
+            //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            this.scene.addChild(title);
+            //this.scene.addChild(instruct);
             this.startGame = function(){
                 this.game._states['game'] = new this.game._gameState(this.game);
                 this.game.fsm.loadMainMenu();
@@ -88,12 +86,10 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
 
     var GameWinState = GameState.extend({
         initState: function(){
-            this.elem = $('.gamewinscreen');
-            if (this.elem.length==0){
-                this.elem = $('<div/>').addClass("gamewinscreen gamestatescreen");
-                this.elem.append($('<h1>You Win!</h1><p>Press Enter to Continue.</p>'));
-                this.game.elem.append(this.elem);
-            }
+            var title = new CAAT.TextActor().setText('Win').setLocation(320,240);
+            //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            this.scene.addChild(title);
+            //this.scene.addChild(instruct);
             this.startGame = function(){
                 this.game._states['game'] = new this.game._gameState(this.game);
                 this.game.fsm.loadMainMenu();
@@ -119,12 +115,10 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
 
     var PauseState = GameState.extend({
         initState: function(){
-            this.elem = $('.pausescreen');
-            if (this.elem.length==0){
-                this.elem = $('<div/>').addClass("pausescreen gamestatescreen");
-                this.elem.append($('<h1>Paused</h1>'));
-                this.game.elem.append(this.elem);
-            }
+            var title = new CAAT.TextActor().setText('Paused').setLocation(320,240);
+            //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            this.scene.addChild(title);
+            //this.scene.addChild(instruct);
             this.unpause = function(){
                 this.game.fsm.unpause();
             }.bind(this);
@@ -181,8 +175,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
                 this.elem = null;
             }
             this.renderer = new CAAT.Director().initialize(640,480, $('#game')[0]);
-            this.renderer.onRenderStart= function(director_time) {console.log('tick',this.renderer.scenes.indexOf(this.renderer.currentScene))}.bind(this)
-            console.log(this.renderer)
+            //this.renderer.onRenderStart= function(director_time) {console.log('tick',this.renderer.scenes.indexOf(this.renderer.currentScene))}.bind(this);
             this.engine.tick = function(delta){
                 this.tick(delta);
             }.bind(this);
@@ -244,19 +237,12 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
             } else {
                 //Do Something;
             }
-            //this.renderer.render();
-            
-            this._tick++;
-            if (this._tick>10){
-                this._tick = 0;
-                this._debugElem.text(1 / delta);
-            }
         },
         start: function(){
             window.onblur = function(){
                 this.fsm.pause();
             }.bind(this);
-            this.engine.run(60);
+            this.engine.run(15);
             CAAT.loop(30);
         }
     });

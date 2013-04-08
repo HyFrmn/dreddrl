@@ -15,6 +15,7 @@ requirejs.config({
 var game = null;
 requirejs(['jquery','sge','dreddrl'],
 function   ($, sge, dreddrl) {
+    CAAT.DEBUG=1;
     game = new sge.Game({elem: '#game'});
     var state = game.setGameState(dreddrl.DreddRLState);
     game._states['dialog'] = new dreddrl.DialogState(game, 'Dialog');

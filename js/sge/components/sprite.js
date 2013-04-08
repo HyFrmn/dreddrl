@@ -1,4 +1,4 @@
-define(['sge/component', 'sge/spritesheet', 'sge/config'], function(Component, SpriteSheet, config){
+define(['sge/component', 'sge/spritesheet', 'sge/config', 'sge/renderer'], function(Component, SpriteSheet, config, Renderer){
 	var SpriteComponent = Component.extend({
 		init : function(entity, data){
 			this._super(entity, data)
@@ -7,9 +7,9 @@ define(['sge/component', 'sge/spritesheet', 'sge/config'], function(Component, S
 			this.data.mirror = true;
 			this.data.offsetX = data.offsetX || 0;
 			this.data.offsetY = data.offsetY || 0;
-			var img = new Image();
-			img.src = config.baseUrl + data.src;
-			this.spriteSheet = new CAAT.SpriteImage().initialize(img,4,3)
+			var subpath = data.src.split('/');
+			var name = subpath[subpath.length-1].split('.')[0];
+			this.spriteSheet = Renderer.SPRITESHEETS[name];
             //new SpriteSheet(config.baseUrl + data.src, data.width, data.height);
             /*
 			this.tintCallback = function(color, length){
@@ -23,26 +23,19 @@ define(['sge/component', 'sge/spritesheet', 'sge/config'], function(Component, S
 		},
 		register: function(state){
 			this._super(state);
-			var scene = this.state.scene;
-			var x = this.entity.get('xform.tx');
-			var y = this.entity.get('xform.ty');
 			this.actor = new CAAT.Actor().
-			        setLocation(x,y).
+			        setLocation(this.get('offsetX'),this.get('offsetY')).
 			        setBackgroundImage(this.spriteSheet).
-                    setAnimationImageIndex( [0,1,2,1] )
-			scene.addChild(this.actor);
-			this.scene = scene;
-			//console.log(this.actor);
+                    setSpriteIndex( 0 )
+			this.entity.get('xform.container').addChild(this.actor);
 		},
 		deregister: function(state){
-			this.scene.removeChild(this.actor);
+			this.entity.get('xform.container').removeChild(this.actor);
 			this._super(state);
 		},
 		
 		render : function(renderer, layer){
-			var x = this.entity.get('xform.tx');
-			var y = this.entity.get('xform.ty');
-			this.actor.setLocation(x, y);
+			this.actor.setSpriteIndex(this.get('frame'));
 		}
 			
 	});

@@ -5,22 +5,34 @@ define(['sge'], function(sge){
 			this._visible = false;
 			this.data.text = data.text || "";
 			this.entity.addListener('emote.msg', function(msg){
+				this.container.setVisible(true);
 				this.set('text', msg);
-				this._visible = true;
 				this.entity.state.createTimeout(1, function(){
-					this._visible = false;
+					this.container.setVisible(false);
 				}.bind(this));
 			}.bind(this))
 		},
-		render: function(renderer, layer){
-			if (this._visible){
-				var tx = this.entity.get('xform.tx');
-	            var ty = this.entity.get('xform.ty');
-				//var m = renderer.drawText('canopy', tx+16,ty-36, this.get('text'), {fillStyle: 'white', fontSize: '16px', baseline:'top'}, 180);
-				//renderer.drawRect('canopy', tx+12,ty-48,m.width+4,16, {fillStyle: 'black'}, 150);
-				
-			}
-		}
+		register: function(state){
+            this._super(state);
+            this.scene = this.state.scene;
+            this.container = new CAAT.ActorContainer().setLocation(32,-24);
+            this.bg = new CAAT.Actor().setSize(32,16).setFillStyle('black');
+            this.container.addChild(this.bg);
+            this.text = new CAAT.TextActor().setLocation(1,1);
+            this.container.addChild(this.text);
+            this.container.setVisible(false);
+            this.entity.get('xform').container.addChild(this.container);
+        },
+        deregister: function(state){
+            this.entity.get('xform').container.removeChild(this.container);
+            this._super(state);
+        },
+        _set_text: function(text){
+        	this.text.setText(text);
+        	this.text.calcTextSize(this.state.game.renderer);
+        	this.bg.setSize(this.text.textWidth+4, 16);
+        	return text;
+        }
 	});
 
 	sge.Component.register('emote', Emote);

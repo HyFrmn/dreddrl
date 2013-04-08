@@ -28,13 +28,7 @@ define(['sge'], function(sge){
 				}});
 
             this.state.addEntity(newItem);
-        },
-    	register: function(state){
-			this.state = state;
-		},
-		unregister: function(){
-			this.state = null;
-		}
+        }
     });
     sge.Component.register('deaddrop', DeadDrop);
     return DeadDrop
