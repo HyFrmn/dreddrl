@@ -38,7 +38,7 @@ define(['sge/component'], function(Component){
             this.container.addChild(bg);
             this.lifebar = new CAAT.Actor().setSize(30,4).setFillStyle('green').setLocation(1,1);
             this.container.addChild(this.lifebar);
-            this.container.setVisible(this.get('alignment')!=0)
+            this.container.setVisible(this.get('alignment')!=0 && this.get('visible')!=false)
             this.entity.get('xform.container').addChild(this.container);
         },
         deregister: function(state){

@@ -154,13 +154,16 @@ define([
                 var elem = $('<p/>').text(msg);
                 //this._elem_log.prepend($('<li/>').append(elem));
             },
+            _removeFromHash : function(entity){
+                var hash = this._spatialHashReverse[entity.id];
+                    this._spatialHashReverse[entity.id]=undefined;
+                    this._spatialHash[hash] = _.without(this._spatialHash[hash], entity.id);
+            },
             _updateHash : function(entity){
                 var cx = Math.floor(entity.get('xform.tx') / this._spatialHashWidth);
                 var cy = Math.floor(entity.get('xform.ty') / this._spatialHashHeight);
                 if (this._spatialHashReverse[entity.id]!==undefined){
-                    var hash = this._spatialHashReverse[entity.id];
-                    this._spatialHashReverse[entity.id]=undefined;
-                    this._spatialHash[hash] = _.without(this._spatialHash[hash], entity.id);
+                    this._removeFromHash(entity);
                 }
                 var hash = cx + '.' + cy;
                 if (this._spatialHash[hash]==undefined){
@@ -250,8 +253,9 @@ define([
                 if (this._debugTick){ var t=Date.now(); console.log('Component Time:', t-debugTime, this._entity_ids.length); debugTime=t};
                 //Prune entities
                 _.each(this._killList, function(e){
+                    this._removeFromHash(e);
                     this.removeEntity(e);
-                }.bind(this))
+                }.bind(this));
                 if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
                 //Tick Encounter System
                 //this.encounterSystem.tick(delta);

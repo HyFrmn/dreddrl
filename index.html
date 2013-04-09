@@ -22,64 +22,9 @@
         <!--[if lt IE 7]>
             <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
         <![endif]-->
-        <div id="game">
-            <div class="mainmenuscreen gamestatescreen">
-                <h1>Dredd RL</h1>
-                <p>Press Enter to Start Game</p>
-            </div>    
-            <div class="gameoverscreen gamestatescreen">
-                <h1>Game Over</h1>
-                <p>You died. Justice is no more.</p>
-            </div> 
-            <div class="gamewinscreen gamestatescreen">
-                <h1>Alive</h1>
-                <p>You are the law.</p>
-            </div> 
-            <div class="pausescreen gamestatescreen">
-                <h1>Paused</h1>
-            </div>
-            <div class="loadscreen gamestatescreen">
-                <img class="loader" src="js/sge/images/ajax-loader.gif"/>
-            </div>
-            <div class="dialogscreen gamestatescreen">
-                <div class="dialogbox">
-                    <div class="content">
-                        
-                    </div>
-                    <div class="instructions">
-                        [Press <span class="accent">ENTER</span> to continue]
-                    </div>
-                </div>
-
-            </div>
-        </div>
-        <div id="debug-window" class="window float-right">
-            FPS: <span class="fps"/>
-        </div>
-         <div id="log-window" class="window float-right">
-            <ul class="log">
-                <li><p>Start Game</p></li>
-            </ul>
-        </div>
-        <div id="stats-window" class="window float-right">
-            <table class="stats full-width">
-               <tr><td class="label">HEALTH:</td><td><span class="health"/></td></tr>
-               <tr><td class="label">AMMO:</td><td><span class="ammo"/></td></tr>
-               <tr><td class="label">XP:</td><td><span class="xp"/></td></tr>
-            </table>
-        </div>
-        <div id="controls-window" class="window float-right">
-            <h1>Controls</h1>
-            <table class="controls full-width">
-                <tr><td class="action">Up</td><td>W or Up Arrow</tr>
-                <tr><td class="action">Down </td><td>S or Down Arrow</td></tr>
-                <tr><td class="action">Left</td><td>A or Left Arrow</td></tr>
-                <tr><td class="action">Right</td><td>D or Right Arrow</td></tr>
-                <tr><td class="action">Shoot</td><td>X</td></tr>
-                <tr><td class="action">Strafe</td><td>Y</td></tr>
-                <tr><td class="action">Pause</td><td>Spacebar</td>
-            </table>
-        </div>
+        <canvas id="game">
+            
+        </canvas>
         <script data-main="js/game" src="dreddrl.js"></script>
     </body>
 </html>

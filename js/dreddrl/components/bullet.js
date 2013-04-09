@@ -12,9 +12,26 @@ define(['sge'],function(sge){
 		kill: function(){
 			this.entity.fireEvent('kill');
 		},
-		register: function(){
-			this.entity.addListener('contact.tile', this.kill)
-		},
+		register: function(state){
+            this._super(state);
+            this.entity.addListener('contact.tile', this.kill);
+            this.scene = this.state.scene;
+            this.container = new CAAT.ActorContainer().setLocation(12,12);
+            var sizeX = 6;
+            var sizeY = 32;
+            if (Math.abs(this.entity.get('xform.vx')) > Math.abs(this.entity.get('xform.vy'))){
+            	sizeX = 32;
+            	sizeY = 6;
+            }
+            this.actor = new CAAT.Actor().setSize(sizeX,sizeY).setFillStyle('yellow').setLocation(0,0);
+            this.container.addChild(this.actor);
+            this.entity.get('xform.container').addChild(this.container);
+        },
+        deregister: function(state){
+        	this.entity.removeListener('contact.tile', this.kill);
+            this.entity.get('xform.container').removeChild(this.container);
+            this._super(state);
+        },
 		tick: function(delta){
 			this.entity.set('physics.width', Math.max(Math.abs(this.entity.get('xform.vx')) * delta, 2)*2);
 			this.entity.set('physics.height', Math.max(Math.abs(this.entity.get('xform.vy')) * delta, 2)*2);
