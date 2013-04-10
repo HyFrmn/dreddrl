@@ -206,32 +206,6 @@ define([
                 //Elevator Shafts
                 this.createRoom(4, 5, 7, 5, {doors: null});
                 this.createRoom(60, 5, 7, 5, {doors: null});
-                
-                //Create Elevator Doors
-                var elevator = Factory('elevator', {xform:{
-                    tx: (2*32)+16,
-                    ty: (11*32)+16
-                }})
-                this.state.addEntity(elevator);
-
-                var elevator = Factory('elevator', {xform:{
-                    tx: (6*32)+16,
-                    ty: (11*32)+16
-                }})
-                this.state.addEntity(elevator);
-                
-                //Create Elevator Doors
-                var elevator = Factory('elevator', {xform:{
-                    tx: (58*32)+16,
-                    ty: (11*32)+16
-                }})
-                this.state.addEntity(elevator);
-
-                var elevator = Factory('elevator', {xform:{
-                    tx: (62*32)+16,
-                    ty: (11*32)+16
-                }})
-                this.state.addEntity(elevator);
 
                 var tiles = this.map.getTiles(boxcoords(32, 0, 32, 32));
                 _.each(tiles, function(tile){
@@ -269,6 +243,33 @@ define([
                         this.buildSmallRoomHall(8,55,65, {doors: 'top'});
                         break;
                 }
+
+                //Create Elevator Doors
+                var elevator = Factory('elevator', {xform:{
+                    tx: (2*32)+16,
+                    ty: (11*32)+16
+                }})
+                this.state.addEntity(elevator);
+
+                var elevator = Factory('elevator', {xform:{
+                    tx: (6*32)+16,
+                    ty: (11*32)+16
+                }})
+                this.state.addEntity(elevator);
+                
+                //Create Elevator Doors
+                var elevator = Factory('elevator', {xform:{
+                    tx: (58*32)+16,
+                    ty: (11*32)+16
+                }})
+                this.state.addEntity(elevator);
+
+                var elevator = Factory('elevator', {xform:{
+                    tx: (62*32)+16,
+                    ty: (11*32)+16
+                }})
+                this.state.addEntity(elevator);
+
 
                 //Spawn Gang
                 //*

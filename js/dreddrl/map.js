@@ -106,6 +106,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
 				}
 			}
 			scene.addChild(this.container);
+			this.scene = scene;
 			//this.tileset.onload =  this.loadCallback.bind(this);
 			//this.tileset.src = options.src;
 			//this.tileSheet = new SpriteSheet(this.tileset.src, 32, 32);
@@ -129,67 +130,38 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
 			}.bind(this));
 			return tiles;
 		},
-		renderTiles : function(renderer, coords){
-			/*
-			var trackX = renderer.tx;
-        	var trackY = renderer.ty;
-        	renderer.tx = 0;
-        	renderer.ty = 0;
-        	var width = renderer.width;
-        	var height = renderer.height;
-        	renderer.width = 2048;
-        	renderer.height = 2048;
-        	var colorR = Math.round(Math.random() * 255);
-        	var colorG = Math.round(Math.random() * 255);
-        	var colorB = Math.round(Math.random() * 255);
-			for (var i = coords.length - 1; i >= 0; i--) {
-				var tile = coords[i];
-				if (tile.fade===undefined){
-					var x = coords[i][0];
-					var y = coords[i][1];
-					tile = this.getTile(x,y);
-				}
-				for (var j=0;j<this.layers.length;j++){
-					if (tile.fade<1){
-						var tx = (tile.x + 0.5) * this.tileSize;
-						var ty = (tile.y + 0.5) * this.tileSize;
-						var tileData = tile.layers[this.layers[j]];
-						if (tileData){
-							var layer = tileData.layer || "base"
-							var spriteSheet = tileData.spritesheet || this.defaultSheet;
-							renderer.drawSprite(layer, this.spriteSheets[spriteSheet], [tileData.srcX, tileData.srcY], tx, ty, [1,1], false, j*10);
-						}
-					}
-				}
-				if (!tile.fade){
-					var style = 'rgba('+colorR+','+colorG+','+colorB+',0.1)';
-					//renderer.drawRect("canopy", tx-16, ty-16, this.tileSize, this.tileSize, {fillStyle: style, strokeStyle: 'none'}, 100000000);
+		renderTile : function(t){
+			_.each(this.layers, function(layerName){
+				if (t.layers[layerName]){
+					var frame = t.layers[layerName].srcY * 8 + t.layers[layerName].srcX;
+					var spriteSheet= t.layers[layerName].spriteSheet || this.defaultSheet;
+					t.actors[layerName].setBackgroundImage(Renderer.SPRITESHEETS[spriteSheet]).setSpriteIndex(frame);
 				} else {
-					//renderer.drawRect("canopy", tx-16, ty-16, this.tileSize, this.tileSize, {fillStyle: 'none', strokeStyle: 'none'}, 100000000);
+					t.actors[layerName].setVisible(false);
 				}
-			};
-			//renderer.cacheUpdate('canopy');
-			//enderer.cacheUpdate('base');
-			
-			renderer.width = width;
-			renderer.height = height;
-			renderer.tx = trackX;
-        	renderer.ty = trackY;
-        	*/
+			}.bind(this));
+		},
+		renderTiles : function(coords){
+			_.each(coords, function(tile){
+				if (tile.layers===undefined){
+					tile = this.getTile(tile[0],tile[1]);
+				}
+				this.renderTile(tile);
+			}.bind(this))	
 		},
 		render : function(renderer){
 			_.each(this._tiles, function(t){
-				_.each(this.layers, function(layerName){
-					if (t.layers[layerName]){
-						var frame = t.layers[layerName].srcY * 8 + t.layers[layerName].srcX;
-						var spriteSheet= t.layers[layerName].spriteSheet || this.defaultSheet;
-						t.actors[layerName].setBackgroundImage(Renderer.SPRITESHEETS[spriteSheet]).setSpriteIndex(frame);
-					} else {
-						t.actors[layerName].setVisible(false);
-					}
-				}.bind(this));
+				this.renderTile(t);
 			}.bind(this));
+			//this.container.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
+		},
+		refreshCache: function(){
+			this.container.stopCacheAsBitmap();
+			var tx = this.scene.x;
+			var ty = this.scene.y;
+			this.scene.setLocation(0,0);
 			this.container.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
+			this.scene.setLocation(tx,ty);
 		},
 		loadCallback : function(){
 

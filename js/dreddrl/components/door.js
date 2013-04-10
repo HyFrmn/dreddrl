@@ -44,9 +44,8 @@ define(['sge'], function(sge){
                 tile.layers['layer1'] = DOORCLOSEDTILE2;
                 tile.passable=false;
             }
-            this.map.renderTiles(this.state.game.renderer, [[tx,ty-2],[tx, ty-1],[tx,ty]]);
-            this.map.renderTiles(this.state.game.renderer, this.room.getTiles());
-            
+            this.map.renderTiles([[tx,ty-2],[tx, ty-1],[tx,ty]]);
+            this.map.renderTiles(this.room.getTiles());
         },
 
     	register: function(state){
