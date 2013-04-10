@@ -1993,1257 +1993,2006 @@ var requirejs, require, define;
 }(this));
 
 
-//     Underscore.js 1.4.4
-//     http://underscorejs.org
-//     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud Inc.
-//     Underscore may be freely distributed under the MIT license.
+/** vim: et:ts=4:sw=4:sts=4
+ * @license RequireJS 2.1.4 Copyright (c) 2010-2012, The Dojo Foundation All Rights Reserved.
+ * Available via the MIT or new BSD license.
+ * see: http://github.com/jrburke/requirejs for details
+ */
+//Not using strict: uneven strict support in browsers, #392, and causes
+//problems with requirejs.exec()/transpiler plugins that may not be strict.
+/*jslint regexp: true, nomen: true, sloppy: true */
+/*global window, navigator, document, importScripts, setTimeout, opera */
 
-(function() {
+var requirejs, require, define;
+(function (global) {
+    var req, s, head, baseElement, dataMain, src,
+        interactiveScript, currentlyAddingScript, mainScript, subPath,
+        version = '2.1.4',
+        commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg,
+        cjsRequireRegExp = /[^.]\s*require\s*\(\s*["']([^'"\s]+)["']\s*\)/g,
+        jsSuffixRegExp = /\.js$/,
+        currDirRegExp = /^\.\//,
+        op = Object.prototype,
+        ostring = op.toString,
+        hasOwn = op.hasOwnProperty,
+        ap = Array.prototype,
+        apsp = ap.splice,
+        isBrowser = !!(typeof window !== 'undefined' && navigator && document),
+        isWebWorker = !isBrowser && typeof importScripts !== 'undefined',
+        //PS3 indicates loaded and complete, but need to wait for complete
+        //specifically. Sequence is 'loading', 'loaded', execution,
+        // then 'complete'. The UA check is unfortunate, but not sure how
+        //to feature test w/o causing perf issues.
+        readyRegExp = isBrowser && navigator.platform === 'PLAYSTATION 3' ?
+                      /^complete$/ : /^(complete|loaded)$/,
+        defContextName = '_',
+        //Oh the tragedy, detecting opera. See the usage of isOpera for reason.
+        isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]',
+        contexts = {},
+        cfg = {},
+        globalDefQueue = [],
+        useInteractive = false;
 
-  // Baseline setup
-  // --------------
-
-  // Establish the root object, `window` in the browser, or `global` on the server.
-  var root = this;
-
-  // Save the previous value of the `_` variable.
-  var previousUnderscore = root._;
-
-  // Establish the object that gets returned to break out of a loop iteration.
-  var breaker = {};
-
-  // Save bytes in the minified (but not gzipped) version:
-  var ArrayProto = Array.prototype, ObjProto = Object.prototype, FuncProto = Function.prototype;
-
-  // Create quick reference variables for speed access to core prototypes.
-  var push             = ArrayProto.push,
-      slice            = ArrayProto.slice,
-      concat           = ArrayProto.concat,
-      toString         = ObjProto.toString,
-      hasOwnProperty   = ObjProto.hasOwnProperty;
-
-  // All **ECMAScript 5** native function implementations that we hope to use
-  // are declared here.
-  var
-    nativeForEach      = ArrayProto.forEach,
-    nativeMap          = ArrayProto.map,
-    nativeReduce       = ArrayProto.reduce,
-    nativeReduceRight  = ArrayProto.reduceRight,
-    nativeFilter       = ArrayProto.filter,
-    nativeEvery        = ArrayProto.every,
-    nativeSome         = ArrayProto.some,
-    nativeIndexOf      = ArrayProto.indexOf,
-    nativeLastIndexOf  = ArrayProto.lastIndexOf,
-    nativeIsArray      = Array.isArray,
-    nativeKeys         = Object.keys,
-    nativeBind         = FuncProto.bind;
-
-  // Create a safe reference to the Underscore object for use below.
-  var _ = function(obj) {
-    if (obj instanceof _) return obj;
-    if (!(this instanceof _)) return new _(obj);
-    this._wrapped = obj;
-  };
-
-  // Export the Underscore object for **Node.js**, with
-  // backwards-compatibility for the old `require()` API. If we're in
-  // the browser, add `_` as a global object via a string identifier,
-  // for Closure Compiler "advanced" mode.
-  if (typeof exports !== 'undefined') {
-    if (typeof module !== 'undefined' && module.exports) {
-      exports = module.exports = _;
+    function isFunction(it) {
+        return ostring.call(it) === '[object Function]';
     }
-    exports._ = _;
-  } else {
-    root._ = _;
-  }
 
-  // Current version.
-  _.VERSION = '1.4.4';
+    function isArray(it) {
+        return ostring.call(it) === '[object Array]';
+    }
 
-  // Collection Functions
-  // --------------------
-
-  // The cornerstone, an `each` implementation, aka `forEach`.
-  // Handles objects with the built-in `forEach`, arrays, and raw objects.
-  // Delegates to **ECMAScript 5**'s native `forEach` if available.
-  var each = _.each = _.forEach = function(obj, iterator, context) {
-    if (obj == null) return;
-    if (nativeForEach && obj.forEach === nativeForEach) {
-      obj.forEach(iterator, context);
-    } else if (obj.length === +obj.length) {
-      for (var i = 0, l = obj.length; i < l; i++) {
-        if (iterator.call(context, obj[i], i, obj) === breaker) return;
-      }
-    } else {
-      for (var key in obj) {
-        if (_.has(obj, key)) {
-          if (iterator.call(context, obj[key], key, obj) === breaker) return;
+    /**
+     * Helper function for iterating over an array. If the func returns
+     * a true value, it will break out of the loop.
+     */
+    function each(ary, func) {
+        if (ary) {
+            var i;
+            for (i = 0; i < ary.length; i += 1) {
+                if (ary[i] && func(ary[i], i, ary)) {
+                    break;
+                }
+            }
         }
-      }
-    }
-  };
-
-  // Return the results of applying the iterator to each element.
-  // Delegates to **ECMAScript 5**'s native `map` if available.
-  _.map = _.collect = function(obj, iterator, context) {
-    var results = [];
-    if (obj == null) return results;
-    if (nativeMap && obj.map === nativeMap) return obj.map(iterator, context);
-    each(obj, function(value, index, list) {
-      results[results.length] = iterator.call(context, value, index, list);
-    });
-    return results;
-  };
-
-  var reduceError = 'Reduce of empty array with no initial value';
-
-  // **Reduce** builds up a single result from a list of values, aka `inject`,
-  // or `foldl`. Delegates to **ECMAScript 5**'s native `reduce` if available.
-  _.reduce = _.foldl = _.inject = function(obj, iterator, memo, context) {
-    var initial = arguments.length > 2;
-    if (obj == null) obj = [];
-    if (nativeReduce && obj.reduce === nativeReduce) {
-      if (context) iterator = _.bind(iterator, context);
-      return initial ? obj.reduce(iterator, memo) : obj.reduce(iterator);
-    }
-    each(obj, function(value, index, list) {
-      if (!initial) {
-        memo = value;
-        initial = true;
-      } else {
-        memo = iterator.call(context, memo, value, index, list);
-      }
-    });
-    if (!initial) throw new TypeError(reduceError);
-    return memo;
-  };
-
-  // The right-associative version of reduce, also known as `foldr`.
-  // Delegates to **ECMAScript 5**'s native `reduceRight` if available.
-  _.reduceRight = _.foldr = function(obj, iterator, memo, context) {
-    var initial = arguments.length > 2;
-    if (obj == null) obj = [];
-    if (nativeReduceRight && obj.reduceRight === nativeReduceRight) {
-      if (context) iterator = _.bind(iterator, context);
-      return initial ? obj.reduceRight(iterator, memo) : obj.reduceRight(iterator);
-    }
-    var length = obj.length;
-    if (length !== +length) {
-      var keys = _.keys(obj);
-      length = keys.length;
-    }
-    each(obj, function(value, index, list) {
-      index = keys ? keys[--length] : --length;
-      if (!initial) {
-        memo = obj[index];
-        initial = true;
-      } else {
-        memo = iterator.call(context, memo, obj[index], index, list);
-      }
-    });
-    if (!initial) throw new TypeError(reduceError);
-    return memo;
-  };
-
-  // Return the first value which passes a truth test. Aliased as `detect`.
-  _.find = _.detect = function(obj, iterator, context) {
-    var result;
-    any(obj, function(value, index, list) {
-      if (iterator.call(context, value, index, list)) {
-        result = value;
-        return true;
-      }
-    });
-    return result;
-  };
-
-  // Return all the elements that pass a truth test.
-  // Delegates to **ECMAScript 5**'s native `filter` if available.
-  // Aliased as `select`.
-  _.filter = _.select = function(obj, iterator, context) {
-    var results = [];
-    if (obj == null) return results;
-    if (nativeFilter && obj.filter === nativeFilter) return obj.filter(iterator, context);
-    each(obj, function(value, index, list) {
-      if (iterator.call(context, value, index, list)) results[results.length] = value;
-    });
-    return results;
-  };
-
-  // Return all the elements for which a truth test fails.
-  _.reject = function(obj, iterator, context) {
-    return _.filter(obj, function(value, index, list) {
-      return !iterator.call(context, value, index, list);
-    }, context);
-  };
-
-  // Determine whether all of the elements match a truth test.
-  // Delegates to **ECMAScript 5**'s native `every` if available.
-  // Aliased as `all`.
-  _.every = _.all = function(obj, iterator, context) {
-    iterator || (iterator = _.identity);
-    var result = true;
-    if (obj == null) return result;
-    if (nativeEvery && obj.every === nativeEvery) return obj.every(iterator, context);
-    each(obj, function(value, index, list) {
-      if (!(result = result && iterator.call(context, value, index, list))) return breaker;
-    });
-    return !!result;
-  };
-
-  // Determine if at least one element in the object matches a truth test.
-  // Delegates to **ECMAScript 5**'s native `some` if available.
-  // Aliased as `any`.
-  var any = _.some = _.any = function(obj, iterator, context) {
-    iterator || (iterator = _.identity);
-    var result = false;
-    if (obj == null) return result;
-    if (nativeSome && obj.some === nativeSome) return obj.some(iterator, context);
-    each(obj, function(value, index, list) {
-      if (result || (result = iterator.call(context, value, index, list))) return breaker;
-    });
-    return !!result;
-  };
-
-  // Determine if the array or object contains a given value (using `===`).
-  // Aliased as `include`.
-  _.contains = _.include = function(obj, target) {
-    if (obj == null) return false;
-    if (nativeIndexOf && obj.indexOf === nativeIndexOf) return obj.indexOf(target) != -1;
-    return any(obj, function(value) {
-      return value === target;
-    });
-  };
-
-  // Invoke a method (with arguments) on every item in a collection.
-  _.invoke = function(obj, method) {
-    var args = slice.call(arguments, 2);
-    var isFunc = _.isFunction(method);
-    return _.map(obj, function(value) {
-      return (isFunc ? method : value[method]).apply(value, args);
-    });
-  };
-
-  // Convenience version of a common use case of `map`: fetching a property.
-  _.pluck = function(obj, key) {
-    return _.map(obj, function(value){ return value[key]; });
-  };
-
-  // Convenience version of a common use case of `filter`: selecting only objects
-  // containing specific `key:value` pairs.
-  _.where = function(obj, attrs, first) {
-    if (_.isEmpty(attrs)) return first ? void 0 : [];
-    return _[first ? 'find' : 'filter'](obj, function(value) {
-      for (var key in attrs) {
-        if (attrs[key] !== value[key]) return false;
-      }
-      return true;
-    });
-  };
-
-  // Convenience version of a common use case of `find`: getting the first object
-  // containing specific `key:value` pairs.
-  _.findWhere = function(obj, attrs) {
-    return _.where(obj, attrs, true);
-  };
-
-  // Return the maximum element or (element-based computation).
-  // Can't optimize arrays of integers longer than 65,535 elements.
-  // See: https://bugs.webkit.org/show_bug.cgi?id=80797
-  _.max = function(obj, iterator, context) {
-    if (!iterator && _.isArray(obj) && obj[0] === +obj[0] && obj.length < 65535) {
-      return Math.max.apply(Math, obj);
-    }
-    if (!iterator && _.isEmpty(obj)) return -Infinity;
-    var result = {computed : -Infinity, value: -Infinity};
-    each(obj, function(value, index, list) {
-      var computed = iterator ? iterator.call(context, value, index, list) : value;
-      computed >= result.computed && (result = {value : value, computed : computed});
-    });
-    return result.value;
-  };
-
-  // Return the minimum element (or element-based computation).
-  _.min = function(obj, iterator, context) {
-    if (!iterator && _.isArray(obj) && obj[0] === +obj[0] && obj.length < 65535) {
-      return Math.min.apply(Math, obj);
-    }
-    if (!iterator && _.isEmpty(obj)) return Infinity;
-    var result = {computed : Infinity, value: Infinity};
-    each(obj, function(value, index, list) {
-      var computed = iterator ? iterator.call(context, value, index, list) : value;
-      computed < result.computed && (result = {value : value, computed : computed});
-    });
-    return result.value;
-  };
-
-  // Shuffle an array.
-  _.shuffle = function(obj) {
-    var rand;
-    var index = 0;
-    var shuffled = [];
-    each(obj, function(value) {
-      rand = _.random(index++);
-      shuffled[index - 1] = shuffled[rand];
-      shuffled[rand] = value;
-    });
-    return shuffled;
-  };
-
-  // An internal function to generate lookup iterators.
-  var lookupIterator = function(value) {
-    return _.isFunction(value) ? value : function(obj){ return obj[value]; };
-  };
-
-  // Sort the object's values by a criterion produced by an iterator.
-  _.sortBy = function(obj, value, context) {
-    var iterator = lookupIterator(value);
-    return _.pluck(_.map(obj, function(value, index, list) {
-      return {
-        value : value,
-        index : index,
-        criteria : iterator.call(context, value, index, list)
-      };
-    }).sort(function(left, right) {
-      var a = left.criteria;
-      var b = right.criteria;
-      if (a !== b) {
-        if (a > b || a === void 0) return 1;
-        if (a < b || b === void 0) return -1;
-      }
-      return left.index < right.index ? -1 : 1;
-    }), 'value');
-  };
-
-  // An internal function used for aggregate "group by" operations.
-  var group = function(obj, value, context, behavior) {
-    var result = {};
-    var iterator = lookupIterator(value == null ? _.identity : value);
-    each(obj, function(value, index) {
-      var key = iterator.call(context, value, index, obj);
-      behavior(result, key, value);
-    });
-    return result;
-  };
-
-  // Groups the object's values by a criterion. Pass either a string attribute
-  // to group by, or a function that returns the criterion.
-  _.groupBy = function(obj, value, context) {
-    return group(obj, value, context, function(result, key, value) {
-      (_.has(result, key) ? result[key] : (result[key] = [])).push(value);
-    });
-  };
-
-  // Counts instances of an object that group by a certain criterion. Pass
-  // either a string attribute to count by, or a function that returns the
-  // criterion.
-  _.countBy = function(obj, value, context) {
-    return group(obj, value, context, function(result, key) {
-      if (!_.has(result, key)) result[key] = 0;
-      result[key]++;
-    });
-  };
-
-  // Use a comparator function to figure out the smallest index at which
-  // an object should be inserted so as to maintain order. Uses binary search.
-  _.sortedIndex = function(array, obj, iterator, context) {
-    iterator = iterator == null ? _.identity : lookupIterator(iterator);
-    var value = iterator.call(context, obj);
-    var low = 0, high = array.length;
-    while (low < high) {
-      var mid = (low + high) >>> 1;
-      iterator.call(context, array[mid]) < value ? low = mid + 1 : high = mid;
-    }
-    return low;
-  };
-
-  // Safely convert anything iterable into a real, live array.
-  _.toArray = function(obj) {
-    if (!obj) return [];
-    if (_.isArray(obj)) return slice.call(obj);
-    if (obj.length === +obj.length) return _.map(obj, _.identity);
-    return _.values(obj);
-  };
-
-  // Return the number of elements in an object.
-  _.size = function(obj) {
-    if (obj == null) return 0;
-    return (obj.length === +obj.length) ? obj.length : _.keys(obj).length;
-  };
-
-  // Array Functions
-  // ---------------
-
-  // Get the first element of an array. Passing **n** will return the first N
-  // values in the array. Aliased as `head` and `take`. The **guard** check
-  // allows it to work with `_.map`.
-  _.first = _.head = _.take = function(array, n, guard) {
-    if (array == null) return void 0;
-    return (n != null) && !guard ? slice.call(array, 0, n) : array[0];
-  };
-
-  // Returns everything but the last entry of the array. Especially useful on
-  // the arguments object. Passing **n** will return all the values in
-  // the array, excluding the last N. The **guard** check allows it to work with
-  // `_.map`.
-  _.initial = function(array, n, guard) {
-    return slice.call(array, 0, array.length - ((n == null) || guard ? 1 : n));
-  };
-
-  // Get the last element of an array. Passing **n** will return the last N
-  // values in the array. The **guard** check allows it to work with `_.map`.
-  _.last = function(array, n, guard) {
-    if (array == null) return void 0;
-    if ((n != null) && !guard) {
-      return slice.call(array, Math.max(array.length - n, 0));
-    } else {
-      return array[array.length - 1];
-    }
-  };
-
-  // Returns everything but the first entry of the array. Aliased as `tail` and `drop`.
-  // Especially useful on the arguments object. Passing an **n** will return
-  // the rest N values in the array. The **guard**
-  // check allows it to work with `_.map`.
-  _.rest = _.tail = _.drop = function(array, n, guard) {
-    return slice.call(array, (n == null) || guard ? 1 : n);
-  };
-
-  // Trim out all falsy values from an array.
-  _.compact = function(array) {
-    return _.filter(array, _.identity);
-  };
-
-  // Internal implementation of a recursive `flatten` function.
-  var flatten = function(input, shallow, output) {
-    each(input, function(value) {
-      if (_.isArray(value)) {
-        shallow ? push.apply(output, value) : flatten(value, shallow, output);
-      } else {
-        output.push(value);
-      }
-    });
-    return output;
-  };
-
-  // Return a completely flattened version of an array.
-  _.flatten = function(array, shallow) {
-    return flatten(array, shallow, []);
-  };
-
-  // Return a version of the array that does not contain the specified value(s).
-  _.without = function(array) {
-    return _.difference(array, slice.call(arguments, 1));
-  };
-
-  // Produce a duplicate-free version of the array. If the array has already
-  // been sorted, you have the option of using a faster algorithm.
-  // Aliased as `unique`.
-  _.uniq = _.unique = function(array, isSorted, iterator, context) {
-    if (_.isFunction(isSorted)) {
-      context = iterator;
-      iterator = isSorted;
-      isSorted = false;
-    }
-    var initial = iterator ? _.map(array, iterator, context) : array;
-    var results = [];
-    var seen = [];
-    each(initial, function(value, index) {
-      if (isSorted ? (!index || seen[seen.length - 1] !== value) : !_.contains(seen, value)) {
-        seen.push(value);
-        results.push(array[index]);
-      }
-    });
-    return results;
-  };
-
-  // Produce an array that contains the union: each distinct element from all of
-  // the passed-in arrays.
-  _.union = function() {
-    return _.uniq(concat.apply(ArrayProto, arguments));
-  };
-
-  // Produce an array that contains every item shared between all the
-  // passed-in arrays.
-  _.intersection = function(array) {
-    var rest = slice.call(arguments, 1);
-    return _.filter(_.uniq(array), function(item) {
-      return _.every(rest, function(other) {
-        return _.indexOf(other, item) >= 0;
-      });
-    });
-  };
-
-  // Take the difference between one array and a number of other arrays.
-  // Only the elements present in just the first array will remain.
-  _.difference = function(array) {
-    var rest = concat.apply(ArrayProto, slice.call(arguments, 1));
-    return _.filter(array, function(value){ return !_.contains(rest, value); });
-  };
-
-  // Zip together multiple lists into a single array -- elements that share
-  // an index go together.
-  _.zip = function() {
-    var args = slice.call(arguments);
-    var length = _.max(_.pluck(args, 'length'));
-    var results = new Array(length);
-    for (var i = 0; i < length; i++) {
-      results[i] = _.pluck(args, "" + i);
-    }
-    return results;
-  };
-
-  // Converts lists into objects. Pass either a single array of `[key, value]`
-  // pairs, or two parallel arrays of the same length -- one of keys, and one of
-  // the corresponding values.
-  _.object = function(list, values) {
-    if (list == null) return {};
-    var result = {};
-    for (var i = 0, l = list.length; i < l; i++) {
-      if (values) {
-        result[list[i]] = values[i];
-      } else {
-        result[list[i][0]] = list[i][1];
-      }
-    }
-    return result;
-  };
-
-  // If the browser doesn't supply us with indexOf (I'm looking at you, **MSIE**),
-  // we need this function. Return the position of the first occurrence of an
-  // item in an array, or -1 if the item is not included in the array.
-  // Delegates to **ECMAScript 5**'s native `indexOf` if available.
-  // If the array is large and already in sort order, pass `true`
-  // for **isSorted** to use binary search.
-  _.indexOf = function(array, item, isSorted) {
-    if (array == null) return -1;
-    var i = 0, l = array.length;
-    if (isSorted) {
-      if (typeof isSorted == 'number') {
-        i = (isSorted < 0 ? Math.max(0, l + isSorted) : isSorted);
-      } else {
-        i = _.sortedIndex(array, item);
-        return array[i] === item ? i : -1;
-      }
-    }
-    if (nativeIndexOf && array.indexOf === nativeIndexOf) return array.indexOf(item, isSorted);
-    for (; i < l; i++) if (array[i] === item) return i;
-    return -1;
-  };
-
-  // Delegates to **ECMAScript 5**'s native `lastIndexOf` if available.
-  _.lastIndexOf = function(array, item, from) {
-    if (array == null) return -1;
-    var hasIndex = from != null;
-    if (nativeLastIndexOf && array.lastIndexOf === nativeLastIndexOf) {
-      return hasIndex ? array.lastIndexOf(item, from) : array.lastIndexOf(item);
-    }
-    var i = (hasIndex ? from : array.length);
-    while (i--) if (array[i] === item) return i;
-    return -1;
-  };
-
-  // Generate an integer Array containing an arithmetic progression. A port of
-  // the native Python `range()` function. See
-  // [the Python documentation](http://docs.python.org/library/functions.html#range).
-  _.range = function(start, stop, step) {
-    if (arguments.length <= 1) {
-      stop = start || 0;
-      start = 0;
-    }
-    step = arguments[2] || 1;
-
-    var len = Math.max(Math.ceil((stop - start) / step), 0);
-    var idx = 0;
-    var range = new Array(len);
-
-    while(idx < len) {
-      range[idx++] = start;
-      start += step;
     }
 
-    return range;
-  };
-
-  // Function (ahem) Functions
-  // ------------------
-
-  // Reusable constructor function for prototype setting.
-  var ctor = function(){};
-
-  // Create a function bound to a given object (assigning `this`, and arguments,
-  // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if
-  // available.
-  _.bind = function(func, context) {
-    var args, bound;
-    if (func.bind === nativeBind && nativeBind) return nativeBind.apply(func, slice.call(arguments, 1));
-    if (!_.isFunction(func)) throw new TypeError;
-    args = slice.call(arguments, 2);
-    return bound = function() {
-      if (!(this instanceof bound)) return func.apply(context, args.concat(slice.call(arguments)));
-      ctor.prototype = func.prototype;
-      var self = new ctor;
-      ctor.prototype = null;
-      var result = func.apply(self, args.concat(slice.call(arguments)));
-      if (Object(result) === result) return result;
-      return self;
-    };
-  };
-
-  // Partially apply a function by creating a version that has had some of its
-  // arguments pre-filled, without changing its dynamic `this` context.
-  _.partial = function(func) {
-    var args = slice.call(arguments, 1);
-    return function() {
-      return func.apply(this, args.concat(slice.call(arguments)));
-    };
-  };
-
-  // Bind all of an object's methods to that object. Useful for ensuring that
-  // all callbacks defined on an object belong to it.
-  _.bindAll = function(obj) {
-    var funcs = slice.call(arguments, 1);
-    if (funcs.length === 0) throw new Error("bindAll must be passed function names");
-    each(funcs, function(f) { obj[f] = _.bind(obj[f], obj); });
-    return obj;
-  };
-
-  // Memoize an expensive function by storing its results.
-  _.memoize = function(func, hasher) {
-    var memo = {};
-    hasher || (hasher = _.identity);
-    return function() {
-      var key = hasher.apply(this, arguments);
-      return _.has(memo, key) ? memo[key] : (memo[key] = func.apply(this, arguments));
-    };
-  };
-
-  // Delays a function for the given number of milliseconds, and then calls
-  // it with the arguments supplied.
-  _.delay = function(func, wait) {
-    var args = slice.call(arguments, 2);
-    return setTimeout(function(){ return func.apply(null, args); }, wait);
-  };
-
-  // Defers a function, scheduling it to run after the current call stack has
-  // cleared.
-  _.defer = function(func) {
-    return _.delay.apply(_, [func, 1].concat(slice.call(arguments, 1)));
-  };
-
-  // Returns a function, that, when invoked, will only be triggered at most once
-  // during a given window of time.
-  _.throttle = function(func, wait) {
-    var context, args, timeout, result;
-    var previous = 0;
-    var later = function() {
-      previous = new Date;
-      timeout = null;
-      result = func.apply(context, args);
-    };
-    return function() {
-      var now = new Date;
-      var remaining = wait - (now - previous);
-      context = this;
-      args = arguments;
-      if (remaining <= 0) {
-        clearTimeout(timeout);
-        timeout = null;
-        previous = now;
-        result = func.apply(context, args);
-      } else if (!timeout) {
-        timeout = setTimeout(later, remaining);
-      }
-      return result;
-    };
-  };
-
-  // Returns a function, that, as long as it continues to be invoked, will not
-  // be triggered. The function will be called after it stops being called for
-  // N milliseconds. If `immediate` is passed, trigger the function on the
-  // leading edge, instead of the trailing.
-  _.debounce = function(func, wait, immediate) {
-    var timeout, result;
-    return function() {
-      var context = this, args = arguments;
-      var later = function() {
-        timeout = null;
-        if (!immediate) result = func.apply(context, args);
-      };
-      var callNow = immediate && !timeout;
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-      if (callNow) result = func.apply(context, args);
-      return result;
-    };
-  };
-
-  // Returns a function that will be executed at most one time, no matter how
-  // often you call it. Useful for lazy initialization.
-  _.once = function(func) {
-    var ran = false, memo;
-    return function() {
-      if (ran) return memo;
-      ran = true;
-      memo = func.apply(this, arguments);
-      func = null;
-      return memo;
-    };
-  };
-
-  // Returns the first function passed as an argument to the second,
-  // allowing you to adjust arguments, run code before and after, and
-  // conditionally execute the original function.
-  _.wrap = function(func, wrapper) {
-    return function() {
-      var args = [func];
-      push.apply(args, arguments);
-      return wrapper.apply(this, args);
-    };
-  };
-
-  // Returns a function that is the composition of a list of functions, each
-  // consuming the return value of the function that follows.
-  _.compose = function() {
-    var funcs = arguments;
-    return function() {
-      var args = arguments;
-      for (var i = funcs.length - 1; i >= 0; i--) {
-        args = [funcs[i].apply(this, args)];
-      }
-      return args[0];
-    };
-  };
-
-  // Returns a function that will only be executed after being called N times.
-  _.after = function(times, func) {
-    if (times <= 0) return func();
-    return function() {
-      if (--times < 1) {
-        return func.apply(this, arguments);
-      }
-    };
-  };
-
-  // Object Functions
-  // ----------------
-
-  // Retrieve the names of an object's properties.
-  // Delegates to **ECMAScript 5**'s native `Object.keys`
-  _.keys = nativeKeys || function(obj) {
-    if (obj !== Object(obj)) throw new TypeError('Invalid object');
-    var keys = [];
-    for (var key in obj) if (_.has(obj, key)) keys[keys.length] = key;
-    return keys;
-  };
-
-  // Retrieve the values of an object's properties.
-  _.values = function(obj) {
-    var values = [];
-    for (var key in obj) if (_.has(obj, key)) values.push(obj[key]);
-    return values;
-  };
-
-  // Convert an object into a list of `[key, value]` pairs.
-  _.pairs = function(obj) {
-    var pairs = [];
-    for (var key in obj) if (_.has(obj, key)) pairs.push([key, obj[key]]);
-    return pairs;
-  };
-
-  // Invert the keys and values of an object. The values must be serializable.
-  _.invert = function(obj) {
-    var result = {};
-    for (var key in obj) if (_.has(obj, key)) result[obj[key]] = key;
-    return result;
-  };
-
-  // Return a sorted list of the function names available on the object.
-  // Aliased as `methods`
-  _.functions = _.methods = function(obj) {
-    var names = [];
-    for (var key in obj) {
-      if (_.isFunction(obj[key])) names.push(key);
-    }
-    return names.sort();
-  };
-
-  // Extend a given object with all the properties in passed-in object(s).
-  _.extend = function(obj) {
-    each(slice.call(arguments, 1), function(source) {
-      if (source) {
-        for (var prop in source) {
-          obj[prop] = source[prop];
+    /**
+     * Helper function for iterating over an array backwards. If the func
+     * returns a true value, it will break out of the loop.
+     */
+    function eachReverse(ary, func) {
+        if (ary) {
+            var i;
+            for (i = ary.length - 1; i > -1; i -= 1) {
+                if (ary[i] && func(ary[i], i, ary)) {
+                    break;
+                }
+            }
         }
-      }
-    });
-    return obj;
-  };
-
-  // Return a copy of the object only containing the whitelisted properties.
-  _.pick = function(obj) {
-    var copy = {};
-    var keys = concat.apply(ArrayProto, slice.call(arguments, 1));
-    each(keys, function(key) {
-      if (key in obj) copy[key] = obj[key];
-    });
-    return copy;
-  };
-
-   // Return a copy of the object without the blacklisted properties.
-  _.omit = function(obj) {
-    var copy = {};
-    var keys = concat.apply(ArrayProto, slice.call(arguments, 1));
-    for (var key in obj) {
-      if (!_.contains(keys, key)) copy[key] = obj[key];
     }
-    return copy;
-  };
 
-  // Fill in a given object with default properties.
-  _.defaults = function(obj) {
-    each(slice.call(arguments, 1), function(source) {
-      if (source) {
-        for (var prop in source) {
-          if (obj[prop] === void 0) obj[prop] = source[prop];
+    function hasProp(obj, prop) {
+        return hasOwn.call(obj, prop);
+    }
+
+    function getOwn(obj, prop) {
+        return hasProp(obj, prop) && obj[prop];
+    }
+
+    /**
+     * Cycles over properties in an object and calls a function for each
+     * property value. If the function returns a truthy value, then the
+     * iteration is stopped.
+     */
+    function eachProp(obj, func) {
+        var prop;
+        for (prop in obj) {
+            if (hasProp(obj, prop)) {
+                if (func(obj[prop], prop)) {
+                    break;
+                }
+            }
         }
-      }
-    });
-    return obj;
-  };
-
-  // Create a (shallow-cloned) duplicate of an object.
-  _.clone = function(obj) {
-    if (!_.isObject(obj)) return obj;
-    return _.isArray(obj) ? obj.slice() : _.extend({}, obj);
-  };
-
-  // Invokes interceptor with the obj, and then returns obj.
-  // The primary purpose of this method is to "tap into" a method chain, in
-  // order to perform operations on intermediate results within the chain.
-  _.tap = function(obj, interceptor) {
-    interceptor(obj);
-    return obj;
-  };
-
-  // Internal recursive comparison function for `isEqual`.
-  var eq = function(a, b, aStack, bStack) {
-    // Identical objects are equal. `0 === -0`, but they aren't identical.
-    // See the Harmony `egal` proposal: http://wiki.ecmascript.org/doku.php?id=harmony:egal.
-    if (a === b) return a !== 0 || 1 / a == 1 / b;
-    // A strict comparison is necessary because `null == undefined`.
-    if (a == null || b == null) return a === b;
-    // Unwrap any wrapped objects.
-    if (a instanceof _) a = a._wrapped;
-    if (b instanceof _) b = b._wrapped;
-    // Compare `[[Class]]` names.
-    var className = toString.call(a);
-    if (className != toString.call(b)) return false;
-    switch (className) {
-      // Strings, numbers, dates, and booleans are compared by value.
-      case '[object String]':
-        // Primitives and their corresponding object wrappers are equivalent; thus, `"5"` is
-        // equivalent to `new String("5")`.
-        return a == String(b);
-      case '[object Number]':
-        // `NaN`s are equivalent, but non-reflexive. An `egal` comparison is performed for
-        // other numeric values.
-        return a != +a ? b != +b : (a == 0 ? 1 / a == 1 / b : a == +b);
-      case '[object Date]':
-      case '[object Boolean]':
-        // Coerce dates and booleans to numeric primitive values. Dates are compared by their
-        // millisecond representations. Note that invalid dates with millisecond representations
-        // of `NaN` are not equivalent.
-        return +a == +b;
-      // RegExps are compared by their source patterns and flags.
-      case '[object RegExp]':
-        return a.source == b.source &&
-               a.global == b.global &&
-               a.multiline == b.multiline &&
-               a.ignoreCase == b.ignoreCase;
     }
-    if (typeof a != 'object' || typeof b != 'object') return false;
-    // Assume equality for cyclic structures. The algorithm for detecting cyclic
-    // structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.
-    var length = aStack.length;
-    while (length--) {
-      // Linear search. Performance is inversely proportional to the number of
-      // unique nested structures.
-      if (aStack[length] == a) return bStack[length] == b;
-    }
-    // Add the first object to the stack of traversed objects.
-    aStack.push(a);
-    bStack.push(b);
-    var size = 0, result = true;
-    // Recursively compare objects and arrays.
-    if (className == '[object Array]') {
-      // Compare array lengths to determine if a deep comparison is necessary.
-      size = a.length;
-      result = size == b.length;
-      if (result) {
-        // Deep compare the contents, ignoring non-numeric properties.
-        while (size--) {
-          if (!(result = eq(a[size], b[size], aStack, bStack))) break;
+
+    /**
+     * Simple function to mix in properties from source into target,
+     * but only if target does not already have a property of the same name.
+     */
+    function mixin(target, source, force, deepStringMixin) {
+        if (source) {
+            eachProp(source, function (value, prop) {
+                if (force || !hasProp(target, prop)) {
+                    if (deepStringMixin && typeof value !== 'string') {
+                        if (!target[prop]) {
+                            target[prop] = {};
+                        }
+                        mixin(target[prop], value, force, deepStringMixin);
+                    } else {
+                        target[prop] = value;
+                    }
+                }
+            });
         }
-      }
-    } else {
-      // Objects with different constructors are not equivalent, but `Object`s
-      // from different frames are.
-      var aCtor = a.constructor, bCtor = b.constructor;
-      if (aCtor !== bCtor && !(_.isFunction(aCtor) && (aCtor instanceof aCtor) &&
-                               _.isFunction(bCtor) && (bCtor instanceof bCtor))) {
-        return false;
-      }
-      // Deep compare objects.
-      for (var key in a) {
-        if (_.has(a, key)) {
-          // Count the expected number of properties.
-          size++;
-          // Deep compare each member.
-          if (!(result = _.has(b, key) && eq(a[key], b[key], aStack, bStack))) break;
+        return target;
+    }
+
+    //Similar to Function.prototype.bind, but the 'this' object is specified
+    //first, since it is easier to read/figure out what 'this' will be.
+    function bind(obj, fn) {
+        return function () {
+            return fn.apply(obj, arguments);
+        };
+    }
+
+    function scripts() {
+        return document.getElementsByTagName('script');
+    }
+
+    //Allow getting a global that expressed in
+    //dot notation, like 'a.b.c'.
+    function getGlobal(value) {
+        if (!value) {
+            return value;
         }
-      }
-      // Ensure that both objects contain the same number of properties.
-      if (result) {
-        for (key in b) {
-          if (_.has(b, key) && !(size--)) break;
+        var g = global;
+        each(value.split('.'), function (part) {
+            g = g[part];
+        });
+        return g;
+    }
+
+    /**
+     * Constructs an error with a pointer to an URL with more information.
+     * @param {String} id the error ID that maps to an ID on a web page.
+     * @param {String} message human readable error.
+     * @param {Error} [err] the original error, if there is one.
+     *
+     * @returns {Error}
+     */
+    function makeError(id, msg, err, requireModules) {
+        var e = new Error(msg + '\nhttp://requirejs.org/docs/errors.html#' + id);
+        e.requireType = id;
+        e.requireModules = requireModules;
+        if (err) {
+            e.originalError = err;
         }
-        result = !size;
-      }
+        return e;
     }
-    // Remove the first object from the stack of traversed objects.
-    aStack.pop();
-    bStack.pop();
-    return result;
-  };
 
-  // Perform a deep comparison to check if two objects are equal.
-  _.isEqual = function(a, b) {
-    return eq(a, b, [], []);
-  };
-
-  // Is a given array, string, or object empty?
-  // An "empty" object has no enumerable own-properties.
-  _.isEmpty = function(obj) {
-    if (obj == null) return true;
-    if (_.isArray(obj) || _.isString(obj)) return obj.length === 0;
-    for (var key in obj) if (_.has(obj, key)) return false;
-    return true;
-  };
-
-  // Is a given value a DOM element?
-  _.isElement = function(obj) {
-    return !!(obj && obj.nodeType === 1);
-  };
-
-  // Is a given value an array?
-  // Delegates to ECMA5's native Array.isArray
-  _.isArray = nativeIsArray || function(obj) {
-    return toString.call(obj) == '[object Array]';
-  };
-
-  // Is a given variable an object?
-  _.isObject = function(obj) {
-    return obj === Object(obj);
-  };
-
-  // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp.
-  each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp'], function(name) {
-    _['is' + name] = function(obj) {
-      return toString.call(obj) == '[object ' + name + ']';
-    };
-  });
-
-  // Define a fallback version of the method in browsers (ahem, IE), where
-  // there isn't any inspectable "Arguments" type.
-  if (!_.isArguments(arguments)) {
-    _.isArguments = function(obj) {
-      return !!(obj && _.has(obj, 'callee'));
-    };
-  }
-
-  // Optimize `isFunction` if appropriate.
-  if (typeof (/./) !== 'function') {
-    _.isFunction = function(obj) {
-      return typeof obj === 'function';
-    };
-  }
-
-  // Is a given object a finite number?
-  _.isFinite = function(obj) {
-    return isFinite(obj) && !isNaN(parseFloat(obj));
-  };
-
-  // Is the given value `NaN`? (NaN is the only number which does not equal itself).
-  _.isNaN = function(obj) {
-    return _.isNumber(obj) && obj != +obj;
-  };
-
-  // Is a given value a boolean?
-  _.isBoolean = function(obj) {
-    return obj === true || obj === false || toString.call(obj) == '[object Boolean]';
-  };
-
-  // Is a given value equal to null?
-  _.isNull = function(obj) {
-    return obj === null;
-  };
-
-  // Is a given variable undefined?
-  _.isUndefined = function(obj) {
-    return obj === void 0;
-  };
-
-  // Shortcut function for checking if an object has a given property directly
-  // on itself (in other words, not on a prototype).
-  _.has = function(obj, key) {
-    return hasOwnProperty.call(obj, key);
-  };
-
-  // Utility Functions
-  // -----------------
-
-  // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
-  // previous owner. Returns a reference to the Underscore object.
-  _.noConflict = function() {
-    root._ = previousUnderscore;
-    return this;
-  };
-
-  // Keep the identity function around for default iterators.
-  _.identity = function(value) {
-    return value;
-  };
-
-  // Run a function **n** times.
-  _.times = function(n, iterator, context) {
-    var accum = Array(n);
-    for (var i = 0; i < n; i++) accum[i] = iterator.call(context, i);
-    return accum;
-  };
-
-  // Return a random integer between min and max (inclusive).
-  _.random = function(min, max) {
-    if (max == null) {
-      max = min;
-      min = 0;
+    if (typeof define !== 'undefined') {
+        //If a define is already in play via another AMD loader,
+        //do not overwrite.
+        return;
     }
-    return min + Math.floor(Math.random() * (max - min + 1));
-  };
 
-  // List of HTML entities for escaping.
-  var entityMap = {
-    escape: {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#x27;',
-      '/': '&#x2F;'
+    if (typeof requirejs !== 'undefined') {
+        if (isFunction(requirejs)) {
+            //Do not overwrite and existing requirejs instance.
+            return;
+        }
+        cfg = requirejs;
+        requirejs = undefined;
     }
-  };
-  entityMap.unescape = _.invert(entityMap.escape);
 
-  // Regexes containing the keys and values listed immediately above.
-  var entityRegexes = {
-    escape:   new RegExp('[' + _.keys(entityMap.escape).join('') + ']', 'g'),
-    unescape: new RegExp('(' + _.keys(entityMap.unescape).join('|') + ')', 'g')
-  };
+    //Allow for a require config object
+    if (typeof require !== 'undefined' && !isFunction(require)) {
+        //assume it is a config object.
+        cfg = require;
+        require = undefined;
+    }
 
-  // Functions for escaping and unescaping strings to/from HTML interpolation.
-  _.each(['escape', 'unescape'], function(method) {
-    _[method] = function(string) {
-      if (string == null) return '';
-      return ('' + string).replace(entityRegexes[method], function(match) {
-        return entityMap[method][match];
-      });
+    function newContext(contextName) {
+        var inCheckLoaded, Module, context, handlers,
+            checkLoadedTimeoutId,
+            config = {
+                waitSeconds: 7,
+                baseUrl: './',
+                paths: {},
+                pkgs: {},
+                shim: {},
+                map: {},
+                config: {}
+            },
+            registry = {},
+            undefEvents = {},
+            defQueue = [],
+            defined = {},
+            urlFetched = {},
+            requireCounter = 1,
+            unnormalizedCounter = 1;
+
+        /**
+         * Trims the . and .. from an array of path segments.
+         * It will keep a leading path segment if a .. will become
+         * the first path segment, to help with module name lookups,
+         * which act like paths, but can be remapped. But the end result,
+         * all paths that use this function should look normalized.
+         * NOTE: this method MODIFIES the input array.
+         * @param {Array} ary the array of path segments.
+         */
+        function trimDots(ary) {
+            var i, part;
+            for (i = 0; ary[i]; i += 1) {
+                part = ary[i];
+                if (part === '.') {
+                    ary.splice(i, 1);
+                    i -= 1;
+                } else if (part === '..') {
+                    if (i === 1 && (ary[2] === '..' || ary[0] === '..')) {
+                        //End of the line. Keep at least one non-dot
+                        //path segment at the front so it can be mapped
+                        //correctly to disk. Otherwise, there is likely
+                        //no path mapping for a path starting with '..'.
+                        //This can still fail, but catches the most reasonable
+                        //uses of ..
+                        break;
+                    } else if (i > 0) {
+                        ary.splice(i - 1, 2);
+                        i -= 2;
+                    }
+                }
+            }
+        }
+
+        /**
+         * Given a relative module name, like ./something, normalize it to
+         * a real name that can be mapped to a path.
+         * @param {String} name the relative name
+         * @param {String} baseName a real name that the name arg is relative
+         * to.
+         * @param {Boolean} applyMap apply the map config to the value. Should
+         * only be done if this normalization is for a dependency ID.
+         * @returns {String} normalized name
+         */
+        function normalize(name, baseName, applyMap) {
+            var pkgName, pkgConfig, mapValue, nameParts, i, j, nameSegment,
+                foundMap, foundI, foundStarMap, starI,
+                baseParts = baseName && baseName.split('/'),
+                normalizedBaseParts = baseParts,
+                map = config.map,
+                starMap = map && map['*'];
+
+            //Adjust any relative paths.
+            if (name && name.charAt(0) === '.') {
+                //If have a base name, try to normalize against it,
+                //otherwise, assume it is a top-level require that will
+                //be relative to baseUrl in the end.
+                if (baseName) {
+                    if (getOwn(config.pkgs, baseName)) {
+                        //If the baseName is a package name, then just treat it as one
+                        //name to concat the name with.
+                        normalizedBaseParts = baseParts = [baseName];
+                    } else {
+                        //Convert baseName to array, and lop off the last part,
+                        //so that . matches that 'directory' and not name of the baseName's
+                        //module. For instance, baseName of 'one/two/three', maps to
+                        //'one/two/three.js', but we want the directory, 'one/two' for
+                        //this normalization.
+                        normalizedBaseParts = baseParts.slice(0, baseParts.length - 1);
+                    }
+
+                    name = normalizedBaseParts.concat(name.split('/'));
+                    trimDots(name);
+
+                    //Some use of packages may use a . path to reference the
+                    //'main' module name, so normalize for that.
+                    pkgConfig = getOwn(config.pkgs, (pkgName = name[0]));
+                    name = name.join('/');
+                    if (pkgConfig && name === pkgName + '/' + pkgConfig.main) {
+                        name = pkgName;
+                    }
+                } else if (name.indexOf('./') === 0) {
+                    // No baseName, so this is ID is resolved relative
+                    // to baseUrl, pull off the leading dot.
+                    name = name.substring(2);
+                }
+            }
+
+            //Apply map config if available.
+            if (applyMap && (baseParts || starMap) && map) {
+                nameParts = name.split('/');
+
+                for (i = nameParts.length; i > 0; i -= 1) {
+                    nameSegment = nameParts.slice(0, i).join('/');
+
+                    if (baseParts) {
+                        //Find the longest baseName segment match in the config.
+                        //So, do joins on the biggest to smallest lengths of baseParts.
+                        for (j = baseParts.length; j > 0; j -= 1) {
+                            mapValue = getOwn(map, baseParts.slice(0, j).join('/'));
+
+                            //baseName segment has config, find if it has one for
+                            //this name.
+                            if (mapValue) {
+                                mapValue = getOwn(mapValue, nameSegment);
+                                if (mapValue) {
+                                    //Match, update name to the new value.
+                                    foundMap = mapValue;
+                                    foundI = i;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (foundMap) {
+                        break;
+                    }
+
+                    //Check for a star map match, but just hold on to it,
+                    //if there is a shorter segment match later in a matching
+                    //config, then favor over this star map.
+                    if (!foundStarMap && starMap && getOwn(starMap, nameSegment)) {
+                        foundStarMap = getOwn(starMap, nameSegment);
+                        starI = i;
+                    }
+                }
+
+                if (!foundMap && foundStarMap) {
+                    foundMap = foundStarMap;
+                    foundI = starI;
+                }
+
+                if (foundMap) {
+                    nameParts.splice(0, foundI, foundMap);
+                    name = nameParts.join('/');
+                }
+            }
+
+            return name;
+        }
+
+        function removeScript(name) {
+            if (isBrowser) {
+                each(scripts(), function (scriptNode) {
+                    if (scriptNode.getAttribute('data-requiremodule') === name &&
+                            scriptNode.getAttribute('data-requirecontext') === context.contextName) {
+                        scriptNode.parentNode.removeChild(scriptNode);
+                        return true;
+                    }
+                });
+            }
+        }
+
+        function hasPathFallback(id) {
+            var pathConfig = getOwn(config.paths, id);
+            if (pathConfig && isArray(pathConfig) && pathConfig.length > 1) {
+                removeScript(id);
+                //Pop off the first array value, since it failed, and
+                //retry
+                pathConfig.shift();
+                context.require.undef(id);
+                context.require([id]);
+                return true;
+            }
+        }
+
+        //Turns a plugin!resource to [plugin, resource]
+        //with the plugin being undefined if the name
+        //did not have a plugin prefix.
+        function splitPrefix(name) {
+            var prefix,
+                index = name ? name.indexOf('!') : -1;
+            if (index > -1) {
+                prefix = name.substring(0, index);
+                name = name.substring(index + 1, name.length);
+            }
+            return [prefix, name];
+        }
+
+        /**
+         * Creates a module mapping that includes plugin prefix, module
+         * name, and path. If parentModuleMap is provided it will
+         * also normalize the name via require.normalize()
+         *
+         * @param {String} name the module name
+         * @param {String} [parentModuleMap] parent module map
+         * for the module name, used to resolve relative names.
+         * @param {Boolean} isNormalized: is the ID already normalized.
+         * This is true if this call is done for a define() module ID.
+         * @param {Boolean} applyMap: apply the map config to the ID.
+         * Should only be true if this map is for a dependency.
+         *
+         * @returns {Object}
+         */
+        function makeModuleMap(name, parentModuleMap, isNormalized, applyMap) {
+            var url, pluginModule, suffix, nameParts,
+                prefix = null,
+                parentName = parentModuleMap ? parentModuleMap.name : null,
+                originalName = name,
+                isDefine = true,
+                normalizedName = '';
+
+            //If no name, then it means it is a require call, generate an
+            //internal name.
+            if (!name) {
+                isDefine = false;
+                name = '_@r' + (requireCounter += 1);
+            }
+
+            nameParts = splitPrefix(name);
+            prefix = nameParts[0];
+            name = nameParts[1];
+
+            if (prefix) {
+                prefix = normalize(prefix, parentName, applyMap);
+                pluginModule = getOwn(defined, prefix);
+            }
+
+            //Account for relative paths if there is a base name.
+            if (name) {
+                if (prefix) {
+                    if (pluginModule && pluginModule.normalize) {
+                        //Plugin is loaded, use its normalize method.
+                        normalizedName = pluginModule.normalize(name, function (name) {
+                            return normalize(name, parentName, applyMap);
+                        });
+                    } else {
+                        normalizedName = normalize(name, parentName, applyMap);
+                    }
+                } else {
+                    //A regular module.
+                    normalizedName = normalize(name, parentName, applyMap);
+
+                    //Normalized name may be a plugin ID due to map config
+                    //application in normalize. The map config values must
+                    //already be normalized, so do not need to redo that part.
+                    nameParts = splitPrefix(normalizedName);
+                    prefix = nameParts[0];
+                    normalizedName = nameParts[1];
+                    isNormalized = true;
+
+                    url = context.nameToUrl(normalizedName);
+                }
+            }
+
+            //If the id is a plugin id that cannot be determined if it needs
+            //normalization, stamp it with a unique ID so two matching relative
+            //ids that may conflict can be separate.
+            suffix = prefix && !pluginModule && !isNormalized ?
+                     '_unnormalized' + (unnormalizedCounter += 1) :
+                     '';
+
+            return {
+                prefix: prefix,
+                name: normalizedName,
+                parentMap: parentModuleMap,
+                unnormalized: !!suffix,
+                url: url,
+                originalName: originalName,
+                isDefine: isDefine,
+                id: (prefix ?
+                        prefix + '!' + normalizedName :
+                        normalizedName) + suffix
+            };
+        }
+
+        function getModule(depMap) {
+            var id = depMap.id,
+                mod = getOwn(registry, id);
+
+            if (!mod) {
+                mod = registry[id] = new context.Module(depMap);
+            }
+
+            return mod;
+        }
+
+        function on(depMap, name, fn) {
+            var id = depMap.id,
+                mod = getOwn(registry, id);
+
+            if (hasProp(defined, id) &&
+                    (!mod || mod.defineEmitComplete)) {
+                if (name === 'defined') {
+                    fn(defined[id]);
+                }
+            } else {
+                getModule(depMap).on(name, fn);
+            }
+        }
+
+        function onError(err, errback) {
+            var ids = err.requireModules,
+                notified = false;
+
+            if (errback) {
+                errback(err);
+            } else {
+                each(ids, function (id) {
+                    var mod = getOwn(registry, id);
+                    if (mod) {
+                        //Set error on module, so it skips timeout checks.
+                        mod.error = err;
+                        if (mod.events.error) {
+                            notified = true;
+                            mod.emit('error', err);
+                        }
+                    }
+                });
+
+                if (!notified) {
+                    req.onError(err);
+                }
+            }
+        }
+
+        /**
+         * Internal method to transfer globalQueue items to this context's
+         * defQueue.
+         */
+        function takeGlobalQueue() {
+            //Push all the globalDefQueue items into the context's defQueue
+            if (globalDefQueue.length) {
+                //Array splice in the values since the context code has a
+                //local var ref to defQueue, so cannot just reassign the one
+                //on context.
+                apsp.apply(defQueue,
+                           [defQueue.length - 1, 0].concat(globalDefQueue));
+                globalDefQueue = [];
+            }
+        }
+
+        handlers = {
+            'require': function (mod) {
+                if (mod.require) {
+                    return mod.require;
+                } else {
+                    return (mod.require = context.makeRequire(mod.map));
+                }
+            },
+            'exports': function (mod) {
+                mod.usingExports = true;
+                if (mod.map.isDefine) {
+                    if (mod.exports) {
+                        return mod.exports;
+                    } else {
+                        return (mod.exports = defined[mod.map.id] = {});
+                    }
+                }
+            },
+            'module': function (mod) {
+                if (mod.module) {
+                    return mod.module;
+                } else {
+                    return (mod.module = {
+                        id: mod.map.id,
+                        uri: mod.map.url,
+                        config: function () {
+                            return (config.config && getOwn(config.config, mod.map.id)) || {};
+                        },
+                        exports: defined[mod.map.id]
+                    });
+                }
+            }
+        };
+
+        function cleanRegistry(id) {
+            //Clean up machinery used for waiting modules.
+            delete registry[id];
+        }
+
+        function breakCycle(mod, traced, processed) {
+            var id = mod.map.id;
+
+            if (mod.error) {
+                mod.emit('error', mod.error);
+            } else {
+                traced[id] = true;
+                each(mod.depMaps, function (depMap, i) {
+                    var depId = depMap.id,
+                        dep = getOwn(registry, depId);
+
+                    //Only force things that have not completed
+                    //being defined, so still in the registry,
+                    //and only if it has not been matched up
+                    //in the module already.
+                    if (dep && !mod.depMatched[i] && !processed[depId]) {
+                        if (getOwn(traced, depId)) {
+                            mod.defineDep(i, defined[depId]);
+                            mod.check(); //pass false?
+                        } else {
+                            breakCycle(dep, traced, processed);
+                        }
+                    }
+                });
+                processed[id] = true;
+            }
+        }
+
+        function checkLoaded() {
+            var map, modId, err, usingPathFallback,
+                waitInterval = config.waitSeconds * 1000,
+                //It is possible to disable the wait interval by using waitSeconds of 0.
+                expired = waitInterval && (context.startTime + waitInterval) < new Date().getTime(),
+                noLoads = [],
+                reqCalls = [],
+                stillLoading = false,
+                needCycleCheck = true;
+
+            //Do not bother if this call was a result of a cycle break.
+            if (inCheckLoaded) {
+                return;
+            }
+
+            inCheckLoaded = true;
+
+            //Figure out the state of all the modules.
+            eachProp(registry, function (mod) {
+                map = mod.map;
+                modId = map.id;
+
+                //Skip things that are not enabled or in error state.
+                if (!mod.enabled) {
+                    return;
+                }
+
+                if (!map.isDefine) {
+                    reqCalls.push(mod);
+                }
+
+                if (!mod.error) {
+                    //If the module should be executed, and it has not
+                    //been inited and time is up, remember it.
+                    if (!mod.inited && expired) {
+                        if (hasPathFallback(modId)) {
+                            usingPathFallback = true;
+                            stillLoading = true;
+                        } else {
+                            noLoads.push(modId);
+                            removeScript(modId);
+                        }
+                    } else if (!mod.inited && mod.fetched && map.isDefine) {
+                        stillLoading = true;
+                        if (!map.prefix) {
+                            //No reason to keep looking for unfinished
+                            //loading. If the only stillLoading is a
+                            //plugin resource though, keep going,
+                            //because it may be that a plugin resource
+                            //is waiting on a non-plugin cycle.
+                            return (needCycleCheck = false);
+                        }
+                    }
+                }
+            });
+
+            if (expired && noLoads.length) {
+                //If wait time expired, throw error of unloaded modules.
+                err = makeError('timeout', 'Load timeout for modules: ' + noLoads, null, noLoads);
+                err.contextName = context.contextName;
+                return onError(err);
+            }
+
+            //Not expired, check for a cycle.
+            if (needCycleCheck) {
+                each(reqCalls, function (mod) {
+                    breakCycle(mod, {}, {});
+                });
+            }
+
+            //If still waiting on loads, and the waiting load is something
+            //other than a plugin resource, or there are still outstanding
+            //scripts, then just try back later.
+            if ((!expired || usingPathFallback) && stillLoading) {
+                //Something is still waiting to load. Wait for it, but only
+                //if a timeout is not already in effect.
+                if ((isBrowser || isWebWorker) && !checkLoadedTimeoutId) {
+                    checkLoadedTimeoutId = setTimeout(function () {
+                        checkLoadedTimeoutId = 0;
+                        checkLoaded();
+                    }, 50);
+                }
+            }
+
+            inCheckLoaded = false;
+        }
+
+        Module = function (map) {
+            this.events = getOwn(undefEvents, map.id) || {};
+            this.map = map;
+            this.shim = getOwn(config.shim, map.id);
+            this.depExports = [];
+            this.depMaps = [];
+            this.depMatched = [];
+            this.pluginMaps = {};
+            this.depCount = 0;
+
+            /* this.exports this.factory
+               this.depMaps = [],
+               this.enabled, this.fetched
+            */
+        };
+
+        Module.prototype = {
+            init: function (depMaps, factory, errback, options) {
+                options = options || {};
+
+                //Do not do more inits if already done. Can happen if there
+                //are multiple define calls for the same module. That is not
+                //a normal, common case, but it is also not unexpected.
+                if (this.inited) {
+                    return;
+                }
+
+                this.factory = factory;
+
+                if (errback) {
+                    //Register for errors on this module.
+                    this.on('error', errback);
+                } else if (this.events.error) {
+                    //If no errback already, but there are error listeners
+                    //on this module, set up an errback to pass to the deps.
+                    errback = bind(this, function (err) {
+                        this.emit('error', err);
+                    });
+                }
+
+                //Do a copy of the dependency array, so that
+                //source inputs are not modified. For example
+                //"shim" deps are passed in here directly, and
+                //doing a direct modification of the depMaps array
+                //would affect that config.
+                this.depMaps = depMaps && depMaps.slice(0);
+
+                this.errback = errback;
+
+                //Indicate this module has be initialized
+                this.inited = true;
+
+                this.ignore = options.ignore;
+
+                //Could have option to init this module in enabled mode,
+                //or could have been previously marked as enabled. However,
+                //the dependencies are not known until init is called. So
+                //if enabled previously, now trigger dependencies as enabled.
+                if (options.enabled || this.enabled) {
+                    //Enable this module and dependencies.
+                    //Will call this.check()
+                    this.enable();
+                } else {
+                    this.check();
+                }
+            },
+
+            defineDep: function (i, depExports) {
+                //Because of cycles, defined callback for a given
+                //export can be called more than once.
+                if (!this.depMatched[i]) {
+                    this.depMatched[i] = true;
+                    this.depCount -= 1;
+                    this.depExports[i] = depExports;
+                }
+            },
+
+            fetch: function () {
+                if (this.fetched) {
+                    return;
+                }
+                this.fetched = true;
+
+                context.startTime = (new Date()).getTime();
+
+                var map = this.map;
+
+                //If the manager is for a plugin managed resource,
+                //ask the plugin to load it now.
+                if (this.shim) {
+                    context.makeRequire(this.map, {
+                        enableBuildCallback: true
+                    })(this.shim.deps || [], bind(this, function () {
+                        return map.prefix ? this.callPlugin() : this.load();
+                    }));
+                } else {
+                    //Regular dependency.
+                    return map.prefix ? this.callPlugin() : this.load();
+                }
+            },
+
+            load: function () {
+                var url = this.map.url;
+
+                //Regular dependency.
+                if (!urlFetched[url]) {
+                    urlFetched[url] = true;
+                    context.load(this.map.id, url);
+                }
+            },
+
+            /**
+             * Checks is the module is ready to define itself, and if so,
+             * define it.
+             */
+            check: function () {
+                if (!this.enabled || this.enabling) {
+                    return;
+                }
+
+                var err, cjsModule,
+                    id = this.map.id,
+                    depExports = this.depExports,
+                    exports = this.exports,
+                    factory = this.factory;
+
+                if (!this.inited) {
+                    this.fetch();
+                } else if (this.error) {
+                    this.emit('error', this.error);
+                } else if (!this.defining) {
+                    //The factory could trigger another require call
+                    //that would result in checking this module to
+                    //define itself again. If already in the process
+                    //of doing that, skip this work.
+                    this.defining = true;
+
+                    if (this.depCount < 1 && !this.defined) {
+                        if (isFunction(factory)) {
+                            //If there is an error listener, favor passing
+                            //to that instead of throwing an error.
+                            if (this.events.error) {
+                                try {
+                                    exports = context.execCb(id, factory, depExports, exports);
+                                } catch (e) {
+                                    err = e;
+                                }
+                            } else {
+                                exports = context.execCb(id, factory, depExports, exports);
+                            }
+
+                            if (this.map.isDefine) {
+                                //If setting exports via 'module' is in play,
+                                //favor that over return value and exports. After that,
+                                //favor a non-undefined return value over exports use.
+                                cjsModule = this.module;
+                                if (cjsModule &&
+                                        cjsModule.exports !== undefined &&
+                                        //Make sure it is not already the exports value
+                                        cjsModule.exports !== this.exports) {
+                                    exports = cjsModule.exports;
+                                } else if (exports === undefined && this.usingExports) {
+                                    //exports already set the defined value.
+                                    exports = this.exports;
+                                }
+                            }
+
+                            if (err) {
+                                err.requireMap = this.map;
+                                err.requireModules = [this.map.id];
+                                err.requireType = 'define';
+                                return onError((this.error = err));
+                            }
+
+                        } else {
+                            //Just a literal value
+                            exports = factory;
+                        }
+
+                        this.exports = exports;
+
+                        if (this.map.isDefine && !this.ignore) {
+                            defined[id] = exports;
+
+                            if (req.onResourceLoad) {
+                                req.onResourceLoad(context, this.map, this.depMaps);
+                            }
+                        }
+
+                        //Clean up
+                        delete registry[id];
+
+                        this.defined = true;
+                    }
+
+                    //Finished the define stage. Allow calling check again
+                    //to allow define notifications below in the case of a
+                    //cycle.
+                    this.defining = false;
+
+                    if (this.defined && !this.defineEmitted) {
+                        this.defineEmitted = true;
+                        this.emit('defined', this.exports);
+                        this.defineEmitComplete = true;
+                    }
+
+                }
+            },
+
+            callPlugin: function () {
+                var map = this.map,
+                    id = map.id,
+                    //Map already normalized the prefix.
+                    pluginMap = makeModuleMap(map.prefix);
+
+                //Mark this as a dependency for this plugin, so it
+                //can be traced for cycles.
+                this.depMaps.push(pluginMap);
+
+                on(pluginMap, 'defined', bind(this, function (plugin) {
+                    var load, normalizedMap, normalizedMod,
+                        name = this.map.name,
+                        parentName = this.map.parentMap ? this.map.parentMap.name : null,
+                        localRequire = context.makeRequire(map.parentMap, {
+                            enableBuildCallback: true
+                        });
+
+                    //If current map is not normalized, wait for that
+                    //normalized name to load instead of continuing.
+                    if (this.map.unnormalized) {
+                        //Normalize the ID if the plugin allows it.
+                        if (plugin.normalize) {
+                            name = plugin.normalize(name, function (name) {
+                                return normalize(name, parentName, true);
+                            }) || '';
+                        }
+
+                        //prefix and name should already be normalized, no need
+                        //for applying map config again either.
+                        normalizedMap = makeModuleMap(map.prefix + '!' + name,
+                                                      this.map.parentMap);
+                        on(normalizedMap,
+                            'defined', bind(this, function (value) {
+                                this.init([], function () { return value; }, null, {
+                                    enabled: true,
+                                    ignore: true
+                                });
+                            }));
+
+                        normalizedMod = getOwn(registry, normalizedMap.id);
+                        if (normalizedMod) {
+                            //Mark this as a dependency for this plugin, so it
+                            //can be traced for cycles.
+                            this.depMaps.push(normalizedMap);
+
+                            if (this.events.error) {
+                                normalizedMod.on('error', bind(this, function (err) {
+                                    this.emit('error', err);
+                                }));
+                            }
+                            normalizedMod.enable();
+                        }
+
+                        return;
+                    }
+
+                    load = bind(this, function (value) {
+                        this.init([], function () { return value; }, null, {
+                            enabled: true
+                        });
+                    });
+
+                    load.error = bind(this, function (err) {
+                        this.inited = true;
+                        this.error = err;
+                        err.requireModules = [id];
+
+                        //Remove temp unnormalized modules for this module,
+                        //since they will never be resolved otherwise now.
+                        eachProp(registry, function (mod) {
+                            if (mod.map.id.indexOf(id + '_unnormalized') === 0) {
+                                cleanRegistry(mod.map.id);
+                            }
+                        });
+
+                        onError(err);
+                    });
+
+                    //Allow plugins to load other code without having to know the
+                    //context or how to 'complete' the load.
+                    load.fromText = bind(this, function (text, textAlt) {
+                        /*jslint evil: true */
+                        var moduleName = map.name,
+                            moduleMap = makeModuleMap(moduleName),
+                            hasInteractive = useInteractive;
+
+                        //As of 2.1.0, support just passing the text, to reinforce
+                        //fromText only being called once per resource. Still
+                        //support old style of passing moduleName but discard
+                        //that moduleName in favor of the internal ref.
+                        if (textAlt) {
+                            text = textAlt;
+                        }
+
+                        //Turn off interactive script matching for IE for any define
+                        //calls in the text, then turn it back on at the end.
+                        if (hasInteractive) {
+                            useInteractive = false;
+                        }
+
+                        //Prime the system by creating a module instance for
+                        //it.
+                        getModule(moduleMap);
+
+                        //Transfer any config to this other module.
+                        if (hasProp(config.config, id)) {
+                            config.config[moduleName] = config.config[id];
+                        }
+
+                        try {
+                            req.exec(text);
+                        } catch (e) {
+                            return onError(makeError('fromtexteval',
+                                             'fromText eval for ' + id +
+                                            ' failed: ' + e,
+                                             e,
+                                             [id]));
+                        }
+
+                        if (hasInteractive) {
+                            useInteractive = true;
+                        }
+
+                        //Mark this as a dependency for the plugin
+                        //resource
+                        this.depMaps.push(moduleMap);
+
+                        //Support anonymous modules.
+                        context.completeLoad(moduleName);
+
+                        //Bind the value of that module to the value for this
+                        //resource ID.
+                        localRequire([moduleName], load);
+                    });
+
+                    //Use parentName here since the plugin's name is not reliable,
+                    //could be some weird string with no path that actually wants to
+                    //reference the parentName's path.
+                    plugin.load(map.name, localRequire, load, config);
+                }));
+
+                context.enable(pluginMap, this);
+                this.pluginMaps[pluginMap.id] = pluginMap;
+            },
+
+            enable: function () {
+                this.enabled = true;
+
+                //Set flag mentioning that the module is enabling,
+                //so that immediate calls to the defined callbacks
+                //for dependencies do not trigger inadvertent load
+                //with the depCount still being zero.
+                this.enabling = true;
+
+                //Enable each dependency
+                each(this.depMaps, bind(this, function (depMap, i) {
+                    var id, mod, handler;
+
+                    if (typeof depMap === 'string') {
+                        //Dependency needs to be converted to a depMap
+                        //and wired up to this module.
+                        depMap = makeModuleMap(depMap,
+                                               (this.map.isDefine ? this.map : this.map.parentMap),
+                                               false,
+                                               !this.skipMap);
+                        this.depMaps[i] = depMap;
+
+                        handler = getOwn(handlers, depMap.id);
+
+                        if (handler) {
+                            this.depExports[i] = handler(this);
+                            return;
+                        }
+
+                        this.depCount += 1;
+
+                        on(depMap, 'defined', bind(this, function (depExports) {
+                            this.defineDep(i, depExports);
+                            this.check();
+                        }));
+
+                        if (this.errback) {
+                            on(depMap, 'error', this.errback);
+                        }
+                    }
+
+                    id = depMap.id;
+                    mod = registry[id];
+
+                    //Skip special modules like 'require', 'exports', 'module'
+                    //Also, don't call enable if it is already enabled,
+                    //important in circular dependency cases.
+                    if (!hasProp(handlers, id) && mod && !mod.enabled) {
+                        context.enable(depMap, this);
+                    }
+                }));
+
+                //Enable each plugin that is used in
+                //a dependency
+                eachProp(this.pluginMaps, bind(this, function (pluginMap) {
+                    var mod = getOwn(registry, pluginMap.id);
+                    if (mod && !mod.enabled) {
+                        context.enable(pluginMap, this);
+                    }
+                }));
+
+                this.enabling = false;
+
+                this.check();
+            },
+
+            on: function (name, cb) {
+                var cbs = this.events[name];
+                if (!cbs) {
+                    cbs = this.events[name] = [];
+                }
+                cbs.push(cb);
+            },
+
+            emit: function (name, evt) {
+                each(this.events[name], function (cb) {
+                    cb(evt);
+                });
+                if (name === 'error') {
+                    //Now that the error handler was triggered, remove
+                    //the listeners, since this broken Module instance
+                    //can stay around for a while in the registry.
+                    delete this.events[name];
+                }
+            }
+        };
+
+        function callGetModule(args) {
+            //Skip modules already defined.
+            if (!hasProp(defined, args[0])) {
+                getModule(makeModuleMap(args[0], null, true)).init(args[1], args[2]);
+            }
+        }
+
+        function removeListener(node, func, name, ieName) {
+            //Favor detachEvent because of IE9
+            //issue, see attachEvent/addEventListener comment elsewhere
+            //in this file.
+            if (node.detachEvent && !isOpera) {
+                //Probably IE. If not it will throw an error, which will be
+                //useful to know.
+                if (ieName) {
+                    node.detachEvent(ieName, func);
+                }
+            } else {
+                node.removeEventListener(name, func, false);
+            }
+        }
+
+        /**
+         * Given an event from a script node, get the requirejs info from it,
+         * and then removes the event listeners on the node.
+         * @param {Event} evt
+         * @returns {Object}
+         */
+        function getScriptData(evt) {
+            //Using currentTarget instead of target for Firefox 2.0's sake. Not
+            //all old browsers will be supported, but this one was easy enough
+            //to support and still makes sense.
+            var node = evt.currentTarget || evt.srcElement;
+
+            //Remove the listeners once here.
+            removeListener(node, context.onScriptLoad, 'load', 'onreadystatechange');
+            removeListener(node, context.onScriptError, 'error');
+
+            return {
+                node: node,
+                id: node && node.getAttribute('data-requiremodule')
+            };
+        }
+
+        function intakeDefines() {
+            var args;
+
+            //Any defined modules in the global queue, intake them now.
+            takeGlobalQueue();
+
+            //Make sure any remaining defQueue items get properly processed.
+            while (defQueue.length) {
+                args = defQueue.shift();
+                if (args[0] === null) {
+                    return onError(makeError('mismatch', 'Mismatched anonymous define() module: ' + args[args.length - 1]));
+                } else {
+                    //args are id, deps, factory. Should be normalized by the
+                    //define() function.
+                    callGetModule(args);
+                }
+            }
+        }
+
+        context = {
+            config: config,
+            contextName: contextName,
+            registry: registry,
+            defined: defined,
+            urlFetched: urlFetched,
+            defQueue: defQueue,
+            Module: Module,
+            makeModuleMap: makeModuleMap,
+            nextTick: req.nextTick,
+
+            /**
+             * Set a configuration for the context.
+             * @param {Object} cfg config object to integrate.
+             */
+            configure: function (cfg) {
+                //Make sure the baseUrl ends in a slash.
+                if (cfg.baseUrl) {
+                    if (cfg.baseUrl.charAt(cfg.baseUrl.length - 1) !== '/') {
+                        cfg.baseUrl += '/';
+                    }
+                }
+
+                //Save off the paths and packages since they require special processing,
+                //they are additive.
+                var pkgs = config.pkgs,
+                    shim = config.shim,
+                    objs = {
+                        paths: true,
+                        config: true,
+                        map: true
+                    };
+
+                eachProp(cfg, function (value, prop) {
+                    if (objs[prop]) {
+                        if (prop === 'map') {
+                            mixin(config[prop], value, true, true);
+                        } else {
+                            mixin(config[prop], value, true);
+                        }
+                    } else {
+                        config[prop] = value;
+                    }
+                });
+
+                //Merge shim
+                if (cfg.shim) {
+                    eachProp(cfg.shim, function (value, id) {
+                        //Normalize the structure
+                        if (isArray(value)) {
+                            value = {
+                                deps: value
+                            };
+                        }
+                        if ((value.exports || value.init) && !value.exportsFn) {
+                            value.exportsFn = context.makeShimExports(value);
+                        }
+                        shim[id] = value;
+                    });
+                    config.shim = shim;
+                }
+
+                //Adjust packages if necessary.
+                if (cfg.packages) {
+                    each(cfg.packages, function (pkgObj) {
+                        var location;
+
+                        pkgObj = typeof pkgObj === 'string' ? { name: pkgObj } : pkgObj;
+                        location = pkgObj.location;
+
+                        //Create a brand new object on pkgs, since currentPackages can
+                        //be passed in again, and config.pkgs is the internal transformed
+                        //state for all package configs.
+                        pkgs[pkgObj.name] = {
+                            name: pkgObj.name,
+                            location: location || pkgObj.name,
+                            //Remove leading dot in main, so main paths are normalized,
+                            //and remove any trailing .js, since different package
+                            //envs have different conventions: some use a module name,
+                            //some use a file name.
+                            main: (pkgObj.main || 'main')
+                                  .replace(currDirRegExp, '')
+                                  .replace(jsSuffixRegExp, '')
+                        };
+                    });
+
+                    //Done with modifications, assing packages back to context config
+                    config.pkgs = pkgs;
+                }
+
+                //If there are any "waiting to execute" modules in the registry,
+                //update the maps for them, since their info, like URLs to load,
+                //may have changed.
+                eachProp(registry, function (mod, id) {
+                    //If module already has init called, since it is too
+                    //late to modify them, and ignore unnormalized ones
+                    //since they are transient.
+                    if (!mod.inited && !mod.map.unnormalized) {
+                        mod.map = makeModuleMap(id);
+                    }
+                });
+
+                //If a deps array or a config callback is specified, then call
+                //require with those args. This is useful when require is defined as a
+                //config object before require.js is loaded.
+                if (cfg.deps || cfg.callback) {
+                    context.require(cfg.deps || [], cfg.callback);
+                }
+            },
+
+            makeShimExports: function (value) {
+                function fn() {
+                    var ret;
+                    if (value.init) {
+                        ret = value.init.apply(global, arguments);
+                    }
+                    return ret || (value.exports && getGlobal(value.exports));
+                }
+                return fn;
+            },
+
+            makeRequire: function (relMap, options) {
+                options = options || {};
+
+                function localRequire(deps, callback, errback) {
+                    var id, map, requireMod;
+
+                    if (options.enableBuildCallback && callback && isFunction(callback)) {
+                        callback.__requireJsBuild = true;
+                    }
+
+                    if (typeof deps === 'string') {
+                        if (isFunction(callback)) {
+                            //Invalid call
+                            return onError(makeError('requireargs', 'Invalid require call'), errback);
+                        }
+
+                        //If require|exports|module are requested, get the
+                        //value for them from the special handlers. Caveat:
+                        //this only works while module is being defined.
+                        if (relMap && hasProp(handlers, deps)) {
+                            return handlers[deps](registry[relMap.id]);
+                        }
+
+                        //Synchronous access to one module. If require.get is
+                        //available (as in the Node adapter), prefer that.
+                        if (req.get) {
+                            return req.get(context, deps, relMap);
+                        }
+
+                        //Normalize module name, if it contains . or ..
+                        map = makeModuleMap(deps, relMap, false, true);
+                        id = map.id;
+
+                        if (!hasProp(defined, id)) {
+                            return onError(makeError('notloaded', 'Module name "' +
+                                        id +
+                                        '" has not been loaded yet for context: ' +
+                                        contextName +
+                                        (relMap ? '' : '. Use require([])')));
+                        }
+                        return defined[id];
+                    }
+
+                    //Grab defines waiting in the global queue.
+                    intakeDefines();
+
+                    //Mark all the dependencies as needing to be loaded.
+                    context.nextTick(function () {
+                        //Some defines could have been added since the
+                        //require call, collect them.
+                        intakeDefines();
+
+                        requireMod = getModule(makeModuleMap(null, relMap));
+
+                        //Store if map config should be applied to this require
+                        //call for dependencies.
+                        requireMod.skipMap = options.skipMap;
+
+                        requireMod.init(deps, callback, errback, {
+                            enabled: true
+                        });
+
+                        checkLoaded();
+                    });
+
+                    return localRequire;
+                }
+
+                mixin(localRequire, {
+                    isBrowser: isBrowser,
+
+                    /**
+                     * Converts a module name + .extension into an URL path.
+                     * *Requires* the use of a module name. It does not support using
+                     * plain URLs like nameToUrl.
+                     */
+                    toUrl: function (moduleNamePlusExt) {
+                        var ext, url,
+                            index = moduleNamePlusExt.lastIndexOf('.'),
+                            segment = moduleNamePlusExt.split('/')[0],
+                            isRelative = segment === '.' || segment === '..';
+
+                        //Have a file extension alias, and it is not the
+                        //dots from a relative path.
+                        if (index !== -1 && (!isRelative || index > 1)) {
+                            ext = moduleNamePlusExt.substring(index, moduleNamePlusExt.length);
+                            moduleNamePlusExt = moduleNamePlusExt.substring(0, index);
+                        }
+
+                        url = context.nameToUrl(normalize(moduleNamePlusExt,
+                                                relMap && relMap.id, true), ext || '.fake');
+                        return ext ? url : url.substring(0, url.length - 5);
+                    },
+
+                    defined: function (id) {
+                        return hasProp(defined, makeModuleMap(id, relMap, false, true).id);
+                    },
+
+                    specified: function (id) {
+                        id = makeModuleMap(id, relMap, false, true).id;
+                        return hasProp(defined, id) || hasProp(registry, id);
+                    }
+                });
+
+                //Only allow undef on top level require calls
+                if (!relMap) {
+                    localRequire.undef = function (id) {
+                        //Bind any waiting define() calls to this context,
+                        //fix for #408
+                        takeGlobalQueue();
+
+                        var map = makeModuleMap(id, relMap, true),
+                            mod = getOwn(registry, id);
+
+                        delete defined[id];
+                        delete urlFetched[map.url];
+                        delete undefEvents[id];
+
+                        if (mod) {
+                            //Hold on to listeners in case the
+                            //module will be attempted to be reloaded
+                            //using a different config.
+                            if (mod.events.defined) {
+                                undefEvents[id] = mod.events;
+                            }
+
+                            cleanRegistry(id);
+                        }
+                    };
+                }
+
+                return localRequire;
+            },
+
+            /**
+             * Called to enable a module if it is still in the registry
+             * awaiting enablement. A second arg, parent, the parent module,
+             * is passed in for context, when this method is overriden by
+             * the optimizer. Not shown here to keep code compact.
+             */
+            enable: function (depMap) {
+                var mod = getOwn(registry, depMap.id);
+                if (mod) {
+                    getModule(depMap).enable();
+                }
+            },
+
+            /**
+             * Internal method used by environment adapters to complete a load event.
+             * A load event could be a script load or just a load pass from a synchronous
+             * load call.
+             * @param {String} moduleName the name of the module to potentially complete.
+             */
+            completeLoad: function (moduleName) {
+                var found, args, mod,
+                    shim = getOwn(config.shim, moduleName) || {},
+                    shExports = shim.exports;
+
+                takeGlobalQueue();
+
+                while (defQueue.length) {
+                    args = defQueue.shift();
+                    if (args[0] === null) {
+                        args[0] = moduleName;
+                        //If already found an anonymous module and bound it
+                        //to this name, then this is some other anon module
+                        //waiting for its completeLoad to fire.
+                        if (found) {
+                            break;
+                        }
+                        found = true;
+                    } else if (args[0] === moduleName) {
+                        //Found matching define call for this script!
+                        found = true;
+                    }
+
+                    callGetModule(args);
+                }
+
+                //Do this after the cycle of callGetModule in case the result
+                //of those calls/init calls changes the registry.
+                mod = getOwn(registry, moduleName);
+
+                if (!found && !hasProp(defined, moduleName) && mod && !mod.inited) {
+                    if (config.enforceDefine && (!shExports || !getGlobal(shExports))) {
+                        if (hasPathFallback(moduleName)) {
+                            return;
+                        } else {
+                            return onError(makeError('nodefine',
+                                             'No define call for ' + moduleName,
+                                             null,
+                                             [moduleName]));
+                        }
+                    } else {
+                        //A script that does not call define(), so just simulate
+                        //the call for it.
+                        callGetModule([moduleName, (shim.deps || []), shim.exportsFn]);
+                    }
+                }
+
+                checkLoaded();
+            },
+
+            /**
+             * Converts a module name to a file path. Supports cases where
+             * moduleName may actually be just an URL.
+             * Note that it **does not** call normalize on the moduleName,
+             * it is assumed to have already been normalized. This is an
+             * internal API, not a public one. Use toUrl for the public API.
+             */
+            nameToUrl: function (moduleName, ext) {
+                var paths, pkgs, pkg, pkgPath, syms, i, parentModule, url,
+                    parentPath;
+
+                //If a colon is in the URL, it indicates a protocol is used and it is just
+                //an URL to a file, or if it starts with a slash, contains a query arg (i.e. ?)
+                //or ends with .js, then assume the user meant to use an url and not a module id.
+                //The slash is important for protocol-less URLs as well as full paths.
+                if (req.jsExtRegExp.test(moduleName)) {
+                    //Just a plain path, not module name lookup, so just return it.
+                    //Add extension if it is included. This is a bit wonky, only non-.js things pass
+                    //an extension, this method probably needs to be reworked.
+                    url = moduleName + (ext || '');
+                } else {
+                    //A module that needs to be converted to a path.
+                    paths = config.paths;
+                    pkgs = config.pkgs;
+
+                    syms = moduleName.split('/');
+                    //For each module name segment, see if there is a path
+                    //registered for it. Start with most specific name
+                    //and work up from it.
+                    for (i = syms.length; i > 0; i -= 1) {
+                        parentModule = syms.slice(0, i).join('/');
+                        pkg = getOwn(pkgs, parentModule);
+                        parentPath = getOwn(paths, parentModule);
+                        if (parentPath) {
+                            //If an array, it means there are a few choices,
+                            //Choose the one that is desired
+                            if (isArray(parentPath)) {
+                                parentPath = parentPath[0];
+                            }
+                            syms.splice(0, i, parentPath);
+                            break;
+                        } else if (pkg) {
+                            //If module name is just the package name, then looking
+                            //for the main module.
+                            if (moduleName === pkg.name) {
+                                pkgPath = pkg.location + '/' + pkg.main;
+                            } else {
+                                pkgPath = pkg.location;
+                            }
+                            syms.splice(0, i, pkgPath);
+                            break;
+                        }
+                    }
+
+                    //Join the path parts together, then figure out if baseUrl is needed.
+                    url = syms.join('/');
+                    url += (ext || (/\?/.test(url) ? '' : '.js'));
+                    url = (url.charAt(0) === '/' || url.match(/^[\w\+\.\-]+:/) ? '' : config.baseUrl) + url;
+                }
+
+                return config.urlArgs ? url +
+                                        ((url.indexOf('?') === -1 ? '?' : '&') +
+                                         config.urlArgs) : url;
+            },
+
+            //Delegates to req.load. Broken out as a separate function to
+            //allow overriding in the optimizer.
+            load: function (id, url) {
+                req.load(context, id, url);
+            },
+
+            /**
+             * Executes a module callack function. Broken out as a separate function
+             * solely to allow the build system to sequence the files in the built
+             * layer in the right sequence.
+             *
+             * @private
+             */
+            execCb: function (name, callback, args, exports) {
+                return callback.apply(exports, args);
+            },
+
+            /**
+             * callback for script loads, used to check status of loading.
+             *
+             * @param {Event} evt the event from the browser for the script
+             * that was loaded.
+             */
+            onScriptLoad: function (evt) {
+                //Using currentTarget instead of target for Firefox 2.0's sake. Not
+                //all old browsers will be supported, but this one was easy enough
+                //to support and still makes sense.
+                if (evt.type === 'load' ||
+                        (readyRegExp.test((evt.currentTarget || evt.srcElement).readyState))) {
+                    //Reset interactive script so a script node is not held onto for
+                    //to long.
+                    interactiveScript = null;
+
+                    //Pull out the name of the module and the context.
+                    var data = getScriptData(evt);
+                    context.completeLoad(data.id);
+                }
+            },
+
+            /**
+             * Callback for script errors.
+             */
+            onScriptError: function (evt) {
+                var data = getScriptData(evt);
+                if (!hasPathFallback(data.id)) {
+                    return onError(makeError('scripterror', 'Script error', evt, [data.id]));
+                }
+            }
+        };
+
+        context.require = context.makeRequire();
+        return context;
+    }
+
+    /**
+     * Main entry point.
+     *
+     * If the only argument to require is a string, then the module that
+     * is represented by that string is fetched for the appropriate context.
+     *
+     * If the first argument is an array, then it will be treated as an array
+     * of dependency string names to fetch. An optional function callback can
+     * be specified to execute when all of those dependencies are available.
+     *
+     * Make a local req variable to help Caja compliance (it assumes things
+     * on a require that are not standardized), and to give a short
+     * name for minification/local scope use.
+     */
+    req = requirejs = function (deps, callback, errback, optional) {
+
+        //Find the right context, use default
+        var context, config,
+            contextName = defContextName;
+
+        // Determine if have config object in the call.
+        if (!isArray(deps) && typeof deps !== 'string') {
+            // deps is a config object
+            config = deps;
+            if (isArray(callback)) {
+                // Adjust args if there are dependencies
+                deps = callback;
+                callback = errback;
+                errback = optional;
+            } else {
+                deps = [];
+            }
+        }
+
+        if (config && config.context) {
+            contextName = config.context;
+        }
+
+        context = getOwn(contexts, contextName);
+        if (!context) {
+            context = contexts[contextName] = req.s.newContext(contextName);
+        }
+
+        if (config) {
+            context.configure(config);
+        }
+
+        return context.require(deps, callback, errback);
     };
-  });
 
-  // If the value of the named property is a function then invoke it;
-  // otherwise, return it.
-  _.result = function(object, property) {
-    if (object == null) return void 0;
-    var value = object[property];
-    return _.isFunction(value) ? value.call(object) : value;
-  };
+    /**
+     * Support require.config() to make it easier to cooperate with other
+     * AMD loaders on globally agreed names.
+     */
+    req.config = function (config) {
+        return req(config);
+    };
 
-  // Add your own custom functions to the Underscore object.
-  _.mixin = function(obj) {
-    each(_.functions(obj), function(name){
-      var func = _[name] = obj[name];
-      _.prototype[name] = function() {
-        var args = [this._wrapped];
-        push.apply(args, arguments);
-        return result.call(this, func.apply(_, args));
-      };
+    /**
+     * Execute something after the current tick
+     * of the event loop. Override for other envs
+     * that have a better solution than setTimeout.
+     * @param  {Function} fn function to execute later.
+     */
+    req.nextTick = typeof setTimeout !== 'undefined' ? function (fn) {
+        setTimeout(fn, 4);
+    } : function (fn) { fn(); };
+
+    /**
+     * Export require as a global, but only if it does not already exist.
+     */
+    if (!require) {
+        require = req;
+    }
+
+    req.version = version;
+
+    //Used to filter out dependencies that are already paths.
+    req.jsExtRegExp = /^\/|:|\?|\.js$/;
+    req.isBrowser = isBrowser;
+    s = req.s = {
+        contexts: contexts,
+        newContext: newContext
+    };
+
+    //Create default context.
+    req({});
+
+    //Exports some context-sensitive methods on global require.
+    each([
+        'toUrl',
+        'undef',
+        'defined',
+        'specified'
+    ], function (prop) {
+        //Reference from contexts instead of early binding to default context,
+        //so that during builds, the latest instance of the default context
+        //with its config gets used.
+        req[prop] = function () {
+            var ctx = contexts[defContextName];
+            return ctx.require[prop].apply(ctx, arguments);
+        };
     });
-  };
 
-  // Generate a unique integer id (unique within the entire client session).
-  // Useful for temporary DOM ids.
-  var idCounter = 0;
-  _.uniqueId = function(prefix) {
-    var id = ++idCounter + '';
-    return prefix ? prefix + id : id;
-  };
-
-  // By default, Underscore uses ERB-style template delimiters, change the
-  // following template settings to use alternative delimiters.
-  _.templateSettings = {
-    evaluate    : /<%([\s\S]+?)%>/g,
-    interpolate : /<%=([\s\S]+?)%>/g,
-    escape      : /<%-([\s\S]+?)%>/g
-  };
-
-  // When customizing `templateSettings`, if you don't want to define an
-  // interpolation, evaluation or escaping regex, we need one that is
-  // guaranteed not to match.
-  var noMatch = /(.)^/;
-
-  // Certain characters need to be escaped so that they can be put into a
-  // string literal.
-  var escapes = {
-    "'":      "'",
-    '\\':     '\\',
-    '\r':     'r',
-    '\n':     'n',
-    '\t':     't',
-    '\u2028': 'u2028',
-    '\u2029': 'u2029'
-  };
-
-  var escaper = /\\|'|\r|\n|\t|\u2028|\u2029/g;
-
-  // JavaScript micro-templating, similar to John Resig's implementation.
-  // Underscore templating handles arbitrary delimiters, preserves whitespace,
-  // and correctly escapes quotes within interpolated code.
-  _.template = function(text, data, settings) {
-    var render;
-    settings = _.defaults({}, settings, _.templateSettings);
-
-    // Combine delimiters into one regular expression via alternation.
-    var matcher = new RegExp([
-      (settings.escape || noMatch).source,
-      (settings.interpolate || noMatch).source,
-      (settings.evaluate || noMatch).source
-    ].join('|') + '|$', 'g');
-
-    // Compile the template source, escaping string literals appropriately.
-    var index = 0;
-    var source = "__p+='";
-    text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {
-      source += text.slice(index, offset)
-        .replace(escaper, function(match) { return '\\' + escapes[match]; });
-
-      if (escape) {
-        source += "'+\n((__t=(" + escape + "))==null?'':_.escape(__t))+\n'";
-      }
-      if (interpolate) {
-        source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
-      }
-      if (evaluate) {
-        source += "';\n" + evaluate + "\n__p+='";
-      }
-      index = offset + match.length;
-      return match;
-    });
-    source += "';\n";
-
-    // If a variable is not specified, place data values in local scope.
-    if (!settings.variable) source = 'with(obj||{}){\n' + source + '}\n';
-
-    source = "var __t,__p='',__j=Array.prototype.join," +
-      "print=function(){__p+=__j.call(arguments,'');};\n" +
-      source + "return __p;\n";
-
-    try {
-      render = new Function(settings.variable || 'obj', '_', source);
-    } catch (e) {
-      e.source = source;
-      throw e;
+    if (isBrowser) {
+        head = s.head = document.getElementsByTagName('head')[0];
+        //If BASE tag is in play, using appendChild is a problem for IE6.
+        //When that browser dies, this can be removed. Details in this jQuery bug:
+        //http://dev.jquery.com/ticket/2709
+        baseElement = document.getElementsByTagName('base')[0];
+        if (baseElement) {
+            head = s.head = baseElement.parentNode;
+        }
     }
 
-    if (data) return render(data, _);
-    var template = function(data) {
-      return render.call(this, data, _);
+    /**
+     * Any errors that require explicitly generates will be passed to this
+     * function. Intercept/override it if you want custom error handling.
+     * @param {Error} err the error object.
+     */
+    req.onError = function (err) {
+        throw err;
     };
 
-    // Provide the compiled function source as a convenience for precompilation.
-    template.source = 'function(' + (settings.variable || 'obj') + '){\n' + source + '}';
+    /**
+     * Does the request to load a module for the browser case.
+     * Make this a separate function to allow other environments
+     * to override it.
+     *
+     * @param {Object} context the require context to find state.
+     * @param {String} moduleName the name of the module.
+     * @param {Object} url the URL to the module.
+     */
+    req.load = function (context, moduleName, url) {
+        var config = (context && context.config) || {},
+            node;
+        if (isBrowser) {
+            //In the browser so use a script tag
+            node = config.xhtml ?
+                    document.createElementNS('http://www.w3.org/1999/xhtml', 'html:script') :
+                    document.createElement('script');
+            node.type = config.scriptType || 'text/javascript';
+            node.charset = 'utf-8';
+            node.async = true;
 
-    return template;
-  };
+            node.setAttribute('data-requirecontext', context.contextName);
+            node.setAttribute('data-requiremodule', moduleName);
 
-  // Add a "chain" function, which will delegate to the wrapper.
-  _.chain = function(obj) {
-    return _(obj).chain();
-  };
+            //Set up load listener. Test attachEvent first because IE9 has
+            //a subtle issue in its addEventListener and script onload firings
+            //that do not match the behavior of all other browsers with
+            //addEventListener support, which fire the onload event for a
+            //script right after the script execution. See:
+            //https://connect.microsoft.com/IE/feedback/details/648057/script-onload-event-is-not-fired-immediately-after-script-execution
+            //UNFORTUNATELY Opera implements attachEvent but does not follow the script
+            //script execution mode.
+            if (node.attachEvent &&
+                    //Check if node.attachEvent is artificially added by custom script or
+                    //natively supported by browser
+                    //read https://github.com/jrburke/requirejs/issues/187
+                    //if we can NOT find [native code] then it must NOT natively supported.
+                    //in IE8, node.attachEvent does not have toString()
+                    //Note the test for "[native code" with no closing brace, see:
+                    //https://github.com/jrburke/requirejs/issues/273
+                    !(node.attachEvent.toString && node.attachEvent.toString().indexOf('[native code') < 0) &&
+                    !isOpera) {
+                //Probably IE. IE (at least 6-8) do not fire
+                //script onload right after executing the script, so
+                //we cannot tie the anonymous define call to a name.
+                //However, IE reports the script as being in 'interactive'
+                //readyState at the time of the define call.
+                useInteractive = true;
 
-  // OOP
-  // ---------------
-  // If Underscore is called as a function, it returns a wrapped object that
-  // can be used OO-style. This wrapper holds altered versions of all the
-  // underscore functions. Wrapped objects may be chained.
+                node.attachEvent('onreadystatechange', context.onScriptLoad);
+                //It would be great to add an error handler here to catch
+                //404s in IE9+. However, onreadystatechange will fire before
+                //the error handler, so that does not help. If addEvenListener
+                //is used, then IE will fire error before load, but we cannot
+                //use that pathway given the connect.microsoft.com issue
+                //mentioned above about not doing the 'script execute,
+                //then fire the script load event listener before execute
+                //next script' that other browsers do.
+                //Best hope: IE10 fixes the issues,
+                //and then destroys all installs of IE 6-9.
+                //node.attachEvent('onerror', context.onScriptError);
+            } else {
+                node.addEventListener('load', context.onScriptLoad, false);
+                node.addEventListener('error', context.onScriptError, false);
+            }
+            node.src = url;
 
-  // Helper function to continue chaining intermediate results.
-  var result = function(obj) {
-    return this._chain ? _(obj).chain() : obj;
-  };
+            //For some cache cases in IE 6-8, the script executes before the end
+            //of the appendChild execution, so to tie an anonymous define
+            //call to the module name (which is stored on the node), hold on
+            //to a reference to this node, but clear after the DOM insertion.
+            currentlyAddingScript = node;
+            if (baseElement) {
+                head.insertBefore(node, baseElement);
+            } else {
+                head.appendChild(node);
+            }
+            currentlyAddingScript = null;
 
-  // Add all of the Underscore functions to the wrapper object.
-  _.mixin(_);
+            return node;
+        } else if (isWebWorker) {
+            //In a web worker, use importScripts. This is not a very
+            //efficient use of importScripts, importScripts will block until
+            //its script is downloaded and evaluated. However, if web workers
+            //are in play, the expectation that a build has been done so that
+            //only one script needs to be loaded anyway. This may need to be
+            //reevaluated if other use cases become common.
+            importScripts(url);
 
-  // Add all mutator Array functions to the wrapper.
-  each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {
-    var method = ArrayProto[name];
-    _.prototype[name] = function() {
-      var obj = this._wrapped;
-      method.apply(obj, arguments);
-      if ((name == 'shift' || name == 'splice') && obj.length === 0) delete obj[0];
-      return result.call(this, obj);
+            //Account for anonymous modules
+            context.completeLoad(moduleName);
+        }
     };
-  });
 
-  // Add all accessor Array functions to the wrapper.
-  each(['concat', 'join', 'slice'], function(name) {
-    var method = ArrayProto[name];
-    _.prototype[name] = function() {
-      return result.call(this, method.apply(this._wrapped, arguments));
-    };
-  });
+    function getInteractiveScript() {
+        if (interactiveScript && interactiveScript.readyState === 'interactive') {
+            return interactiveScript;
+        }
 
-  _.extend(_.prototype, {
-
-    // Start chaining a wrapped Underscore object.
-    chain: function() {
-      this._chain = true;
-      return this;
-    },
-
-    // Extracts the result from a wrapped and chained object.
-    value: function() {
-      return this._wrapped;
+        eachReverse(scripts(), function (script) {
+            if (script.readyState === 'interactive') {
+                return (interactiveScript = script);
+            }
+        });
+        return interactiveScript;
     }
 
-  });
+    //Look for a data-main script attribute, which could also adjust the baseUrl.
+    if (isBrowser) {
+        //Figure out baseUrl. Get it from the script tag with require.js in it.
+        eachReverse(scripts(), function (script) {
+            //Set the 'head' where we can append children by
+            //using the script's parent.
+            if (!head) {
+                head = script.parentNode;
+            }
 
-}).call(this);
+            //Look for a data-main attribute to set main script for the page
+            //to load. If it is there, the path to data main becomes the
+            //baseUrl, if it is not already set.
+            dataMain = script.getAttribute('data-main');
+            if (dataMain) {
+                //Set final baseUrl if there is not already an explicit one.
+                if (!cfg.baseUrl) {
+                    //Pull off the directory of data-main for use as the
+                    //baseUrl.
+                    src = dataMain.split('/');
+                    mainScript = src.pop();
+                    subPath = src.length ? src.join('/')  + '/' : './';
 
-define("sge/vendor/underscore", (function (global) {
-    return function () {
-        var ret, fn;
-        return ret || global._;
+                    cfg.baseUrl = subPath;
+                    dataMain = mainScript;
+                }
+
+                //Strip off any trailing .js since dataMain is now
+                //like a module name.
+                dataMain = dataMain.replace(jsSuffixRegExp, '');
+
+                //Put the data-main script in the files to load.
+                cfg.deps = cfg.deps ? cfg.deps.concat(dataMain) : [dataMain];
+
+                return true;
+            }
+        });
+    }
+
+    /**
+     * The function that handles definitions of modules. Differs from
+     * require() in that a string for the module should be the first argument,
+     * and the function to execute after dependencies are loaded should
+     * return a value to define the module corresponding to the first argument's
+     * name.
+     */
+    define = function (name, deps, callback) {
+        var node, context;
+
+        //Allow for anonymous modules
+        if (typeof name !== 'string') {
+            //Adjust args appropriately
+            callback = deps;
+            deps = name;
+            name = null;
+        }
+
+        //This module may not have dependencies
+        if (!isArray(deps)) {
+            callback = deps;
+            deps = [];
+        }
+
+        //If no name, and callback is a function, then figure out if it a
+        //CommonJS thing with dependencies.
+        if (!deps.length && isFunction(callback)) {
+            //Remove comments from the callback string,
+            //look for require calls, and pull them into the dependencies,
+            //but only if there are function args.
+            if (callback.length) {
+                callback
+                    .toString()
+                    .replace(commentRegExp, '')
+                    .replace(cjsRequireRegExp, function (match, dep) {
+                        deps.push(dep);
+                    });
+
+                //May be a CommonJS thing even without require calls, but still
+                //could use exports, and module. Avoid doing exports and module
+                //work though if it just needs require.
+                //REQUIRES the function to expect the CommonJS variables in the
+                //order listed below.
+                deps = (callback.length === 1 ? ['require'] : ['require', 'exports', 'module']).concat(deps);
+            }
+        }
+
+        //If in IE 6-8 and hit an anonymous define() call, do the interactive
+        //work.
+        if (useInteractive) {
+            node = currentlyAddingScript || getInteractiveScript();
+            if (node) {
+                if (!name) {
+                    name = node.getAttribute('data-requiremodule');
+                }
+                context = contexts[node.getAttribute('data-requirecontext')];
+            }
+        }
+
+        //Always save off evaluating the def call until the script onload handler.
+        //This allows multiple modules to be in a file without prematurely
+        //tracing dependencies, and allows for anonymous module support,
+        //where the module name is not known until the script onload event
+        //occurs. If no context, use the global queue, and get it processed
+        //in the onscript load callback.
+        (context ? context.defQueue : globalDefQueue).push([name, deps, callback]);
     };
-}(this)));
 
-
-define('sge/config',[],function(){
-    return {
-        baseUrl: ''
+    define.amd = {
+        jQuery: true
     };
-});
+
+
+    /**
+     * Executes the text. Normally just uses eval, but can be modified
+     * to use a better, environment-specific call. Only used for transpiling
+     * loader plugins, not for plain JS modules.
+     * @param {String} text the text to execute/evaluate.
+     */
+    req.exec = function (text) {
+        /*jslint evil: true */
+        return eval(text);
+    };
+
+    //Set up with config info.
+    req(cfg);
+}(this));
 /*!
  * jQuery JavaScript Library v1.9.0
  * http://jquery.com/
@@ -12800,4652 +13549,11 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
 
 })( window );
 
-define('sge/renderer',['jquery'], function($){
-    var Renderer = function(container){
-        this.container = $(container);
-        this.mirror = true;
-        this.width = this.container.width();
-        this.height = this.container.height();
-        this.layers = {};
-        this.tx = 0;
-        this.ty = 0;
-
-        this._clearList = {};
-        this._clearListNew = {};
-        this._drawList = {};
-        this._layers = [];
-
-
+define('sge/config',[],function(){
+    return {
+        baseUrl: ''
     };
-
-    Renderer.prototype.track = function(entity, options){
-        options = {
-            padding: 128,
-            speedScale: 1
-        }
-        var width = this.width;
-        var height = this.height;
-        var screenX = entity.get('xform.tx') - this.tx;
-        var screenY = entity.get('xform.ty') - this.ty;
-        if (screenX < 300){
-            this.tx += options.speedScale * (screenX - 300);
-        }
-        if (screenX > width-300){
-            this.tx += options.speedScale * (screenX - (width - 300));
-        }
-        if (screenY < options.padding){
-            this.ty += options.speedScale * (screenY - options.padding);
-        }
-        if (screenY > height-options.padding){
-            this.ty += options.speedScale * (screenY - (height - options.padding));
-        }
-        this.tx = Math.round(this.tx);
-        this.ty = Math.round(this.ty);
-
-    }
-
-    Renderer.prototype.draw = function(layer, func, priority){
-        priority = priority || 0;
-        if (this._drawList[layer]===undefined){
-            this._drawList[layer] = [];
-        }
-        this._drawList[layer].push({func: func, priority: priority*1000});
-    }
-
-    Renderer.prototype.clear = function(layer, x, y, width, height){
-        if (this._clearListNew[layer]==undefined){
-            this._clearListNew[layer] = [[x, y, width, height],];
-        } else {
-            this._clearListNew[layer].push([x, y, width, height]);
-        }
-    }
-
-    Renderer.prototype.cache = function(layerName, width, height){
-        var layer = this.layers[layerName];
-        layer.cacheCanvas = $('<canvas/>').attr({width: width, height: height})[0];
-        layer.cacheContext = layer.cacheCanvas.getContext('2d');
-        layer.cacheContext.setTransform(1,0,0,1,0,0);
-        var tmpW = this.width;
-        var tmpH = this.height;
-        this.width = width;
-        this.height = height;
-        var drawList = this._drawList[layerName];
-        if (drawList===undefined){
-            return;
-        }
-        drawList.sort(function(a,b){return b.priority - a.priority});
-        //drawList.reverse();
-        for (var j = drawList.length - 1; j >= 0; j--) {
-            var func = drawList[j].func;
-            func(layer.cacheContext);
-        };
-        this.height = tmpH;
-        this.width = tmpW;
-        this._drawList[layerName]=undefined;
-        //$(layer.cacheCanvas).css({display: 'none'});
-        //$('body').append(layer.cacheCanvas)
-    }
-
-     Renderer.prototype.cacheUpdate = function(layerName){
-        var layer = this.layers[layerName];
-        if (!layer.cacheCanvas){
-            return;
-        }
-        var drawList = this._drawList[layerName];
-        if (drawList===undefined){
-            return;
-        }
-        var trackX = this.tx;
-        var trackY = this.ty;
-        this.tx = 0;
-        this.ty = 0;
-        drawList.sort(function(a,b){return b.priority - a.priority});
-        //drawList.reverse();
-        for (var j = drawList.length - 1; j >= 0; j--) {
-            var func = drawList[j].func;
-            func(layer.cacheContext);
-        };
-        this._drawList[layerName]=undefined;
-        this.tx = trackX;
-        this.ty = trackY;
-     }
-
-    Renderer.prototype.render = function(layerName){
-        if (layerName===undefined){
-            var layers = this._layers;
-            layers.reverse();
-            for (var i = layers.length - 1; i >= 0; i--) {
-                this.render(layers[i])
-            }
-        } else {
-            var layer = this.layers[layerName];
-            if (layer.cacheCanvas){
-                layer.context.save()
-                layer.context.setTransform(1,0,0,1,0,0);
-                layer.context.clearRect(0,0,this.width, this.height);
-                var tx = Math.max(0,this.tx);
-                var offsetx = Math.min(0,this.tx);
-                var height = Math.min(layer.cacheCanvas.height-this.ty,this.height);
-                var ty = Math.max(0,this.ty);
-                var offsety = Math.min(0,this.ty);
-                var width = Math.min(layer.cacheCanvas.width-this.tx,this.width);
-                layer.context.drawImage(layer.cacheCanvas, tx, ty, width-offsetx, height-offsety, -offsetx, -offsety, width-offsetx, height-offsety);
-                layer.context.restore();
-            } else {
-                if (this._clearList[layerName]!==undefined){
-                    for (var i = this._clearList[layerName].length - 1; i >= 0; i--) {
-                        var clearRect = this._clearList[layerName][i];
-                        this.layers[layerName].context.clearRect(clearRect[0],clearRect[1],clearRect[2],clearRect[3]);
-                    };
-                }
-                this._clearList[layerName] = this._clearListNew[layerName];
-                this._clearListNew[layerName] = undefined;
-                var drawList = this._drawList[layerName];
-                if (drawList===undefined){
-                    return;
-                }
-                drawList.sort(function(a,b){return b.priority - a.priority});
-                for (var j = drawList.length - 1; j >= 0; j--) {
-                    var func = drawList[j].func;
-                    func(layer.context);
-                };
-                this._drawList[layerName]=undefined;
-            }
-        }
-    }
-
-    Renderer.prototype.createLayer = function(name) {
-        if (this._layers.indexOf(name)>=0){
-            this.layers[name].context.clearRect(0, 0, this.width, this.height);
-        } else {
-            this._layers.push(name);
-            var id = "RPGEDITOR_RENDERER_LAYER_" + name;
-            var canvasElem = $('<canvas id=' + id +'></canvas>');
-            canvasElem.attr({width: this.width, height: this.height});
-            this.container.append(canvasElem);
-            var context = canvasElem[0].getContext('2d');
-            //context.scale(0.5,0.5);
-            this.layers[name] = { canvas : canvasElem,
-                                    visible : true,
-                                    context : context };
-        }
-                            
-    };
-
-    Renderer.prototype.drawRect = function(layer, x, y, width, height, style, priority){
-        var destRect = [
-            Math.round(x - this.tx),
-            Math.round(y - this.ty),
-            Math.round(width),
-            Math.round(height)
-        ];
-        if ((destRect[0]>this.width) || (destRect[1]>this.height)|| (destRect[2]+destRect[0]<0) || (destRect[1]+destRect[3]<0)){
-            return;
-        }
-        //var ctx = this.layers[layer].context;
-        priority = priority || 0;
-        this.clear(layer, destRect[0]-8,destRect[1]-8,destRect[2]+16,destRect[3]+16)
-        this.draw(layer, function(ctx){
-            ctx.save();
-            var keys = Object.keys(style);
-            for (var j = keys.length - 1; j >= 0; j--) {
-                var key = keys[j];
-                ctx[key] = style[key];
-            };
-            ctx.beginPath()
-            ctx.rect(destRect[0],destRect[1],destRect[2],destRect[3]);
-            ctx.fillRect(destRect[0],destRect[1],destRect[2],destRect[3]);
-            ctx.stroke();
-            ctx.restore();
-        }, priority + (y+x));
-    }
-
-    Renderer.prototype.drawSprite = function(layer, spriteSheet, sprite, x, y, scale, clear, priority){
-        if (scale===undefined){
-            scale=[1,1];
-        }
-        var srcRect = spriteSheet.getSrcRect(sprite);
-
-        priority = priority || 0;
-
-        var tx = Math.round(x + (spriteSheet.offsetX * scale[0]) - this.tx);
-        var ty = Math.round(y + (spriteSheet.offsetY * scale[1]) - this.ty);
-
-        var clearX = Math.round(x + (spriteSheet.offsetX * Math.abs(scale[0])) - this.tx);
-        var clearY = Math.round(y + (spriteSheet.offsetY * Math.abs(scale[1])) - this.ty);
-
-        var destRect = [
-            tx,
-            ty,
-            Math.round(srcRect[2] * Math.abs(scale[0])),
-            Math.round(srcRect[3] * Math.abs(scale[1])),
-        ]
-
-        if ((destRect[0]>this.width) || (destRect[1]>this.height) || (destRect[2]+destRect[0]<0) || (destRect[1]+destRect[3]<0)){
-            return;
-        }
-
-        //var ctx = this.layers[layer].context;
-        if (clear!==false){
-            this.clear(layer, clearX, clearY,destRect[2],destRect[3])
-        }
-
-        this.draw(layer, function(ctx){
-            ctx.save();
-            ctx.translate(tx, ty);
-            ctx.scale(scale[0],scale[1]);
-            /*
-            if (spriteSheet.buffer){
-                console.log('Missing', spriteSheet, spriteSheet.buffer)
-                return;
-            }
-            */
-            ctx.drawImage(
-                spriteSheet.buffer,
-                srcRect[0],
-                srcRect[1],
-                srcRect[2],
-                srcRect[3],
-                0,
-                0,
-                destRect[2],
-                destRect[3]);
-            ctx.restore();
-        }, priority + (y+x));
-    }
-
-    return Renderer;
 });
-/* Simple JavaScript Inheritance
- * By John Resig http://ejohn.org/
- * MIT Licensed.
- */
-// Inspired by base2 and Prototype
-define('sge/lib/class',[],function(){
-  var initializing = false, fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
- 
-  // The base Class implementation (does nothing)
-  this.Class = function(){};
- 
-  // Create a new Class that inherits from this class
-  Class.extend = function(prop) {
-    var _super = this.prototype;
-   
-    // Instantiate a base class (but only create the instance,
-    // don't run the init constructor)
-    initializing = true;
-    var prototype = new this();
-    initializing = false;
-   
-    // Copy the properties over onto the new prototype
-    for (var name in prop) {
-      // Check if we're overwriting an existing function
-      prototype[name] = typeof prop[name] == "function" &&
-        typeof _super[name] == "function" && fnTest.test(prop[name]) ?
-        (function(name, fn){
-          return function() {
-            var tmp = this._super;
-           
-            // Add a new ._super() method that is the same method
-            // but on the super-class
-            this._super = _super[name];
-           
-            // The method only need to be bound temporarily, so we
-            // remove it when we're done executing
-            var ret = fn.apply(this, arguments);        
-            this._super = tmp;
-           
-            return ret;
-          };
-        })(name, prop[name]) :
-        prop[name];
-    }
-   
-    // The dummy class constructor
-    function Class() {
-      // All construction is actually done in the init method
-      if ( !initializing && this.init )
-        this.init.apply(this, arguments);
-    }
-   
-    // Populate our constructed prototype object
-    Class.prototype = prototype;
-   
-    // Enforce the constructor to be what we expect
-    Class.prototype.constructor = Class;
- 
-    // And make this class extendable
-    Class.extend = arguments.callee;
-   
-    return Class;
-  };
-
-  return Class
-});
-define('sge/engine',['sge/lib/class',], function(Class){
-	var Engine = Class.extend({
-		init: function(){
-			this.interval = null;
-			this.entities = {};
-			this._ids =[];
-			this._lastTick = 0;
-		},
-
-		run: function(fps) {
-			if (fps==undefined){
-				fps = 15.0;
-			};
-			this._lastTick = Date.now();
-			this.interval = setInterval(this.tickCallback.bind(this), 1000.0 / fps);
-		},
-
-		stop: function(){
-			clearInterval(this.interval);
-			this.interval = null;
-		},
-
-		tickCallback: function(){
-			var now = Date.now();
-			var delta = now - this._lastTick;
-			this._lastTick = now;
-			this.tick(delta/1000);
-		}
-	});
-	return Engine
-});
-define('sge/observable',[
-    'sge/lib/class',
-    ], function(Class){
-    var Observable = Class.extend({
-    	init: function () {
-            this._listeners = {};
-        },
-
-        addListener: function (type, listener) {
-            if (!this._listeners[type]) {
-                this._listeners[type] = [];
-            }
-            this._listeners[type].push(listener);
-        },
-
-        fireEvent: function () {
-        	args = Array.prototype.slice.call(arguments);
-        	event = args.shift();
-            if (typeof(event) == "string") {
-                event = {
-                    type: event
-                };
-            }
-            if (!event.target) {
-                event.target = this;
-            }
-
-            if (!event.type) { //falsy
-                throw new Error("Event object missing 'type' property.");
-            }
-            if (this._listeners[event.type]) {
-                var listeners = this._listeners[event.type].slice(0);
-                for (var i = 0, len = listeners.length; i < len; i++) {
-                    try {
-                        listeners[i].apply(this, args);
-                    } catch(err) {
-                        console.log("SandboxObservableError: " + err);
-                        console.log(err.stack);
-                        console.trace();
-                    }
-                }
-            }
-        },
-
-        removeListener: function (type, listener) {
-            if (this._listeners[type] instanceof Array) {
-                var listeners = this._listeners[type];
-                for (var i = 0, len = listeners.length; i < len; i++) {
-                    if (listeners[i] === listener) {
-                        var func = listeners.splice(i, 1);
-                        break;
-                    }
-                }
-            }
-        }
-	})
-
-    return Observable;
-});
-define('sge/component',['sge/lib/class'], function(Class){
-	var factory_map = {};
-
-	var Component = Class.extend({
-		init: function(entity, data){
-			this.entity = entity;
-			this.data = {};
-			this._listeners = {};
-		},
-		get : function(path){
-			var val = null
-			if (this['_get_' + path] !== undefined){
-				val = this['_get_' + path]();
-			} else {
-				val = this.data[path];
-			}
-			return val;
-		},
-		set : function(path, value, method){
-			var newValue = null;
-					
-			if (this['_set_' + path] !== undefined){
-				newValue = this['_set_' + path](value, method);
-			} else {
-				newValue = this.__set_value(path, value, method);
-			}
-			return newValue;
-		},
-		__set_value : function(path, value, method){
-			switch (method){
-				case 'add':
-					var tmp = this.get(path);
-					newValue = this.data[path] = tmp + value;
-					break;
-				case 'subtract':
-					var tmp = this.get(path);
-					newValue = this.data[path] = tmp - value;
-					break;
-				case 'set':
-				default:
-					newValue = this.data[path] = value;
-					break;
-			}
-			return newValue;
-		},
-		render : function(){},
-		tick : function(){},
-		register: function(state){
-			this.state = state;
-		},
-		deregister: function(state){
-			this.state = null;
-		},
-		createInputListener: function(event, callback){
-			this._listeners[callback] = callback.bind(this);
-		}
-	});
-
-	Component.register = function(name, klass){
-		factory_map[name] = klass;
-	};
-
-	Component.Factory = function(name, entity, data){
-		return new factory_map[name](entity, data);
-	}
-
-	return Component;
-});
-define('sge/spritesheet',[],function(){
-
-	var SpriteSheet = function(image, spriteWidth, spriteHeight){
-		if (spriteHeight ===undefined){
-			spriteHeight  = spriteWidth;
-
-		}
-		this.ready = false;
-		this.spriteWidth = spriteWidth;
-		this.spriteHeight = spriteHeight;
-		this.offsetX = this.spriteWidth / -2;
-		this.offsetY = this.spriteHeight / -2;
-
-		if (SpriteSheet.SpriteSheetImages[image]===undefined){
-			this.image = new Image();
-			this.buffer = this.image;
-			this.image.onload = this.onLoadImage.bind(this);
-			this.image.src = image;
-			SpriteSheet.SpriteSheetImages[image]=this.image;
-		} else {
-			this.image = SpriteSheet.SpriteSheetImages[image];
-			this.buffer = this.image;
-			this.onLoadImage();
-		}
-
-	};
-
-	SpriteSheet.SpriteSheetImages = {};
-
-	SpriteSheet.prototype.onLoadImage = function(){
-		this.imageWidth = this.image.width;
-		this.imageHeight = this.image.height;
-		this.horzSprites = this.imageWidth / this.spriteWidth;
-		this.vertSprites = this.imageHeight / this.spriteHeight;
-		this._image_tint = document.createElement('canvas');
-        this._image_tint.width = this.image.width;
-        this._image_tint.height = this.image.height;
-        
-        
-        this._image_buffer = document.createElement('canvas');
-        this._image_buffer.width = this.image.width;
-        this._image_buffer.height = this.image.height;
-
-        this.buffer = this.image;
-
-		this.ready = true;
-	};
-
-	SpriteSheet.prototype.getSrcRect = function(sprite){
-		var x = null;
-		var y = null;
-		if (sprite[0] != undefined){
-			x = sprite[0];
-			y = sprite[1];
-		} else {
-		    x = sprite % this.horzSprites;
-		    y = Math.floor(sprite / this.horzSprites);
-		}
-		var srcX = x * this.spriteWidth;
-		var srcY = y * this.spriteHeight;
-		return [srcX, srcY, this.spriteWidth, this.spriteHeight];
-	}
-
-	SpriteSheet.prototype.tint = function(color){
-		if (color===undefined){
-			this.buffer = this.image;
-		} else {
-			ctx = this._image_tint.getContext('2d');
-	        
-	        ctx.fillStyle = color;
-	        ctx.fillRect(0,0,this._image_tint.width, this._image_tint.height);
-	        ctx.globalCompositeOperation = "destination-atop";
-	        ctx.drawImage(this.image, 0, 0);
-	        
-	        ctx = this._image_buffer.getContext('2d');
-	        ctx.drawImage(this.image, 0, 0);
-	        if (this.tint_alpha > 0){
-	            ctx.globalAlpha = this.tint_alpha;
-	            ctx.drawImage(this._image_tint, 0, 0);
-	            ctx.globalAlpha = 1;
-	        }
-
-	        this.buffer = this._image_tint;
-	    }
-	}
-
-	return SpriteSheet;
-});
-define('sge/components/sprite',['sge/component', 'sge/spritesheet', '../config'], function(Component, SpriteSheet, config){
-	var SpriteComponent = Component.extend({
-		init : function(entity, data){
-			this._super(entity, data)
-			this.data.frame = data.frame || 0;
-			this.data.scale = data.scale || 1;
-			this.data.mirror = true;
-			this.data.offsetX = data.offsetX || 0;
-			this.data.offsetY = data.offsetY || 0;
-			this.spriteSheet = new SpriteSheet(config.baseUrl + data.src, data.width, data.height);
-
-			this.tintCallback = function(color, length){
-				this.spriteSheet.tint(color);
-				var timer = this.entity.state.createTimeout(length, function(){
-					this.spriteSheet.tint();
-				}.bind(this));
-			}.bind(this);
-			this.entity.addListener('tint', this.tintCallback);
-		},
-		render : function(renderer, layer){
-
-			if (this.data.scale===undefined){
-				this.data.scale=1;
-			}
-			var mirrorScale = 1;
-			if (this.data.mirror){
-				mirrorScale = -1;
-			}
-			var x = this.entity.get('xform.tx');
-			var y = this.entity.get('xform.ty');
-			var scale = [1,1];
-			if (this.data.mirror){
-				scale = [-1,1];
-			}
-			renderer.drawSprite(layer, this.spriteSheet, this.data.frame, x + this.data.offsetX, y + this.data.offsetY, scale);
-		}
-			
-	});
-	Component.register('sprite', SpriteComponent);
-	return SpriteComponent;
-});
-define('sge/components/anim',['sge/component'], function(Component){
-	var AnimComponent = Component.extend({
-		init : function(entity, data){
-			this._super(entity, data);
-			this.data.play = false;
-			this.frame = 0;
-			var keys = Object.keys(data.frames);
-			this.animData = {};
-			for (var i = keys.length - 1; i >= 0; i--) {
-				var key = keys[i];
-				var val = data.frames[key];
-				if (val.frames===undefined){
-					val = { frames: val }
-				}
-				this.animData[key] = val;
-			};
-			this.current = null;
-			this.currentAnim = null;
-			this.frameLength = null;
-			this.setAnim("walk_right");
-		},
-		tick : function(){
-			if (this.data.play){
-				this.frame++;
-				if (this.frame>=this.frameLength){
-					this.frame=0;
-				}
-				this.entity.set('sprite.frame', this.currentAnim[this.frame]);
-			}
-		},
-		_set_anim : function(value) {
-			if (value != this.current){
-				this.setAnim(value);
-			}
-		},
-		setAnim : function(name){
-			this.current = name;
-			var mirrored = (this.animData[name].mirror === true);
-			this.entity.set('sprite.mirror', mirrored);
-			this.currentAnim = this.animData[name].frames;
-			this.frameLength = this.currentAnim.length;
-			this.data.anim = name;
-		}
-	});
-	Component.register('anim', AnimComponent);
-	return AnimComponent
-});
-define('sge/components/xform',['sge/component'], function(Component){
-	var XFormComponent = Component.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.data.tx = data.tx || 0;
-			this.data.ty = data.ty || 0;
-			this.data.vx = data.vx || 0;
-			this.data.vy = data.vy || 0;
-			this.data.dir = data.dir || 'down';
-		}
-	});
-	Component.register('xform', XFormComponent);
-	return XFormComponent
-});
-define('sge/components/movement',['sge/component'], function(Component){
-    var MovementComponent = Component.extend({
-        init: function(entity, data){
-            this._super(entity, data);
-            this.data.speed = 8;
-            this.data.width = data.width || 640;
-            this.data.height = data.height || 480;
-            this.data.map = data.map || null;
-            this._isKeyDown = {};
-        },
-        tick: function(delta){
-            var vx = this.entity.get('xform.vx') * delta;
-            var vy = this.entity.get('xform.vy') * delta;
-            if ((Math.abs(vx) > 0) || (Math.abs(vy) > 0)){
-                this.entity.set('anim.play', true)
-                if (Math.abs(vx) > Math.abs(vy)){
-                    if (vx > 0){
-                        this.entity.set('anim.anim', 'walk_right');
-                        this.entity.set('xform.dir', 'right');
-                    } else {
-                        this.entity.set('anim.anim', 'walk_left');
-                        this.entity.set('xform.dir', 'left');
-                    }
-                } else {
-                    if (vy < 0){
-                        this.entity.set('anim.anim', 'walk_up');
-                        this.entity.set('xform.dir', 'up');
-                    } else {
-                        this.entity.set('anim.anim', 'walk_down');
-                        this.entity.set('xform.dir', 'down');
-                    }
-                }
-            } else {
-                this.entity.set('anim.play', false)   
-            }
-        }
-    });
-    Component.register('movement', MovementComponent);
-
-    return MovementComponent;
-});
-define('sge/components/controls',['sge/component'], function(Component){
-    var ControlsComponent = Component.extend({
-        init: function(entity, data){
-            this._super(entity, data);
-            this.data.speed = 256;
-        },
-        register: function(state){
-            this.input = state.input;
-        },
-        deregister: function(state){
-            this.input = undefined;
-        },
-        tick : function(){
-            if (this.input===undefined){
-                return;
-            }
-            var xaxis = 0;
-            var yaxis = 0;
-            if (this.input.isPressed('down') || this.input.isPressed('S')){
-                yaxis++;
-            }
-            if (this.input.isPressed('up') || this.input.isPressed('W')){
-                yaxis--;
-            }
-            if (this.input.isPressed('right') || this.input.isPressed('D')){
-                xaxis++;
-            }
-            if (this.input.isPressed('left') || this.input.isPressed('A')){
-                xaxis--;
-            }
-            this.entity.set('xform.vx', xaxis * this.data.speed);
-            this.entity.set('xform.vy', yaxis * this.data.speed);
-        }
-    });
-    Component.register('controls', ControlsComponent);
-    return ControlsComponent;
-});
-define('sge/components/health',['sge/component'], function(Component){
-	var HealthComponent = Component.extend({
-		init: function(entity, data){
-            this._super(entity, data);
-            this.data.visible = data.visible === undefined ? true : data.visible;
-            this.data.life = data.life || 100;
-            this.data.maxLife = data.maxLife || data.life || 100;
-            this.data.alignment = data.alignment || 0;
-            this.entity.addListener('contact.start', function(entity){
-                if (!entity.get('health')){
-                    return;
-                }
-                var alignA = this.get('alignment');
-                var alignB = entity.get('health.alignment');
-                if ((alignA==0)||(alignB==0)){
-                    return;
-                }
-                if ((alignA<0)&&(alignB<0)){
-                    return
-                }
-                if ((alignA>0)&&(alignB>0)){
-                    return
-                }
-            	this.data.life--;
-                if (this.data.life <= 0){
-                    this.data.life = 0;
-                    this.entity.fireEvent('kill', 'Ran out of health.');
-                } else {
-                    this.entity.fireEvent('tint', 'red', 0.25);
-                }
-            }.bind(this));
-        },
-        _set_life : function(value, method){
-            var life = this.__set_value('life', value, method);
-            this.data.life = Math.min(life, this.get('maxLife'));
-            return this.data.life
-        },
-        render : function(renderer, layer){
-            if (!this.get('visible')){
-                return;
-            }
-            var life = this.data.life / this.data.maxLife;
-            var tx = this.entity.get('xform.tx');
-            var ty = this.entity.get('xform.ty');
-            renderer.drawRect(layer, tx - 16, ty - 48, 32, 4, {fillStyle: 'black', strokeStyle: 'black'}, 10);
-            renderer.drawRect(layer, tx - 16, ty - 48, 32 * life, 4, {fillStyle: 'green', strokeStyle: 'none'}, 100);
-        }
-	})
-	Component.register('health', HealthComponent);
-
-    return HealthComponent;
-});
-define('sge/components/debug',['sge/component'], function(Component){
-	var DebugComponent = Component.extend({
-		init: function(entity, data){
-            this._super(entity, data);
-            this.data.fillStyle = 'yellow';
-            this.data.strokeStyle = 'black';
-            this.entity.addListener('contact.start', function(){
-            	this.data.fillStyle = 'red';
-            }.bind(this))
-            this.entity.addListener('contact.end', function(){
-            	this.data.fillStyle = 'yellow';
-            }.bind(this))
-        },
-		render : function(renderer, layer){
-            var tx = this.entity.get('xform.tx');
-            var ty = this.entity.get('xform.ty');
-            var width = this.entity.get('physics.width');
-            var height = this.entity.get('physics.height');
-            renderer.drawRect(layer, tx - width/2, ty - height/2, width, height, {fillStyle: this.get('fillStyle'), strokeStyle: this.get('strokeStyle')})
-        }
-	})
-	Component.register('debug', DebugComponent);
-
-    return DebugComponent;
-});
-/*
-
-  Javascript State Machine Library - https://github.com/jakesgordon/javascript-state-machine
-
-  Copyright (c) 2012, 2013 Jake Gordon and contributors
-  Released under the MIT license - https://github.com/jakesgordon/javascript-state-machine/blob/master/LICENSE
-
-*/
-
-(function (window) {
-
-  var StateMachine = {
-
-    //---------------------------------------------------------------------------
-
-    VERSION: "2.2.0",
-
-    //---------------------------------------------------------------------------
-
-    Result: {
-      SUCCEEDED:    1, // the event transitioned successfully from one state to another
-      NOTRANSITION: 2, // the event was successfull but no state transition was necessary
-      CANCELLED:    3, // the event was cancelled by the caller in a beforeEvent callback
-      PENDING:      4  // the event is asynchronous and the caller is in control of when the transition occurs
-    },
-
-    Error: {
-      INVALID_TRANSITION: 100, // caller tried to fire an event that was innapropriate in the current state
-      PENDING_TRANSITION: 200, // caller tried to fire an event while an async transition was still pending
-      INVALID_CALLBACK:   300 // caller provided callback function threw an exception
-    },
-
-    WILDCARD: '*',
-    ASYNC: 'async',
-
-    //---------------------------------------------------------------------------
-
-    create: function(cfg, target) {
-
-      var initial   = (typeof cfg.initial == 'string') ? { state: cfg.initial } : cfg.initial; // allow for a simple string, or an object with { state: 'foo', event: 'setup', defer: true|false }
-      var terminal  = cfg.terminal || cfg['final'];
-      var fsm       = target || cfg.target  || {};
-      var events    = cfg.events || [];
-      var callbacks = cfg.callbacks || {};
-      var map       = {};
-
-      var add = function(e) {
-        var from = (e.from instanceof Array) ? e.from : (e.from ? [e.from] : [StateMachine.WILDCARD]); // allow 'wildcard' transition if 'from' is not specified
-        map[e.name] = map[e.name] || {};
-        for (var n = 0 ; n < from.length ; n++)
-          map[e.name][from[n]] = e.to || from[n]; // allow no-op transition if 'to' is not specified
-      };
-
-      if (initial) {
-        initial.event = initial.event || 'startup';
-        add({ name: initial.event, from: 'none', to: initial.state });
-      }
-
-      for(var n = 0 ; n < events.length ; n++)
-        add(events[n]);
-
-      for(var name in map) {
-        if (map.hasOwnProperty(name))
-          fsm[name] = StateMachine.buildEvent(name, map[name]);
-      }
-
-      for(var name in callbacks) {
-        if (callbacks.hasOwnProperty(name))
-          fsm[name] = callbacks[name]
-      }
-
-      fsm.current = 'none';
-      fsm.is      = function(state) { return (state instanceof Array) ? (state.indexOf(this.current) >= 0) : (this.current === state); };
-      fsm.can     = function(event) { return !this.transition && (map[event].hasOwnProperty(this.current) || map[event].hasOwnProperty(StateMachine.WILDCARD)); }
-      fsm.cannot  = function(event) { return !this.can(event); };
-      fsm.error   = cfg.error || function(name, from, to, args, error, msg, e) { throw e || msg; }; // default behavior when something unexpected happens is to throw an exception, but caller can override this behavior if desired (see github issue #3 and #17)
-
-      fsm.isFinished = function() { return this.is(terminal); };
-
-      if (initial && !initial.defer)
-        fsm[initial.event]();
-
-      return fsm;
-
-    },
-
-    //===========================================================================
-
-    doCallback: function(fsm, func, name, from, to, args) {
-      if (func) {
-        try {
-          return func.apply(fsm, [name, from, to].concat(args));
-        }
-        catch(e) {
-          return fsm.error(name, from, to, args, StateMachine.Error.INVALID_CALLBACK, "an exception occurred in a caller-provided callback function", e);
-        }
-      }
-    },
-
-    beforeAnyEvent:  function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onbeforeevent'],                       name, from, to, args); },
-    afterAnyEvent:   function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onafterevent'] || fsm['onevent'],      name, from, to, args); },
-    leaveAnyState:   function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onleavestate'],                        name, from, to, args); },
-    enterAnyState:   function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onenterstate'] || fsm['onstate'],      name, from, to, args); },
-    changeState:     function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onchangestate'],                       name, from, to, args); },
-
-    beforeThisEvent: function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onbefore' + name],                     name, from, to, args); },
-    afterThisEvent:  function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onafter'  + name] || fsm['on' + name], name, from, to, args); },
-    leaveThisState:  function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onleave'  + from],                     name, from, to, args); },
-    enterThisState:  function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onenter'  + to]   || fsm['on' + to],   name, from, to, args); },
-
-    beforeEvent: function(fsm, name, from, to, args) {
-      if ((false === StateMachine.beforeThisEvent(fsm, name, from, to, args)) ||
-          (false === StateMachine.beforeAnyEvent( fsm, name, from, to, args)))
-        return false;
-    },
-
-    afterEvent: function(fsm, name, from, to, args) {
-      StateMachine.afterThisEvent(fsm, name, from, to, args);
-      StateMachine.afterAnyEvent( fsm, name, from, to, args);
-    },
-
-    leaveState: function(fsm, name, from, to, args) {
-      var specific = StateMachine.leaveThisState(fsm, name, from, to, args),
-          general  = StateMachine.leaveAnyState( fsm, name, from, to, args);
-      if ((false === specific) || (false === general))
-        return false;
-      else if ((StateMachine.ASYNC === specific) || (StateMachine.ASYNC === general))
-        return StateMachine.ASYNC;
-    },
-
-    enterState: function(fsm, name, from, to, args) {
-      StateMachine.enterThisState(fsm, name, from, to, args);
-      StateMachine.enterAnyState( fsm, name, from, to, args);
-    },
-
-    //===========================================================================
-
-    buildEvent: function(name, map) {
-      return function() {
-
-        var from  = this.current;
-        var to    = map[from] || map[StateMachine.WILDCARD] || from;
-        var args  = Array.prototype.slice.call(arguments); // turn arguments into pure array
-
-        if (this.transition)
-          return this.error(name, from, to, args, StateMachine.Error.PENDING_TRANSITION, "event " + name + " inappropriate because previous transition did not complete");
-
-        if (this.cannot(name))
-          return this.error(name, from, to, args, StateMachine.Error.INVALID_TRANSITION, "event " + name + " inappropriate in current state " + this.current);
-
-        if (false === StateMachine.beforeEvent(this, name, from, to, args))
-          return StateMachine.Result.CANCELLED;
-
-        if (from === to) {
-          StateMachine.afterEvent(this, name, from, to, args);
-          return StateMachine.Result.NOTRANSITION;
-        }
-
-        // prepare a transition method for use EITHER lower down, or by caller if they want an async transition (indicated by an ASYNC return value from leaveState)
-        var fsm = this;
-        this.transition = function() {
-          fsm.transition = null; // this method should only ever be called once
-          fsm.current = to;
-          StateMachine.enterState( fsm, name, from, to, args);
-          StateMachine.changeState(fsm, name, from, to, args);
-          StateMachine.afterEvent( fsm, name, from, to, args);
-          return StateMachine.Result.SUCCEEDED;
-        };
-        this.transition.cancel = function() { // provide a way for caller to cancel async transition if desired (issue #22)
-          fsm.transition = null;
-          StateMachine.afterEvent(fsm, name, from, to, args);
-        }
-
-        var leave = StateMachine.leaveState(this, name, from, to, args);
-        if (false === leave) {
-          this.transition = null;
-          return StateMachine.Result.CANCELLED;
-        }
-        else if (StateMachine.ASYNC === leave) {
-          return StateMachine.Result.PENDING;
-        }
-        else {
-          if (this.transition) // need to check in case user manually called transition() but forgot to return StateMachine.ASYNC
-            return this.transition();
-        }
-
-      };
-    }
-
-  }; // StateMachine
-
-  //===========================================================================
-
-  if ("function" === typeof define) {
-    define('sge/vendor/state-machine',['require'],function(require) { return StateMachine; });
-  }
-  else {
-    window.StateMachine = StateMachine;
-  }
-
-}(this));
-
-
-define('sge/components/simpleai',['sge/component', '../vendor/state-machine'], function(Component, StateMachine){
-	var SimpleAIComponent = Component.extend({
-		init: function(entity, data){
-            this._super(entity, data);
-            this.fsm = StateMachine.create({
-                initial: 'idle',
-                events: [
-                    {name: 'seePlayer', from: 'idle', to: 'tracking'},
-                    {name: 'losePlayer', from:'tracking', to: 'idle'}
-                ],
-            })
-            this.data.radius = 96;
-            this._idleCounter = 0;
-
-        },
-        getPC: function(){
-            return this.entity.state.getEntitiesWithTag('pc')[0] || null;
-        },
-        getPCPosition: function(){
-            var pc = this.getPC();
-            var dx = this.entity.get('xform.tx') - pc.get('xform.tx');
-            var dy = this.entity.get('xform.ty') - pc.get('xform.ty');
-            var dist = Math.sqrt((dx*dx)+(dy*dy));
-            return [pc, dx, dy, dist];
-        },
-        tick : function(delta){
-            if (this.entity.state){
-                var stateName = this.fsm.current;
-                if (this.getPC()===null){
-                    this.wander(delta);
-                } else {
-                    method = this['tick_' + stateName];
-                    if (method){
-                        method.call(this, delta);
-                    }
-                }
-            }
-        },
-        tick_tracking: function(delta){
-            var pcData = this.getPCPosition();
-            var dx = pcData[1]
-            var dy = pcData[2]
-            var dist = pcData[3]
-            if (dist >= this.data.radius){
-                this.fsm.losePlayer();
-            } else {
-                var vx = 0;
-                var vy = 0;
-                vx = -64 * (pcData[1] / dist);
-                vy = -64 * (dy / dist);
-                this.entity.set('xform.vx', vx);
-                this.entity.set('xform.vy', vy);
-            }
-        },
-        tick_idle: function(delta){
-            var pcData = this.getPCPosition();
-            var dx = pcData[1]
-            var dy = pcData[2]
-            var dist = pcData[3]
-            if (pcData[3] <= this.data.radius){
-                this.fsm.seePlayer();
-            } else {
-                this.wander();
-            }
-        },
-        wander: function(){
-            if (this._idleCounter<0){
-                this._idleCounter=30 + (Math.random() * 30);
-                var vx = 0;
-                var vy = 0;
-                if (Math.random() > 0.5){
-                    var vx = 64 * ((Math.random() * 2) - 1);
-                    var vy = 64 * ((Math.random() * 2) - 1);
-                }
-                this.entity.set('xform.vx', vx);
-                this.entity.set('xform.vy', vy);
-            } else {
-                this._idleCounter--;
-            }
-        }
-	})
-	Component.register('simpleai', SimpleAIComponent);
-
-    return SimpleAIComponent;
-});
-define('sge/components/eventmgr',['sge/component'], function(Component){
-	var EventManagerComponent = Component.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			var keys = Object.keys(data.callbacks);
-			for (var i = keys.length - 1; i >= 0; i--) {
-				var key = keys[i];
-				this.entity.addListener(key, data.callbacks[key]);
-			};
-		}
-	});
-	Component.register('eventmgr', EventManagerComponent);
-    return EventManagerComponent;
-});
-define('sge/entity',[
-	'sge/lib/class',
-    'sge/observable',
-	'sge/component',
-	'sge/components/sprite',
-	'sge/components/anim',
-	'sge/components/xform',
-	'sge/components/movement',
-	'sge/components/controls',
-	'sge/components/health',
-	'sge/components/debug',
-	'sge/components/simpleai',
-	'sge/components/eventmgr'
-	], function(Class, Observable, Component){
-
-
-
-	var Entity = Observable.extend({
-		init: function(componentData){
-			this._super();
-			this.id = null;
-			this.components = {}
-			this.tags = [];
-			var keys = Object.keys(componentData);
-			keys.reverse();
-			for (var j = keys.length - 1; j >= 0; j--) {
-				var key = keys[j];
-				var comp = Component.Factory(key, this, componentData[key]);
-				this.components[key] = comp;
-			};
-		},
-		componentCall: function(){
-			var args = Array.prototype.slice.call(arguments);
-			var method = args.shift();
-			var keys = Object.keys(this.components);
-			for (var i = keys.length - 1; i >= 0; i--) {
-				var comp = this.components[keys[i]];
-				comp[method].apply(comp, args);
-			};
-		},
-		get : function(path){
-			var subpaths = path.split('.');
-			var compName = subpaths.shift();
-			var comp = this.components[compName];
-			if (subpaths.length){
-				return comp.get(subpaths.join('.'));
-			} else {
-				return comp;
-			}
-		},
-		set : function(path, value, method){
-			var subpaths = path.split('.');
-			var compName = subpaths.shift();
-			var comp = this.components[compName];
-			return comp.set(subpaths.join('.'), value, method);
-		},
-		hasTag : function(tag){
-			return (this.tags.indexOf(tag)>=0);
-		},
-		register : function(state){
-			this.componentCall('register', state)
-		},
-		deregister : function(state){
-			this.componentCall('deregister', state)
-		}
-	});
-	return Entity;
-});
-//     Underscore.js 1.4.4
-//     http://underscorejs.org
-//     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud Inc.
-//     Underscore may be freely distributed under the MIT license.
-
-(function() {
-
-  // Baseline setup
-  // --------------
-
-  // Establish the root object, `window` in the browser, or `global` on the server.
-  var root = this;
-
-  // Save the previous value of the `_` variable.
-  var previousUnderscore = root._;
-
-  // Establish the object that gets returned to break out of a loop iteration.
-  var breaker = {};
-
-  // Save bytes in the minified (but not gzipped) version:
-  var ArrayProto = Array.prototype, ObjProto = Object.prototype, FuncProto = Function.prototype;
-
-  // Create quick reference variables for speed access to core prototypes.
-  var push             = ArrayProto.push,
-      slice            = ArrayProto.slice,
-      concat           = ArrayProto.concat,
-      toString         = ObjProto.toString,
-      hasOwnProperty   = ObjProto.hasOwnProperty;
-
-  // All **ECMAScript 5** native function implementations that we hope to use
-  // are declared here.
-  var
-    nativeForEach      = ArrayProto.forEach,
-    nativeMap          = ArrayProto.map,
-    nativeReduce       = ArrayProto.reduce,
-    nativeReduceRight  = ArrayProto.reduceRight,
-    nativeFilter       = ArrayProto.filter,
-    nativeEvery        = ArrayProto.every,
-    nativeSome         = ArrayProto.some,
-    nativeIndexOf      = ArrayProto.indexOf,
-    nativeLastIndexOf  = ArrayProto.lastIndexOf,
-    nativeIsArray      = Array.isArray,
-    nativeKeys         = Object.keys,
-    nativeBind         = FuncProto.bind;
-
-  // Create a safe reference to the Underscore object for use below.
-  var _ = function(obj) {
-    if (obj instanceof _) return obj;
-    if (!(this instanceof _)) return new _(obj);
-    this._wrapped = obj;
-  };
-
-  // Export the Underscore object for **Node.js**, with
-  // backwards-compatibility for the old `require()` API. If we're in
-  // the browser, add `_` as a global object via a string identifier,
-  // for Closure Compiler "advanced" mode.
-  if (typeof exports !== 'undefined') {
-    if (typeof module !== 'undefined' && module.exports) {
-      exports = module.exports = _;
-    }
-    exports._ = _;
-  } else {
-    root._ = _;
-  }
-
-  // Current version.
-  _.VERSION = '1.4.4';
-
-  // Collection Functions
-  // --------------------
-
-  // The cornerstone, an `each` implementation, aka `forEach`.
-  // Handles objects with the built-in `forEach`, arrays, and raw objects.
-  // Delegates to **ECMAScript 5**'s native `forEach` if available.
-  var each = _.each = _.forEach = function(obj, iterator, context) {
-    if (obj == null) return;
-    if (nativeForEach && obj.forEach === nativeForEach) {
-      obj.forEach(iterator, context);
-    } else if (obj.length === +obj.length) {
-      for (var i = 0, l = obj.length; i < l; i++) {
-        if (iterator.call(context, obj[i], i, obj) === breaker) return;
-      }
-    } else {
-      for (var key in obj) {
-        if (_.has(obj, key)) {
-          if (iterator.call(context, obj[key], key, obj) === breaker) return;
-        }
-      }
-    }
-  };
-
-  // Return the results of applying the iterator to each element.
-  // Delegates to **ECMAScript 5**'s native `map` if available.
-  _.map = _.collect = function(obj, iterator, context) {
-    var results = [];
-    if (obj == null) return results;
-    if (nativeMap && obj.map === nativeMap) return obj.map(iterator, context);
-    each(obj, function(value, index, list) {
-      results[results.length] = iterator.call(context, value, index, list);
-    });
-    return results;
-  };
-
-  var reduceError = 'Reduce of empty array with no initial value';
-
-  // **Reduce** builds up a single result from a list of values, aka `inject`,
-  // or `foldl`. Delegates to **ECMAScript 5**'s native `reduce` if available.
-  _.reduce = _.foldl = _.inject = function(obj, iterator, memo, context) {
-    var initial = arguments.length > 2;
-    if (obj == null) obj = [];
-    if (nativeReduce && obj.reduce === nativeReduce) {
-      if (context) iterator = _.bind(iterator, context);
-      return initial ? obj.reduce(iterator, memo) : obj.reduce(iterator);
-    }
-    each(obj, function(value, index, list) {
-      if (!initial) {
-        memo = value;
-        initial = true;
-      } else {
-        memo = iterator.call(context, memo, value, index, list);
-      }
-    });
-    if (!initial) throw new TypeError(reduceError);
-    return memo;
-  };
-
-  // The right-associative version of reduce, also known as `foldr`.
-  // Delegates to **ECMAScript 5**'s native `reduceRight` if available.
-  _.reduceRight = _.foldr = function(obj, iterator, memo, context) {
-    var initial = arguments.length > 2;
-    if (obj == null) obj = [];
-    if (nativeReduceRight && obj.reduceRight === nativeReduceRight) {
-      if (context) iterator = _.bind(iterator, context);
-      return initial ? obj.reduceRight(iterator, memo) : obj.reduceRight(iterator);
-    }
-    var length = obj.length;
-    if (length !== +length) {
-      var keys = _.keys(obj);
-      length = keys.length;
-    }
-    each(obj, function(value, index, list) {
-      index = keys ? keys[--length] : --length;
-      if (!initial) {
-        memo = obj[index];
-        initial = true;
-      } else {
-        memo = iterator.call(context, memo, obj[index], index, list);
-      }
-    });
-    if (!initial) throw new TypeError(reduceError);
-    return memo;
-  };
-
-  // Return the first value which passes a truth test. Aliased as `detect`.
-  _.find = _.detect = function(obj, iterator, context) {
-    var result;
-    any(obj, function(value, index, list) {
-      if (iterator.call(context, value, index, list)) {
-        result = value;
-        return true;
-      }
-    });
-    return result;
-  };
-
-  // Return all the elements that pass a truth test.
-  // Delegates to **ECMAScript 5**'s native `filter` if available.
-  // Aliased as `select`.
-  _.filter = _.select = function(obj, iterator, context) {
-    var results = [];
-    if (obj == null) return results;
-    if (nativeFilter && obj.filter === nativeFilter) return obj.filter(iterator, context);
-    each(obj, function(value, index, list) {
-      if (iterator.call(context, value, index, list)) results[results.length] = value;
-    });
-    return results;
-  };
-
-  // Return all the elements for which a truth test fails.
-  _.reject = function(obj, iterator, context) {
-    return _.filter(obj, function(value, index, list) {
-      return !iterator.call(context, value, index, list);
-    }, context);
-  };
-
-  // Determine whether all of the elements match a truth test.
-  // Delegates to **ECMAScript 5**'s native `every` if available.
-  // Aliased as `all`.
-  _.every = _.all = function(obj, iterator, context) {
-    iterator || (iterator = _.identity);
-    var result = true;
-    if (obj == null) return result;
-    if (nativeEvery && obj.every === nativeEvery) return obj.every(iterator, context);
-    each(obj, function(value, index, list) {
-      if (!(result = result && iterator.call(context, value, index, list))) return breaker;
-    });
-    return !!result;
-  };
-
-  // Determine if at least one element in the object matches a truth test.
-  // Delegates to **ECMAScript 5**'s native `some` if available.
-  // Aliased as `any`.
-  var any = _.some = _.any = function(obj, iterator, context) {
-    iterator || (iterator = _.identity);
-    var result = false;
-    if (obj == null) return result;
-    if (nativeSome && obj.some === nativeSome) return obj.some(iterator, context);
-    each(obj, function(value, index, list) {
-      if (result || (result = iterator.call(context, value, index, list))) return breaker;
-    });
-    return !!result;
-  };
-
-  // Determine if the array or object contains a given value (using `===`).
-  // Aliased as `include`.
-  _.contains = _.include = function(obj, target) {
-    if (obj == null) return false;
-    if (nativeIndexOf && obj.indexOf === nativeIndexOf) return obj.indexOf(target) != -1;
-    return any(obj, function(value) {
-      return value === target;
-    });
-  };
-
-  // Invoke a method (with arguments) on every item in a collection.
-  _.invoke = function(obj, method) {
-    var args = slice.call(arguments, 2);
-    var isFunc = _.isFunction(method);
-    return _.map(obj, function(value) {
-      return (isFunc ? method : value[method]).apply(value, args);
-    });
-  };
-
-  // Convenience version of a common use case of `map`: fetching a property.
-  _.pluck = function(obj, key) {
-    return _.map(obj, function(value){ return value[key]; });
-  };
-
-  // Convenience version of a common use case of `filter`: selecting only objects
-  // containing specific `key:value` pairs.
-  _.where = function(obj, attrs, first) {
-    if (_.isEmpty(attrs)) return first ? void 0 : [];
-    return _[first ? 'find' : 'filter'](obj, function(value) {
-      for (var key in attrs) {
-        if (attrs[key] !== value[key]) return false;
-      }
-      return true;
-    });
-  };
-
-  // Convenience version of a common use case of `find`: getting the first object
-  // containing specific `key:value` pairs.
-  _.findWhere = function(obj, attrs) {
-    return _.where(obj, attrs, true);
-  };
-
-  // Return the maximum element or (element-based computation).
-  // Can't optimize arrays of integers longer than 65,535 elements.
-  // See: https://bugs.webkit.org/show_bug.cgi?id=80797
-  _.max = function(obj, iterator, context) {
-    if (!iterator && _.isArray(obj) && obj[0] === +obj[0] && obj.length < 65535) {
-      return Math.max.apply(Math, obj);
-    }
-    if (!iterator && _.isEmpty(obj)) return -Infinity;
-    var result = {computed : -Infinity, value: -Infinity};
-    each(obj, function(value, index, list) {
-      var computed = iterator ? iterator.call(context, value, index, list) : value;
-      computed >= result.computed && (result = {value : value, computed : computed});
-    });
-    return result.value;
-  };
-
-  // Return the minimum element (or element-based computation).
-  _.min = function(obj, iterator, context) {
-    if (!iterator && _.isArray(obj) && obj[0] === +obj[0] && obj.length < 65535) {
-      return Math.min.apply(Math, obj);
-    }
-    if (!iterator && _.isEmpty(obj)) return Infinity;
-    var result = {computed : Infinity, value: Infinity};
-    each(obj, function(value, index, list) {
-      var computed = iterator ? iterator.call(context, value, index, list) : value;
-      computed < result.computed && (result = {value : value, computed : computed});
-    });
-    return result.value;
-  };
-
-  // Shuffle an array.
-  _.shuffle = function(obj) {
-    var rand;
-    var index = 0;
-    var shuffled = [];
-    each(obj, function(value) {
-      rand = _.random(index++);
-      shuffled[index - 1] = shuffled[rand];
-      shuffled[rand] = value;
-    });
-    return shuffled;
-  };
-
-  // An internal function to generate lookup iterators.
-  var lookupIterator = function(value) {
-    return _.isFunction(value) ? value : function(obj){ return obj[value]; };
-  };
-
-  // Sort the object's values by a criterion produced by an iterator.
-  _.sortBy = function(obj, value, context) {
-    var iterator = lookupIterator(value);
-    return _.pluck(_.map(obj, function(value, index, list) {
-      return {
-        value : value,
-        index : index,
-        criteria : iterator.call(context, value, index, list)
-      };
-    }).sort(function(left, right) {
-      var a = left.criteria;
-      var b = right.criteria;
-      if (a !== b) {
-        if (a > b || a === void 0) return 1;
-        if (a < b || b === void 0) return -1;
-      }
-      return left.index < right.index ? -1 : 1;
-    }), 'value');
-  };
-
-  // An internal function used for aggregate "group by" operations.
-  var group = function(obj, value, context, behavior) {
-    var result = {};
-    var iterator = lookupIterator(value == null ? _.identity : value);
-    each(obj, function(value, index) {
-      var key = iterator.call(context, value, index, obj);
-      behavior(result, key, value);
-    });
-    return result;
-  };
-
-  // Groups the object's values by a criterion. Pass either a string attribute
-  // to group by, or a function that returns the criterion.
-  _.groupBy = function(obj, value, context) {
-    return group(obj, value, context, function(result, key, value) {
-      (_.has(result, key) ? result[key] : (result[key] = [])).push(value);
-    });
-  };
-
-  // Counts instances of an object that group by a certain criterion. Pass
-  // either a string attribute to count by, or a function that returns the
-  // criterion.
-  _.countBy = function(obj, value, context) {
-    return group(obj, value, context, function(result, key) {
-      if (!_.has(result, key)) result[key] = 0;
-      result[key]++;
-    });
-  };
-
-  // Use a comparator function to figure out the smallest index at which
-  // an object should be inserted so as to maintain order. Uses binary search.
-  _.sortedIndex = function(array, obj, iterator, context) {
-    iterator = iterator == null ? _.identity : lookupIterator(iterator);
-    var value = iterator.call(context, obj);
-    var low = 0, high = array.length;
-    while (low < high) {
-      var mid = (low + high) >>> 1;
-      iterator.call(context, array[mid]) < value ? low = mid + 1 : high = mid;
-    }
-    return low;
-  };
-
-  // Safely convert anything iterable into a real, live array.
-  _.toArray = function(obj) {
-    if (!obj) return [];
-    if (_.isArray(obj)) return slice.call(obj);
-    if (obj.length === +obj.length) return _.map(obj, _.identity);
-    return _.values(obj);
-  };
-
-  // Return the number of elements in an object.
-  _.size = function(obj) {
-    if (obj == null) return 0;
-    return (obj.length === +obj.length) ? obj.length : _.keys(obj).length;
-  };
-
-  // Array Functions
-  // ---------------
-
-  // Get the first element of an array. Passing **n** will return the first N
-  // values in the array. Aliased as `head` and `take`. The **guard** check
-  // allows it to work with `_.map`.
-  _.first = _.head = _.take = function(array, n, guard) {
-    if (array == null) return void 0;
-    return (n != null) && !guard ? slice.call(array, 0, n) : array[0];
-  };
-
-  // Returns everything but the last entry of the array. Especially useful on
-  // the arguments object. Passing **n** will return all the values in
-  // the array, excluding the last N. The **guard** check allows it to work with
-  // `_.map`.
-  _.initial = function(array, n, guard) {
-    return slice.call(array, 0, array.length - ((n == null) || guard ? 1 : n));
-  };
-
-  // Get the last element of an array. Passing **n** will return the last N
-  // values in the array. The **guard** check allows it to work with `_.map`.
-  _.last = function(array, n, guard) {
-    if (array == null) return void 0;
-    if ((n != null) && !guard) {
-      return slice.call(array, Math.max(array.length - n, 0));
-    } else {
-      return array[array.length - 1];
-    }
-  };
-
-  // Returns everything but the first entry of the array. Aliased as `tail` and `drop`.
-  // Especially useful on the arguments object. Passing an **n** will return
-  // the rest N values in the array. The **guard**
-  // check allows it to work with `_.map`.
-  _.rest = _.tail = _.drop = function(array, n, guard) {
-    return slice.call(array, (n == null) || guard ? 1 : n);
-  };
-
-  // Trim out all falsy values from an array.
-  _.compact = function(array) {
-    return _.filter(array, _.identity);
-  };
-
-  // Internal implementation of a recursive `flatten` function.
-  var flatten = function(input, shallow, output) {
-    each(input, function(value) {
-      if (_.isArray(value)) {
-        shallow ? push.apply(output, value) : flatten(value, shallow, output);
-      } else {
-        output.push(value);
-      }
-    });
-    return output;
-  };
-
-  // Return a completely flattened version of an array.
-  _.flatten = function(array, shallow) {
-    return flatten(array, shallow, []);
-  };
-
-  // Return a version of the array that does not contain the specified value(s).
-  _.without = function(array) {
-    return _.difference(array, slice.call(arguments, 1));
-  };
-
-  // Produce a duplicate-free version of the array. If the array has already
-  // been sorted, you have the option of using a faster algorithm.
-  // Aliased as `unique`.
-  _.uniq = _.unique = function(array, isSorted, iterator, context) {
-    if (_.isFunction(isSorted)) {
-      context = iterator;
-      iterator = isSorted;
-      isSorted = false;
-    }
-    var initial = iterator ? _.map(array, iterator, context) : array;
-    var results = [];
-    var seen = [];
-    each(initial, function(value, index) {
-      if (isSorted ? (!index || seen[seen.length - 1] !== value) : !_.contains(seen, value)) {
-        seen.push(value);
-        results.push(array[index]);
-      }
-    });
-    return results;
-  };
-
-  // Produce an array that contains the union: each distinct element from all of
-  // the passed-in arrays.
-  _.union = function() {
-    return _.uniq(concat.apply(ArrayProto, arguments));
-  };
-
-  // Produce an array that contains every item shared between all the
-  // passed-in arrays.
-  _.intersection = function(array) {
-    var rest = slice.call(arguments, 1);
-    return _.filter(_.uniq(array), function(item) {
-      return _.every(rest, function(other) {
-        return _.indexOf(other, item) >= 0;
-      });
-    });
-  };
-
-  // Take the difference between one array and a number of other arrays.
-  // Only the elements present in just the first array will remain.
-  _.difference = function(array) {
-    var rest = concat.apply(ArrayProto, slice.call(arguments, 1));
-    return _.filter(array, function(value){ return !_.contains(rest, value); });
-  };
-
-  // Zip together multiple lists into a single array -- elements that share
-  // an index go together.
-  _.zip = function() {
-    var args = slice.call(arguments);
-    var length = _.max(_.pluck(args, 'length'));
-    var results = new Array(length);
-    for (var i = 0; i < length; i++) {
-      results[i] = _.pluck(args, "" + i);
-    }
-    return results;
-  };
-
-  // Converts lists into objects. Pass either a single array of `[key, value]`
-  // pairs, or two parallel arrays of the same length -- one of keys, and one of
-  // the corresponding values.
-  _.object = function(list, values) {
-    if (list == null) return {};
-    var result = {};
-    for (var i = 0, l = list.length; i < l; i++) {
-      if (values) {
-        result[list[i]] = values[i];
-      } else {
-        result[list[i][0]] = list[i][1];
-      }
-    }
-    return result;
-  };
-
-  // If the browser doesn't supply us with indexOf (I'm looking at you, **MSIE**),
-  // we need this function. Return the position of the first occurrence of an
-  // item in an array, or -1 if the item is not included in the array.
-  // Delegates to **ECMAScript 5**'s native `indexOf` if available.
-  // If the array is large and already in sort order, pass `true`
-  // for **isSorted** to use binary search.
-  _.indexOf = function(array, item, isSorted) {
-    if (array == null) return -1;
-    var i = 0, l = array.length;
-    if (isSorted) {
-      if (typeof isSorted == 'number') {
-        i = (isSorted < 0 ? Math.max(0, l + isSorted) : isSorted);
-      } else {
-        i = _.sortedIndex(array, item);
-        return array[i] === item ? i : -1;
-      }
-    }
-    if (nativeIndexOf && array.indexOf === nativeIndexOf) return array.indexOf(item, isSorted);
-    for (; i < l; i++) if (array[i] === item) return i;
-    return -1;
-  };
-
-  // Delegates to **ECMAScript 5**'s native `lastIndexOf` if available.
-  _.lastIndexOf = function(array, item, from) {
-    if (array == null) return -1;
-    var hasIndex = from != null;
-    if (nativeLastIndexOf && array.lastIndexOf === nativeLastIndexOf) {
-      return hasIndex ? array.lastIndexOf(item, from) : array.lastIndexOf(item);
-    }
-    var i = (hasIndex ? from : array.length);
-    while (i--) if (array[i] === item) return i;
-    return -1;
-  };
-
-  // Generate an integer Array containing an arithmetic progression. A port of
-  // the native Python `range()` function. See
-  // [the Python documentation](http://docs.python.org/library/functions.html#range).
-  _.range = function(start, stop, step) {
-    if (arguments.length <= 1) {
-      stop = start || 0;
-      start = 0;
-    }
-    step = arguments[2] || 1;
-
-    var len = Math.max(Math.ceil((stop - start) / step), 0);
-    var idx = 0;
-    var range = new Array(len);
-
-    while(idx < len) {
-      range[idx++] = start;
-      start += step;
-    }
-
-    return range;
-  };
-
-  // Function (ahem) Functions
-  // ------------------
-
-  // Reusable constructor function for prototype setting.
-  var ctor = function(){};
-
-  // Create a function bound to a given object (assigning `this`, and arguments,
-  // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if
-  // available.
-  _.bind = function(func, context) {
-    var args, bound;
-    if (func.bind === nativeBind && nativeBind) return nativeBind.apply(func, slice.call(arguments, 1));
-    if (!_.isFunction(func)) throw new TypeError;
-    args = slice.call(arguments, 2);
-    return bound = function() {
-      if (!(this instanceof bound)) return func.apply(context, args.concat(slice.call(arguments)));
-      ctor.prototype = func.prototype;
-      var self = new ctor;
-      ctor.prototype = null;
-      var result = func.apply(self, args.concat(slice.call(arguments)));
-      if (Object(result) === result) return result;
-      return self;
-    };
-  };
-
-  // Partially apply a function by creating a version that has had some of its
-  // arguments pre-filled, without changing its dynamic `this` context.
-  _.partial = function(func) {
-    var args = slice.call(arguments, 1);
-    return function() {
-      return func.apply(this, args.concat(slice.call(arguments)));
-    };
-  };
-
-  // Bind all of an object's methods to that object. Useful for ensuring that
-  // all callbacks defined on an object belong to it.
-  _.bindAll = function(obj) {
-    var funcs = slice.call(arguments, 1);
-    if (funcs.length === 0) throw new Error("bindAll must be passed function names");
-    each(funcs, function(f) { obj[f] = _.bind(obj[f], obj); });
-    return obj;
-  };
-
-  // Memoize an expensive function by storing its results.
-  _.memoize = function(func, hasher) {
-    var memo = {};
-    hasher || (hasher = _.identity);
-    return function() {
-      var key = hasher.apply(this, arguments);
-      return _.has(memo, key) ? memo[key] : (memo[key] = func.apply(this, arguments));
-    };
-  };
-
-  // Delays a function for the given number of milliseconds, and then calls
-  // it with the arguments supplied.
-  _.delay = function(func, wait) {
-    var args = slice.call(arguments, 2);
-    return setTimeout(function(){ return func.apply(null, args); }, wait);
-  };
-
-  // Defers a function, scheduling it to run after the current call stack has
-  // cleared.
-  _.defer = function(func) {
-    return _.delay.apply(_, [func, 1].concat(slice.call(arguments, 1)));
-  };
-
-  // Returns a function, that, when invoked, will only be triggered at most once
-  // during a given window of time.
-  _.throttle = function(func, wait) {
-    var context, args, timeout, result;
-    var previous = 0;
-    var later = function() {
-      previous = new Date;
-      timeout = null;
-      result = func.apply(context, args);
-    };
-    return function() {
-      var now = new Date;
-      var remaining = wait - (now - previous);
-      context = this;
-      args = arguments;
-      if (remaining <= 0) {
-        clearTimeout(timeout);
-        timeout = null;
-        previous = now;
-        result = func.apply(context, args);
-      } else if (!timeout) {
-        timeout = setTimeout(later, remaining);
-      }
-      return result;
-    };
-  };
-
-  // Returns a function, that, as long as it continues to be invoked, will not
-  // be triggered. The function will be called after it stops being called for
-  // N milliseconds. If `immediate` is passed, trigger the function on the
-  // leading edge, instead of the trailing.
-  _.debounce = function(func, wait, immediate) {
-    var timeout, result;
-    return function() {
-      var context = this, args = arguments;
-      var later = function() {
-        timeout = null;
-        if (!immediate) result = func.apply(context, args);
-      };
-      var callNow = immediate && !timeout;
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-      if (callNow) result = func.apply(context, args);
-      return result;
-    };
-  };
-
-  // Returns a function that will be executed at most one time, no matter how
-  // often you call it. Useful for lazy initialization.
-  _.once = function(func) {
-    var ran = false, memo;
-    return function() {
-      if (ran) return memo;
-      ran = true;
-      memo = func.apply(this, arguments);
-      func = null;
-      return memo;
-    };
-  };
-
-  // Returns the first function passed as an argument to the second,
-  // allowing you to adjust arguments, run code before and after, and
-  // conditionally execute the original function.
-  _.wrap = function(func, wrapper) {
-    return function() {
-      var args = [func];
-      push.apply(args, arguments);
-      return wrapper.apply(this, args);
-    };
-  };
-
-  // Returns a function that is the composition of a list of functions, each
-  // consuming the return value of the function that follows.
-  _.compose = function() {
-    var funcs = arguments;
-    return function() {
-      var args = arguments;
-      for (var i = funcs.length - 1; i >= 0; i--) {
-        args = [funcs[i].apply(this, args)];
-      }
-      return args[0];
-    };
-  };
-
-  // Returns a function that will only be executed after being called N times.
-  _.after = function(times, func) {
-    if (times <= 0) return func();
-    return function() {
-      if (--times < 1) {
-        return func.apply(this, arguments);
-      }
-    };
-  };
-
-  // Object Functions
-  // ----------------
-
-  // Retrieve the names of an object's properties.
-  // Delegates to **ECMAScript 5**'s native `Object.keys`
-  _.keys = nativeKeys || function(obj) {
-    if (obj !== Object(obj)) throw new TypeError('Invalid object');
-    var keys = [];
-    for (var key in obj) if (_.has(obj, key)) keys[keys.length] = key;
-    return keys;
-  };
-
-  // Retrieve the values of an object's properties.
-  _.values = function(obj) {
-    var values = [];
-    for (var key in obj) if (_.has(obj, key)) values.push(obj[key]);
-    return values;
-  };
-
-  // Convert an object into a list of `[key, value]` pairs.
-  _.pairs = function(obj) {
-    var pairs = [];
-    for (var key in obj) if (_.has(obj, key)) pairs.push([key, obj[key]]);
-    return pairs;
-  };
-
-  // Invert the keys and values of an object. The values must be serializable.
-  _.invert = function(obj) {
-    var result = {};
-    for (var key in obj) if (_.has(obj, key)) result[obj[key]] = key;
-    return result;
-  };
-
-  // Return a sorted list of the function names available on the object.
-  // Aliased as `methods`
-  _.functions = _.methods = function(obj) {
-    var names = [];
-    for (var key in obj) {
-      if (_.isFunction(obj[key])) names.push(key);
-    }
-    return names.sort();
-  };
-
-  // Extend a given object with all the properties in passed-in object(s).
-  _.extend = function(obj) {
-    each(slice.call(arguments, 1), function(source) {
-      if (source) {
-        for (var prop in source) {
-          obj[prop] = source[prop];
-        }
-      }
-    });
-    return obj;
-  };
-
-  // Return a copy of the object only containing the whitelisted properties.
-  _.pick = function(obj) {
-    var copy = {};
-    var keys = concat.apply(ArrayProto, slice.call(arguments, 1));
-    each(keys, function(key) {
-      if (key in obj) copy[key] = obj[key];
-    });
-    return copy;
-  };
-
-   // Return a copy of the object without the blacklisted properties.
-  _.omit = function(obj) {
-    var copy = {};
-    var keys = concat.apply(ArrayProto, slice.call(arguments, 1));
-    for (var key in obj) {
-      if (!_.contains(keys, key)) copy[key] = obj[key];
-    }
-    return copy;
-  };
-
-  // Fill in a given object with default properties.
-  _.defaults = function(obj) {
-    each(slice.call(arguments, 1), function(source) {
-      if (source) {
-        for (var prop in source) {
-          if (obj[prop] === void 0) obj[prop] = source[prop];
-        }
-      }
-    });
-    return obj;
-  };
-
-  // Create a (shallow-cloned) duplicate of an object.
-  _.clone = function(obj) {
-    if (!_.isObject(obj)) return obj;
-    return _.isArray(obj) ? obj.slice() : _.extend({}, obj);
-  };
-
-  // Invokes interceptor with the obj, and then returns obj.
-  // The primary purpose of this method is to "tap into" a method chain, in
-  // order to perform operations on intermediate results within the chain.
-  _.tap = function(obj, interceptor) {
-    interceptor(obj);
-    return obj;
-  };
-
-  // Internal recursive comparison function for `isEqual`.
-  var eq = function(a, b, aStack, bStack) {
-    // Identical objects are equal. `0 === -0`, but they aren't identical.
-    // See the Harmony `egal` proposal: http://wiki.ecmascript.org/doku.php?id=harmony:egal.
-    if (a === b) return a !== 0 || 1 / a == 1 / b;
-    // A strict comparison is necessary because `null == undefined`.
-    if (a == null || b == null) return a === b;
-    // Unwrap any wrapped objects.
-    if (a instanceof _) a = a._wrapped;
-    if (b instanceof _) b = b._wrapped;
-    // Compare `[[Class]]` names.
-    var className = toString.call(a);
-    if (className != toString.call(b)) return false;
-    switch (className) {
-      // Strings, numbers, dates, and booleans are compared by value.
-      case '[object String]':
-        // Primitives and their corresponding object wrappers are equivalent; thus, `"5"` is
-        // equivalent to `new String("5")`.
-        return a == String(b);
-      case '[object Number]':
-        // `NaN`s are equivalent, but non-reflexive. An `egal` comparison is performed for
-        // other numeric values.
-        return a != +a ? b != +b : (a == 0 ? 1 / a == 1 / b : a == +b);
-      case '[object Date]':
-      case '[object Boolean]':
-        // Coerce dates and booleans to numeric primitive values. Dates are compared by their
-        // millisecond representations. Note that invalid dates with millisecond representations
-        // of `NaN` are not equivalent.
-        return +a == +b;
-      // RegExps are compared by their source patterns and flags.
-      case '[object RegExp]':
-        return a.source == b.source &&
-               a.global == b.global &&
-               a.multiline == b.multiline &&
-               a.ignoreCase == b.ignoreCase;
-    }
-    if (typeof a != 'object' || typeof b != 'object') return false;
-    // Assume equality for cyclic structures. The algorithm for detecting cyclic
-    // structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.
-    var length = aStack.length;
-    while (length--) {
-      // Linear search. Performance is inversely proportional to the number of
-      // unique nested structures.
-      if (aStack[length] == a) return bStack[length] == b;
-    }
-    // Add the first object to the stack of traversed objects.
-    aStack.push(a);
-    bStack.push(b);
-    var size = 0, result = true;
-    // Recursively compare objects and arrays.
-    if (className == '[object Array]') {
-      // Compare array lengths to determine if a deep comparison is necessary.
-      size = a.length;
-      result = size == b.length;
-      if (result) {
-        // Deep compare the contents, ignoring non-numeric properties.
-        while (size--) {
-          if (!(result = eq(a[size], b[size], aStack, bStack))) break;
-        }
-      }
-    } else {
-      // Objects with different constructors are not equivalent, but `Object`s
-      // from different frames are.
-      var aCtor = a.constructor, bCtor = b.constructor;
-      if (aCtor !== bCtor && !(_.isFunction(aCtor) && (aCtor instanceof aCtor) &&
-                               _.isFunction(bCtor) && (bCtor instanceof bCtor))) {
-        return false;
-      }
-      // Deep compare objects.
-      for (var key in a) {
-        if (_.has(a, key)) {
-          // Count the expected number of properties.
-          size++;
-          // Deep compare each member.
-          if (!(result = _.has(b, key) && eq(a[key], b[key], aStack, bStack))) break;
-        }
-      }
-      // Ensure that both objects contain the same number of properties.
-      if (result) {
-        for (key in b) {
-          if (_.has(b, key) && !(size--)) break;
-        }
-        result = !size;
-      }
-    }
-    // Remove the first object from the stack of traversed objects.
-    aStack.pop();
-    bStack.pop();
-    return result;
-  };
-
-  // Perform a deep comparison to check if two objects are equal.
-  _.isEqual = function(a, b) {
-    return eq(a, b, [], []);
-  };
-
-  // Is a given array, string, or object empty?
-  // An "empty" object has no enumerable own-properties.
-  _.isEmpty = function(obj) {
-    if (obj == null) return true;
-    if (_.isArray(obj) || _.isString(obj)) return obj.length === 0;
-    for (var key in obj) if (_.has(obj, key)) return false;
-    return true;
-  };
-
-  // Is a given value a DOM element?
-  _.isElement = function(obj) {
-    return !!(obj && obj.nodeType === 1);
-  };
-
-  // Is a given value an array?
-  // Delegates to ECMA5's native Array.isArray
-  _.isArray = nativeIsArray || function(obj) {
-    return toString.call(obj) == '[object Array]';
-  };
-
-  // Is a given variable an object?
-  _.isObject = function(obj) {
-    return obj === Object(obj);
-  };
-
-  // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp.
-  each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp'], function(name) {
-    _['is' + name] = function(obj) {
-      return toString.call(obj) == '[object ' + name + ']';
-    };
-  });
-
-  // Define a fallback version of the method in browsers (ahem, IE), where
-  // there isn't any inspectable "Arguments" type.
-  if (!_.isArguments(arguments)) {
-    _.isArguments = function(obj) {
-      return !!(obj && _.has(obj, 'callee'));
-    };
-  }
-
-  // Optimize `isFunction` if appropriate.
-  if (typeof (/./) !== 'function') {
-    _.isFunction = function(obj) {
-      return typeof obj === 'function';
-    };
-  }
-
-  // Is a given object a finite number?
-  _.isFinite = function(obj) {
-    return isFinite(obj) && !isNaN(parseFloat(obj));
-  };
-
-  // Is the given value `NaN`? (NaN is the only number which does not equal itself).
-  _.isNaN = function(obj) {
-    return _.isNumber(obj) && obj != +obj;
-  };
-
-  // Is a given value a boolean?
-  _.isBoolean = function(obj) {
-    return obj === true || obj === false || toString.call(obj) == '[object Boolean]';
-  };
-
-  // Is a given value equal to null?
-  _.isNull = function(obj) {
-    return obj === null;
-  };
-
-  // Is a given variable undefined?
-  _.isUndefined = function(obj) {
-    return obj === void 0;
-  };
-
-  // Shortcut function for checking if an object has a given property directly
-  // on itself (in other words, not on a prototype).
-  _.has = function(obj, key) {
-    return hasOwnProperty.call(obj, key);
-  };
-
-  // Utility Functions
-  // -----------------
-
-  // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
-  // previous owner. Returns a reference to the Underscore object.
-  _.noConflict = function() {
-    root._ = previousUnderscore;
-    return this;
-  };
-
-  // Keep the identity function around for default iterators.
-  _.identity = function(value) {
-    return value;
-  };
-
-  // Run a function **n** times.
-  _.times = function(n, iterator, context) {
-    var accum = Array(n);
-    for (var i = 0; i < n; i++) accum[i] = iterator.call(context, i);
-    return accum;
-  };
-
-  // Return a random integer between min and max (inclusive).
-  _.random = function(min, max) {
-    if (max == null) {
-      max = min;
-      min = 0;
-    }
-    return min + Math.floor(Math.random() * (max - min + 1));
-  };
-
-  // List of HTML entities for escaping.
-  var entityMap = {
-    escape: {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#x27;',
-      '/': '&#x2F;'
-    }
-  };
-  entityMap.unescape = _.invert(entityMap.escape);
-
-  // Regexes containing the keys and values listed immediately above.
-  var entityRegexes = {
-    escape:   new RegExp('[' + _.keys(entityMap.escape).join('') + ']', 'g'),
-    unescape: new RegExp('(' + _.keys(entityMap.unescape).join('|') + ')', 'g')
-  };
-
-  // Functions for escaping and unescaping strings to/from HTML interpolation.
-  _.each(['escape', 'unescape'], function(method) {
-    _[method] = function(string) {
-      if (string == null) return '';
-      return ('' + string).replace(entityRegexes[method], function(match) {
-        return entityMap[method][match];
-      });
-    };
-  });
-
-  // If the value of the named property is a function then invoke it;
-  // otherwise, return it.
-  _.result = function(object, property) {
-    if (object == null) return void 0;
-    var value = object[property];
-    return _.isFunction(value) ? value.call(object) : value;
-  };
-
-  // Add your own custom functions to the Underscore object.
-  _.mixin = function(obj) {
-    each(_.functions(obj), function(name){
-      var func = _[name] = obj[name];
-      _.prototype[name] = function() {
-        var args = [this._wrapped];
-        push.apply(args, arguments);
-        return result.call(this, func.apply(_, args));
-      };
-    });
-  };
-
-  // Generate a unique integer id (unique within the entire client session).
-  // Useful for temporary DOM ids.
-  var idCounter = 0;
-  _.uniqueId = function(prefix) {
-    var id = ++idCounter + '';
-    return prefix ? prefix + id : id;
-  };
-
-  // By default, Underscore uses ERB-style template delimiters, change the
-  // following template settings to use alternative delimiters.
-  _.templateSettings = {
-    evaluate    : /<%([\s\S]+?)%>/g,
-    interpolate : /<%=([\s\S]+?)%>/g,
-    escape      : /<%-([\s\S]+?)%>/g
-  };
-
-  // When customizing `templateSettings`, if you don't want to define an
-  // interpolation, evaluation or escaping regex, we need one that is
-  // guaranteed not to match.
-  var noMatch = /(.)^/;
-
-  // Certain characters need to be escaped so that they can be put into a
-  // string literal.
-  var escapes = {
-    "'":      "'",
-    '\\':     '\\',
-    '\r':     'r',
-    '\n':     'n',
-    '\t':     't',
-    '\u2028': 'u2028',
-    '\u2029': 'u2029'
-  };
-
-  var escaper = /\\|'|\r|\n|\t|\u2028|\u2029/g;
-
-  // JavaScript micro-templating, similar to John Resig's implementation.
-  // Underscore templating handles arbitrary delimiters, preserves whitespace,
-  // and correctly escapes quotes within interpolated code.
-  _.template = function(text, data, settings) {
-    var render;
-    settings = _.defaults({}, settings, _.templateSettings);
-
-    // Combine delimiters into one regular expression via alternation.
-    var matcher = new RegExp([
-      (settings.escape || noMatch).source,
-      (settings.interpolate || noMatch).source,
-      (settings.evaluate || noMatch).source
-    ].join('|') + '|$', 'g');
-
-    // Compile the template source, escaping string literals appropriately.
-    var index = 0;
-    var source = "__p+='";
-    text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {
-      source += text.slice(index, offset)
-        .replace(escaper, function(match) { return '\\' + escapes[match]; });
-
-      if (escape) {
-        source += "'+\n((__t=(" + escape + "))==null?'':_.escape(__t))+\n'";
-      }
-      if (interpolate) {
-        source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
-      }
-      if (evaluate) {
-        source += "';\n" + evaluate + "\n__p+='";
-      }
-      index = offset + match.length;
-      return match;
-    });
-    source += "';\n";
-
-    // If a variable is not specified, place data values in local scope.
-    if (!settings.variable) source = 'with(obj||{}){\n' + source + '}\n';
-
-    source = "var __t,__p='',__j=Array.prototype.join," +
-      "print=function(){__p+=__j.call(arguments,'');};\n" +
-      source + "return __p;\n";
-
-    try {
-      render = new Function(settings.variable || 'obj', '_', source);
-    } catch (e) {
-      e.source = source;
-      throw e;
-    }
-
-    if (data) return render(data, _);
-    var template = function(data) {
-      return render.call(this, data, _);
-    };
-
-    // Provide the compiled function source as a convenience for precompilation.
-    template.source = 'function(' + (settings.variable || 'obj') + '){\n' + source + '}';
-
-    return template;
-  };
-
-  // Add a "chain" function, which will delegate to the wrapper.
-  _.chain = function(obj) {
-    return _(obj).chain();
-  };
-
-  // OOP
-  // ---------------
-  // If Underscore is called as a function, it returns a wrapped object that
-  // can be used OO-style. This wrapper holds altered versions of all the
-  // underscore functions. Wrapped objects may be chained.
-
-  // Helper function to continue chaining intermediate results.
-  var result = function(obj) {
-    return this._chain ? _(obj).chain() : obj;
-  };
-
-  // Add all of the Underscore functions to the wrapper object.
-  _.mixin(_);
-
-  // Add all mutator Array functions to the wrapper.
-  each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {
-    var method = ArrayProto[name];
-    _.prototype[name] = function() {
-      var obj = this._wrapped;
-      method.apply(obj, arguments);
-      if ((name == 'shift' || name == 'splice') && obj.length === 0) delete obj[0];
-      return result.call(this, obj);
-    };
-  });
-
-  // Add all accessor Array functions to the wrapper.
-  each(['concat', 'join', 'slice'], function(name) {
-    var method = ArrayProto[name];
-    _.prototype[name] = function() {
-      return result.call(this, method.apply(this._wrapped, arguments));
-    };
-  });
-
-  _.extend(_.prototype, {
-
-    // Start chaining a wrapped Underscore object.
-    chain: function() {
-      this._chain = true;
-      return this;
-    },
-
-    // Extracts the result from a wrapped and chained object.
-    value: function() {
-      return this._wrapped;
-    }
-
-  });
-
-}).call(this);
-
-define("sge/vendor/underscore", (function (global) {
-    return function () {
-        var ret, fn;
-        return ret || global._;
-    };
-}(this)));
-
-define('sge/gamestate',['./lib/class', './vendor/underscore'],
-	function(Class, _, PxLoader){
-
-	var Timeout = Class.extend({
-		init: function(length, callback){
-			this._length = length;
-			this.callback = callback;
-		},
-		tick : function(delta){
-			this._length = this._length - delta;
-			if (this._length<=0){
-				this.callback()
-				return false;
-			}
-			return true;
-		}
-	})
-
-
-	var GameState = Class.extend({
-		init: function(game, options){
-			this.game = game;
-			this.input = game.input;
-			this.entities = {};
-			this._entity_ids = [];
-			this.initState(options);
-			this._timeouts = [];
-		},
-		createTimeout : function(length, callback){
-			var timeout = new Timeout(length, callback);
-			this._timeouts.push(timeout);
-		},
-		tickTimeouts : function(delta){
-			this._timeouts = _.filter(this._timeouts, function(t){return t.tick(delta)});
-		},
-		initState: function(){
-
-        },
-        startState : function(){
-
-        },
-        endState : function(){
-
-        },
-        tick : function(){
-        	_.each(this._entity_ids, function(id){
-        		var entity = this.entities[id];
-        		entity.componentCall('tick');
-        	}.bind(this))
-        	_.each(this._entity_ids, function(id){
-        		var entity = this.entities[id];
-        		entity.componentCall('render', this.game.renderer, 'main');
-        	}.bind(this))
-        },
-
-		getNextId: function(){
-			var id = 0;
-			while (this._entity_ids.indexOf(id) > -1){
-				id++;
-			}
-			return id;
-		},
-
-		addEntity: function(entity){
-			var id = this.getNextId();
-			entity.id = id;
-			this._entity_ids.push(id);
-			this.entities[id] = entity;
-			entity.state = this;
-			entity.register(this);
-			return entity;
-		},
-
-		getEntity: function(id){
-			return this.entities[id];
-		},
-
-		getEntities : function(){
-			var entities = []
-			_.each(this._entity_ids, function(id){
-        		entities.push(this.entities[id]);
-        	}.bind(this));
-        	return entities;
-		},
-
-		getEntitiesWithTag: function(tag){
-			return _.filter(this.getEntities(), function(e){
-				return _.include(e.tags, tag);
-			});
-		},
-		getEntityWithTag: function(tag){
-			return _.filter(this.getEntities(), function(e){
-				return _.include(e.tags, tag)[0];
-			});
-		},
-
-		getEntitiesWithComponent: function(comp){
-			return _.filter(this.getEntities(), function(e){
-				return (e.components[comp]!==undefined);
-			});
-		},
-
-		removeEntity: function(entity){
-			var id = entity.id;
-			this._entity_ids = _.without(this._entity_ids, id);
-			this.entities[id] = undefined;
-			entity.deregister();
-			entity.id = null;
-			entity.state = null;
-			return entity;
-		}
-	});
-	return GameState;
-});
-
-define('sge/input',['./lib/class', './observable'], function(Class, Observable){
-	var KEYCODES = {
-        "backspace" : 8,
-        "tab" : 9,
-        "enter" : 13,
-        "shift" : 16,
-        "ctrl" : 17,
-        "alt" : 18,
-        "pause" : 19,
-        "capslock" : 20,
-        "escape" : 27,
-        "space" : 32,
-        "pageup" : 33,
-        "pagedown" : 34,
-        "end" : 35,
-        "home" : 36,
-        "left" : 37,
-        "up" : 38,
-        "right" : 39,
-        "down" : 40,
-        "insert" : 45,
-        "delete" : 46,
-        "0" : 48,
-        "1" : 49,
-        "2" : 50,
-        "3" : 51,
-        "4" : 52,
-        "5" : 53,
-        "6" : 54,
-        "7" : 55,
-        "8" : 56,
-        "9" : 57,
-        "A" : 65,
-        "B" : 66,
-        "C" : 67,
-        "D" : 68,
-        "E" : 69,
-        "F" : 70,
-        "G" : 71,
-        "H" : 72,
-        "I" : 73,
-        "J" : 74,
-        "K" : 75,
-        "L" : 76,
-        "M" : 77,
-        "N" : 78,
-        "O" : 79,
-        "P" : 80,
-        "Q" : 81,
-        "R" : 82,
-        "S" : 83,
-        "T" : 84,
-        "U" : 85,
-        "V" : 86,
-        "W" : 87,
-        "X" : 88,
-        "Y" : 89,
-        "Z" : 90,
-        "left-window-key" : 91,
-        "right-window-key" : 92,
-        "select" : 93,
-        "numpad0" : 96,
-        "numpad1" : 97,
-        "numpad2" : 98,
-        "numpad3" : 99,
-        "numpad4" : 100,
-        "numpad5" : 101,
-        "numpad6" : 102,
-        "numpad7" : 103,
-        "numpad8" : 104,
-        "numpad9" : 105,
-        "multiply" : 106,
-        "add" : 107,
-        "subtract" : 109,
-        "decimal-point" : 110,
-        "divide" : 111,
-        "F1" : 112,
-        "F2" : 113,
-        "F3" : 114,
-        "F4" : 115,
-        "F5" : 116,
-        "F6" : 117,
-        "F7" : 118,
-        "F8" : 119,
-        "F9" : 120,
-        "F10" : 121,
-        "F11" : 122,
-        "F12" : 123,
-        "numlock" : 144,
-        "scrolllock" : 145,
-        "semi-colon" : 186,
-        "equals" : 187,
-        "comma" : 188,
-        "dash" : 189,
-        "period" : 190,
-        "slash" : 191,
-        "accent" : 192,
-        "lbracket" : 219,
-        "backslash" : 220,
-        "rbraket" : 221,
-        "singlequote" : 222
-    };
-
-    var REVERSE_KEYCODES = {};
-    var keys = Object.keys(KEYCODES);
-    for (var i=0; i<keys.length; i++){
-        var key = keys[i];
-        var value = KEYCODES[key];
-        REVERSE_KEYCODES[value] = key;
-    }
-
-	var Input = Observable.extend({
-		init: function(){
-            this._super()
-			this._isNewKeyDown = {}
-            this._isKeyDown = {};
-            document.onkeydown = this.keyDownCallback.bind(this);
-            document.onkeyup = this.keyUpCallback.bind(this);
-        },
-        keyDownCallback : function(e){
-            //console.log('keydown:' + REVERSE_KEYCODES[e.keyCode]);
-            if (!this._isKeyDown[e.keyCode]){
-                this._isNewKeyDown[e.keyCode] = true;
-            }
-        },
-        keyUpCallback : function(e){
-            //console.log('keyup:' + REVERSE_KEYCODES[e.keyCode]);
-            this._isKeyDown[e.keyCode] = undefined;
-        },
-        isPressed : function(keyCode){
-            return (this._isKeyDown[KEYCODES[keyCode]] === true);
-        },
-        tick : function(){
-           var keys = Object.keys(this._isNewKeyDown);
-           for (var i = keys.length - 1; i >= 0; i--) {
-           		var keyCode = keys[i];
-           		this._isKeyDown[keyCode] = true;
-           		delete this._isNewKeyDown[keyCode];
-
-                this.fireEvent('keydown:' + REVERSE_KEYCODES[keyCode])
-           };
-        }
-	});
-
-	return Input
-});
-/*global define: true */ 
-
-define('sge/vendor/pxloader',[], function() {
-
-    /*
-     * PixelLab Resource Loader
-     * Loads resources while providing progress updates.
-     */
-    function PxLoader(settings) {
-
-        // merge settings with defaults
-        settings = settings || {};
-        this.settings = settings;
-
-        // how frequently we poll resources for progress
-        if (settings.statusInterval == null) {
-            settings.statusInterval = 5000; // every 5 seconds by default
-        }
-
-        // delay before logging since last progress change
-        if (settings.loggingDelay == null) {
-            settings.loggingDelay = 20 * 1000; // log stragglers after 20 secs
-        }
-
-        // stop waiting if no progress has been made in the moving time window
-        if (settings.noProgressTimeout == null) {
-            settings.noProgressTimeout = Infinity; // do not stop waiting by default
-        }
-
-        var entries = [],
-            // holds resources to be loaded with their status
-            progressListeners = [],
-            timeStarted, progressChanged = Date.now();
-
-        /**
-         * The status of a resource
-         * @enum {number}
-         */
-        var ResourceState = {
-            QUEUED: 0,
-            WAITING: 1,
-            LOADED: 2,
-            ERROR: 3,
-            TIMEOUT: 4
-        };
-
-        // places non-array values into an array.
-        var ensureArray = function(val) {
-            if (val == null) {
-                return [];
-            }
-
-            if (Array.isArray(val)) {
-                return val;
-            }
-
-            return [val];
-        };
-
-        // add an entry to the list of resources to be loaded
-        this.add = function(resource) {
-
-            // ensure tags are in an object
-            resource.tags = new PxLoaderTags(resource.tags);
-
-            // ensure priority is set
-            if (resource.priority == null) {
-                resource.priority = Infinity;
-            }
-
-            entries.push({
-                resource: resource,
-                status: ResourceState.QUEUED
-            });
-        };
-
-        this.addProgressListener = function(callback, tags) {
-            progressListeners.push({
-                callback: callback,
-                tags: new PxLoaderTags(tags)
-            });
-        };
-
-        this.addCompletionListener = function(callback, tags) {
-            progressListeners.push({
-                tags: new PxLoaderTags(tags),
-                callback: function(e) {
-                    if (e.completedCount === e.totalCount) {
-                        callback(e);
-                    }
-                }
-            });
-        };
-
-        // creates a comparison function for resources
-        var getResourceSort = function(orderedTags) {
-
-            // helper to get the top tag's order for a resource
-            orderedTags = ensureArray(orderedTags);
-            var getTagOrder = function(entry) {
-                var resource = entry.resource,
-                    bestIndex = Infinity;
-                for (var i = 0; i < resource.tags.length; i++) {
-                    for (var j = 0; j < Math.min(orderedTags.length, bestIndex); j++) {
-                        if (resource.tags[i] === orderedTags[j] && j < bestIndex) {
-                            bestIndex = j;
-                            if (bestIndex === 0) {
-                                break;
-                            }
-                        }
-                        if (bestIndex === 0) {
-                            break;
-                        }
-                    }
-                }
-                return bestIndex;
-            };
-            return function(a, b) {
-                // check tag order first
-                var aOrder = getTagOrder(a),
-                    bOrder = getTagOrder(b);
-                if (aOrder < bOrder) { return -1; }
-                if (aOrder > bOrder) { return 1; }
-
-                // now check priority
-                if (a.priority < b.priority) { return -1; }
-                if (a.priority > b.priority) { return 1; }
-                return 0;
-            };
-        };
-
-        this.start = function(orderedTags) {
-            timeStarted = Date.now();
-
-            // first order the resources
-            var compareResources = getResourceSort(orderedTags);
-            entries.sort(compareResources);
-
-            // trigger requests for each resource
-            for (var i = 0, len = entries.length; i < len; i++) {
-                var entry = entries[i];
-                entry.status = ResourceState.WAITING;
-                entry.resource.start(this);
-            }
-
-            // do an initial status check soon since items may be loaded from the cache
-            setTimeout(statusCheck, 100);
-        };
-
-        var statusCheck = function() {
-            var checkAgain = false,
-                noProgressTime = Date.now() - progressChanged,
-                timedOut = (noProgressTime >= settings.noProgressTimeout),
-                shouldLog = (noProgressTime >= settings.loggingDelay);
-
-            for (var i = 0, len = entries.length; i < len; i++) {
-                var entry = entries[i];
-                if (entry.status !== ResourceState.WAITING) {
-                    continue;
-                }
-
-                // see if the resource has loaded
-                if (entry.resource.checkStatus) {
-                    entry.resource.checkStatus();
-                }
-
-                // if still waiting, mark as timed out or make sure we check again
-                if (entry.status === ResourceState.WAITING) {
-                    if (timedOut) {
-                        entry.resource.onTimeout();
-                    } else {
-                        checkAgain = true;
-                    }
-                }
-            }
-
-            // log any resources that are still pending
-            if (shouldLog && checkAgain) {
-                log();
-            }
-
-            if (checkAgain) {
-                setTimeout(statusCheck, settings.statusInterval);
-            }
-        };
-
-        this.isBusy = function() {
-            for (var i = 0, len = entries.length; i < len; i++) {
-                if (entries[i].status === ResourceState.QUEUED || entries[i].status === ResourceState.WAITING) {
-                    return true;
-                }
-            }
-            return false;
-        };
-
-        var onProgress = function(resource, statusType) {
-            
-            var entry = null,
-                i, len, numResourceTags, listener, shouldCall;
-
-            // find the entry for the resource    
-            for (i = 0, len = entries.length; i < len; i++) {
-                if (entries[i].resource === resource) {
-                    entry = entries[i];
-                    break;
-                }
-            }
-
-            // we have already updated the status of the resource
-            if (entry == null || entry.status !== ResourceState.WAITING) {
-                return;
-            }
-            entry.status = statusType;
-            progressChanged = Date.now();
-
-            numResourceTags = resource.tags.length;
-
-            // fire callbacks for interested listeners
-            for (i = 0, len = progressListeners.length; i < len; i++) {
-                
-                listener = progressListeners[i];
-                if (listener.tags.length === 0) {
-                    // no tags specified so always tell the listener
-                    shouldCall = true;
-                } else {
-                    // listener only wants to hear about certain tags
-                    shouldCall = resource.tags.contains(listener.tags);
-                }
-
-                if (shouldCall) {
-                    sendProgress(entry, listener);
-                }
-            }
-        };
-
-        this.onLoad = function(resource) {
-            onProgress(resource, ResourceState.LOADED);
-        };
-        this.onError = function(resource) {
-            onProgress(resource, ResourceState.ERROR);
-        };
-        this.onTimeout = function(resource) {
-            onProgress(resource, ResourceState.TIMEOUT);
-        };
-
-        // sends a progress report to a listener
-        var sendProgress = function(updatedEntry, listener) {
-            // find stats for all the resources the caller is interested in
-            var completed = 0,
-                total = 0,
-                i, len, entry, includeResource;
-            for (i = 0, len = entries.length; i < len; i++) {
-                
-                entry = entries[i];
-                includeResource = false;
-
-                if (listener.tags.length === 0) {
-                    // no tags specified so always tell the listener
-                    includeResource = true;
-                } else {
-                    includeResource = entry.resource.tags.contains(listener.tags);
-                }
-
-                if (includeResource) {
-                    total++;
-                    if (entry.status === ResourceState.LOADED ||
-                        entry.status === ResourceState.ERROR ||
-                        entry.status === ResourceState.TIMEOUT) {
-
-                        completed++;
-                    }
-                }
-            }
-
-            listener.callback({
-                // info about the resource that changed
-                resource: updatedEntry.resource,
-
-                // should we expose StatusType instead?
-                loaded: (updatedEntry.status === ResourceState.LOADED),
-                error: (updatedEntry.status === ResourceState.ERROR),
-                timeout: (updatedEntry.status === ResourceState.TIMEOUT),
-
-                // updated stats for all resources
-                completedCount: completed,
-                totalCount: total
-            });
-        };
-
-        // prints the status of each resource to the console
-        var log = this.log = function(showAll) {
-            if (!window.console) {
-                return;
-            }
-
-            var elapsedSeconds = Math.round((Date.now() - timeStarted) / 1000);
-            window.console.log('PxLoader elapsed: ' + elapsedSeconds + ' sec');
-
-            for (var i = 0, len = entries.length; i < len; i++) {
-                var entry = entries[i];
-                if (!showAll && entry.status !== ResourceState.WAITING) {
-                    continue;
-                }
-
-                var message = 'PxLoader: #' + i + ' ' + entry.resource.getName();
-                switch(entry.status) {
-                    case ResourceState.QUEUED:
-                        message += ' (Not Started)';
-                        break;
-                    case ResourceState.WAITING:
-                        message += ' (Waiting)';
-                        break;
-                    case ResourceState.LOADED:
-                        message += ' (Loaded)';
-                        break;
-                    case ResourceState.ERROR:
-                        message += ' (Error)';
-                        break;
-                    case ResourceState.TIMEOUT:
-                        message += ' (Timeout)';
-                        break;
-                }
-
-                if (entry.resource.tags.length > 0) {
-                    message += ' Tags: [' + entry.resource.tags.array.join(',') + ']';
-                }
-
-                window.console.log(message);
-            }
-        };
-    }
-
-
-    // Tag object to handle tag intersection; once created not meant to be changed
-    // Performance rationale: http://jsperf.com/lists-indexof-vs-in-operator/3
-     
-    function PxLoaderTags(values) {
-     
-        this.array = [];
-        this.object = {};
-        this.value = null; // single value
-        this.length = 0;
-     
-        if (values !== null && values !== undefined) {
-            if (Array.isArray(values)) {
-                this.array = values;
-            } else if (typeof values === 'object') {
-                for (var key in values) {
-                    this.array.push(key);
-                }
-            } else {
-                this.array.push(values);
-                this.value = values;
-            }
-     
-            this.length = this.array.length;
-     
-            // convert array values to object with truthy values, used by contains function below
-            for (var i = 0; i < this.length; i++) {
-                this.object[this.array[i]] = true;
-            }
-        }
-    }
-
-    // compare this object with another; return true if they share at least one value
-    PxLoaderTags.prototype.contains = function(other) {
-        if (this.length === 0 || other.length === 0) {
-            return false;
-        } else if (this.length === 1 && this.value !== null) {
-            if (other.length === 1) {
-                return this.value === other.value;
-            } else {
-                return other.object.hasOwnProperty(this.value);
-            }
-        } else if (other.length < this.length) {
-            return other.contains(this); // better to loop through the smaller object
-        } else {
-            for (var key in this.object) {
-                if (other.object[key]) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    };
-    // AMD module support
-    function PxLoaderImage(url, tags, priority) {
-        var self = this,
-            loader = null;
-
-        this.img = new Image();
-        this.tags = tags;
-        this.priority = priority;
-
-        var onReadyStateChange = function() {
-            if (self.img.readyState === 'complete') {
-                removeEventHandlers();
-                loader.onLoad(self);
-            }
-        };
-
-        var onLoad = function() {
-            removeEventHandlers();
-            loader.onLoad(self);
-        };
-
-        var onError = function() {
-            removeEventHandlers();
-            loader.onError(self);
-        };
-
-        var removeEventHandlers = function() {
-            self.unbind('load', onLoad);
-            self.unbind('readystatechange', onReadyStateChange);
-            self.unbind('error', onError);
-        };
-
-        this.start = function(pxLoader) {
-            // we need the loader ref so we can notify upon completion
-            loader = pxLoader;
-
-            // NOTE: Must add event listeners before the src is set. We
-            // also need to use the readystatechange because sometimes
-            // load doesn't fire when an image is in the cache.
-            self.bind('load', onLoad);
-            self.bind('readystatechange', onReadyStateChange);
-            self.bind('error', onError);
-
-            self.img.src = url;
-        };
-
-        // called by PxLoader to check status of image (fallback in case
-        // the event listeners are not triggered).
-        this.checkStatus = function() {
-            if (self.img.complete) {
-                removeEventHandlers();
-                loader.onLoad(self);
-            }
-        };
-
-        // called by PxLoader when it is no longer waiting
-        this.onTimeout = function() {
-            removeEventHandlers();
-            if (self.img.complete) {
-                loader.onLoad(self);
-            } else {
-                loader.onTimeout(self);
-            }
-        };
-
-        // returns a name for the resource that can be used in logging
-        this.getName = function() {
-            return url;
-        };
-
-        // cross-browser event binding
-        this.bind = function(eventName, eventHandler) {
-            if (self.img.addEventListener) {
-                self.img.addEventListener(eventName, eventHandler, false);
-            } else if (self.img.attachEvent) {
-                self.img.attachEvent('on' + eventName, eventHandler);
-            }
-        };
-
-        // cross-browser event un-binding
-        this.unbind = function(eventName, eventHandler) {
-            if (self.img.removeEventListener) {
-                self.img.removeEventListener(eventName, eventHandler, false);
-            } else if (self.img.detachEvent) {
-                self.img.detachEvent('on' + eventName, eventHandler);
-            }
-        };
-
-    }
-
-    // add a convenience method to PxLoader for adding an image
-    PxLoader.prototype.addImage = function(url, tags, priority) {
-        var imageLoader = new PxLoaderImage(url, tags, priority);
-        this.add(imageLoader);
-
-        // return the img element to the caller
-        return imageLoader.img;
-    };
-    // exports
-    return PxLoader;
-
-});
-
-// Date.now() shim for older browsers
-if (!Date.now) {
-    Date.now = function now() {
-        return new Date().getTime();
-    };
-}
-
-// shims to ensure we have newer Array utility methods
-// https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/isArray
-if (!Array.isArray) {
-    Array.isArray = function(arg) {
-        return Object.prototype.toString.call(arg) === '[object Array]';
-    };
-}
-
-
-
-;
-define('sge/game',['jquery', './lib/class' , './vendor/state-machine','./engine','./gamestate', './input','./renderer', './vendor/pxloader'],
-function($, Class, StateMachine, Engine, GameState, Input, Renderer, PxLoader, PxLoaderImage){
-    var LoadState = GameState.extend({
-        initState: function(){
-            this.elem = $('.loadscreen');
-            if (this.elem.length==0){
-                this.elem = $('<div/>').addClass("loadscreen gamestatescreen");
-                this.elem.append($('<img class="loader" src="js/sge/images/ajax-loader.gif"/>'));
-                this.game.elem.append(this.elem);
-            }
-        },
-        startState : function(){
-            if (this.game._states['game'].loader){
-                this.game._states['game'].loader.start();
-            }
-            if (this.elem){
-                this.elem.fadeIn();
-            }
-        },
-        endState : function(){
-            if (this.elem){
-                this.elem.fadeOut();
-            }
-        }
-    });
-
-    var MainMenuState = GameState.extend({
-        initState: function(){
-            this.elem = $('.mainmenuscreen');
-            if (this.elem.length==0){
-                this.elem = $('<div/>').addClass("mainmenuscreen gamestatescreen");
-                this.elem.append($('<p>Press Enter to Start Game</p>'));
-                this.game.elem.append(this.elem);
-            }
-            this.startGame = function(){
-                this.game._states['game'] = new this.game._gameState(this.game);
-                this.game.fsm.startGame();    
-            }.bind(this);
-            this.startState()
-        },
-        startState : function(){
-            this.input.addListener('keydown:enter', this.startGame);
-            if (this.elem){
-                this.elem.fadeIn();
-            }
-        },
-        endState : function(){
-            this.input.removeListener('keydown:enter', this.startGame);
-            if (this.elem){
-                this.elem.fadeOut();
-            }
-        },
-        tick : function(delta){
-
-        }
-    })
-
-    var GameOverState = GameState.extend({
-        initState: function(){
-            this.elem = $('.gameoverscreen') || null;
-            if (this.elem.length==0){
-                this.elem = $('<div/>').addClass("gameoverscreen gamestatescreen");
-                this.elem.append($('<h1>Game Over</h1><p>Press Enter to Continue.</p>'));
-                this.game.elem.append(this.elem);
-            }
-            this.startGame = function(){
-                this.game._states['game'] = new this.game._gameState(this.game);
-                this.game.fsm.loadMainMenu();
-            }.bind(this);
-        },
-        startState : function(){
-            this.input.addListener('keydown:enter', this.startGame);
-            if (this.elem){
-                this.elem.fadeIn();
-            }
-        },
-        endState : function(){
-            this.input.removeListener('keydown:enter', this.startGame);
-            if (this.elem){
-                this.elem.fadeOut();
-            }
-        },
-        tick : function(delta){
-
-        }
-    })
-
-    var GameWinState = GameState.extend({
-        initState: function(){
-            this.elem = $('.gamewinscreen');
-            if (this.elem.length==0){
-                this.elem = $('<div/>').addClass("gamewinscreen gamestatescreen");
-                this.elem.append($('<h1>You Win!</h1><p>Press Enter to Continue.</p>'));
-                this.game.elem.append(this.elem);
-            }
-            this.startGame = function(){
-                console.log('START')
-                this.game._states['game'] = new this.game._gameState(this.game);
-                this.game.fsm.loadMainMenu();
-            }.bind(this);
-        },
-        startState : function(){
-            this.input.addListener('keydown:enter', this.startGame);
-            if (this.elem){
-                this.elem.fadeIn();
-            }
-        },
-        endState : function(){
-            this.input.removeListener('keydown:enter', this.startGame);
-            if (this.elem){
-                this.elem.fadeOut();
-            }
-        },
-        tick : function(delta){
-
-        }
-    })
-
-    var PauseState = GameState.extend({
-        initState: function(){
-            this.elem = $('.pausescreen');
-            if (this.elem.length==0){
-                this.elem = $('<div/>').addClass("pausescreen gamestatescreen");
-                this.elem.append($('<h1>Paused</h1>'));
-                this.game.elem.append(this.elem);
-            }
-            this.unpause = function(){
-                this.game.fsm.unpause();
-            }.bind(this);
-        },
-        startState : function(){
-            this.input.addListener('keydown:space', this.unpause);
-            if (this.elem){
-                this.elem.fadeIn();
-            }
-        },
-        endState : function(){
-            this.input.removeListener('keydown:space', this.unpause);
-            if (this.elem){
-                this.elem.fadeOut();
-            }
-        },
-        tick : function(delta){
-            func = this.game._states['game']._paused_tick;
-            if (func){
-                func.call(this.game._states['game'], delta);
-            }
-        }
-    });
-
-    var DefaultGame = GameState.extend({
-        initState: function(){
-            setTimeout(function(){
-                this.game.fsm.finishLoad();
-                setTimeout(function(){
-                    this.game.fsm.gameWin();
-                }.bind(this), 5000);
-            }.bind(this), 1000)
-        }
-    })
-
-    var Game = Class.extend({
-        init: function(options){
-            this.options = $.extend({
-                elem: null
-            }, options || {});
-            this.engine = new Engine();
-            this.loader = new PxLoader();
-            this.input = new Input();
-            this._tick = 0;
-            this._last = 0;
-            this._gameState = DefaultGame;
-            this._debugElem = $('.fps');
-            if (this.options.elem!==null){
-                this.elem = $(this.options.elem);
-            } else {
-                console.log('[SGE ERROR] Need an element to render in. Use elem option to constructor.')
-                this.elem = null;
-            }
-            this.renderer = new Renderer(this.elem);
-            this.engine.tick = function(delta){
-                this.tick(delta);
-            }.bind(this);
-
-            this.fsm = StateMachine.create({
-                initial: 'mainmenu',
-                events: [
-                    {name: 'startLoad', from: ['game','menu','mainmenu'], to:'loading'},
-                    {name: 'finishLoad', from: 'loading', to: 'game'},
-                    {name: 'pause', from: 'game', to:'paused'},
-                    {name: 'unpause', from: ['paused','menu'], to:'game'},
-                    {name: 'startGame', from: 'mainmenu', to:'loading'},
-                    {name: 'loadMainMenu', from: ['game','gameover','gamewin','menu','pause'], to: 'mainmenu'},
-                    {name: 'gameOver', from: 'game', to: 'gameover'},
-                    {name: 'gameWin', from: 'game', to:'gamewin'},
-                    {name: 'startDialog', from: 'game', to:'dialog'},
-                    {name: 'endDialog', from:'dialog', to:'game'}
-                ],
-                callbacks: {
-                    onleavestate: function(evt, from, to){
-                        if (from=="none"){return};
-                        //console.log('Leaving:', from)
-                        this._states[from].endState(evt, from, to);
-                    }.bind(this),
-                    onenterstate: function(evt, from, to){
-                        if (from=="none"){return};
-                        //console.log('Entering:', to)
-                        this._states[to].startState(evt, from, to);
-                        this.state = this._states[to];
-                    }.bind(this)
-                }
-            });
-
-            this._states = {
-                'game' : null,
-                'mainmenu' : new MainMenuState(this),
-                'loading' : new LoadState(this),
-                'paused' : new PauseState(this),
-                'gameover' : new GameOverState(this),
-                'gamewin' : new GameWinState(this)
-            }
-            this.state = this._states['loading'];
-            this.initGame(options);
-        },
-        setGameState : function(StateClass){
-            this._gameState = StateClass
-        },
-        addState: function(label, value){
-            this._states[label] = value;
-            return value;
-        },
-        initGame: function(){},
-        preRender: function(){},
-        postRender: function(){},
-        tick: function(delta){
-            this.input.tick();
-            if (this.state!=null){
-                this.state.tick(delta);
-            } else {
-                //Do Something;
-            }
-            this.renderer.render();
-            this._tick++;
-            if (this._tick>10){
-                this._tick = 0;
-                this._debugElem.text(1 / delta);
-            }
-        },
-        start: function(){
-            window.onblur = function(){
-                this.fsm.pause();
-            }.bind(this);
-            this.engine.run()
-        }
-    });
-
-    return Game;
-});
-
-define('sge/lib/random',[],function(){
-	var unit = function(){
-			return Math.random();
-	}
-	var range = function(min, max){
-		var delta = max - min;
-		return ((Math.random() * delta) + min);
-	}
-	var rangeInt = function(min, max){
-		return Math.round(range(min, max));
-	}
-	var item = function(array){
-		var length = array.length-1;
-		return array[Math.round(Math.random() * length)];
-	}
-	return {
-		unit : unit,
-		range : range,
-		rangeInt : rangeInt,
-		item : item
-	}
-});
-define('sge/main',['sge/config',
-        'sge/renderer',
-        'sge/engine',
-        'sge/entity',
-        'sge/component',
-        'sge/game',
-        'sge/gamestate',
-        'sge/vendor/pxloader',
-        'sge/lib/class',
-        'sge/lib/random',
-        'sge/spritesheet'],
-function(
-      config,
-      Renderer,
-      Engine,
-      Entity,
-      Component,
-      Game,
-      GameState,
-      PxLoader,
-      Class,
-      random,
-      SpriteSheet
-        ){
-   return {
-        config: config,
-        Renderer: Renderer,
-        Engine : Engine,
-        Entity : Entity,
-        Component : Component,
-        Game : Game,
-        GameState : GameState,
-        vendor : {
-          PxLoader : PxLoader
-        },
-        Class : Class,
-        random : random,
-        SpriteSheet : SpriteSheet
-   };
-});
-define('sge', ['sge/main'], function (main) { return main; });
-
-define('dreddrl/components/bullet',['sge'],function(sge){
-
-	var BulletComponent = sge.Component.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.kill = this.kill.bind(this);
-			this.hit = this.hit.bind(this);
-		},
-		hit: function(){
-			console.log('Hit');
-		},
-		kill: function(){
-			this.entity.fireEvent('kill');
-		},
-		register: function(){
-			this.entity.addListener('contact.tile', this.kill)
-		},
-		tick: function(delta){
-			this.entity.set('physics.width', Math.max(Math.abs(this.entity.get('xform.vx')) * delta, 2)*2);
-			this.entity.set('physics.height', Math.max(Math.abs(this.entity.get('xform.vy')) * delta, 2)*2);
-		}
-	});
-	sge.Component.register('bullet', BulletComponent);
-    return BulletComponent;
-})		;
-define('dreddrl/components/weapons',['sge', './bullet'],function(sge){
-
-	var WeaponsComponent = sge.Component.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.fire = this.fire.bind(this);
-		},
-		fire: function(){
-			var ammo = this.entity.get('inventory.ammo');
-			if (ammo<=0){
-				/*blink ammo red*/
-				return;
-			}
-			this.entity.set('inventory.ammo', ammo-1);
-
-			var speed = 1024;
-			var vx = 0;
-			var vy = 0;
-			switch( this.entity.get('xform.dir')){
-				case 'up':
-					vy = -1;
-					break;
-				case 'down':
-					vy = 1;
-					break;
-				case 'left':
-					vx = -1;
-					break;
-				case 'right':
-					vx = 1;
-					break;
-			}
-			var bullet = new sge.Entity({
-				xform: {
-					tx: this.entity.get('xform.tx') + (vx * 24 * 0),
-					ty: this.entity.get('xform.ty') + (vy * 24 * 0),
-					vx: vx * speed,
-					vy: vy * speed
-				},
-				physics: { width: (4 + Math.abs(vx*48)), height: (4+Math.abs(vy*48))},
-				bullet:{},
-				debug: {},
-				health: {life: 1, alignment: this.entity.get('health.alignment'), visible: false}
-			});
-			this.state.addEntity(bullet);
-		},
-		register: function(state){
-			this.state = state;
-			this.entity.state.input.addListener('keydown:X', this.fire);
-		},
-		unregister: function(){
-			this.entity.state.input.removeListener('keydown:X', this.fire);
-			this.state = null;
-		}
-	});
-	sge.Component.register('weapons', WeaponsComponent);
-    return WeaponsComponent;
-});
-define('dreddrl/components/physics',['sge'], function(sge){
-	var PhysicsComponent = sge.Component.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.data.width = data.width || 16;
-			this.data.height = data.height || 16;
-			this.data.type = data.type || 0;
-		}
-	})
-	sge.Component.register('physics', PhysicsComponent);
-    return PhysicsComponent;
-});
-define('dreddrl/components/judgemovement',['sge/component'], function(Component){
-    var JudgeMovementComponent = Component.extend({
-        init: function(entity, data){
-            this._super(entity, data);
-            this.data.speed = 8;
-            this.data.width = data.width || 640;
-            this.data.height = data.height || 480;
-            this.data.map = data.map || null;
-            this._isKeyDown = {};
-        },
-        register: function(state){
-            this.input = state.input;
-        },
-        deregister: function(state){
-            this.input = undefined;
-        },
-        tick: function(delta){
-            var vx = this.entity.get('xform.vx') * delta;
-            var vy = this.entity.get('xform.vy') * delta;
-            if ((Math.abs(vx) > 0) || (Math.abs(vy) > 0)){
-                this.entity.set('anim.play', true)
-                if (!this.input.isPressed('Z')){
-                    if (Math.abs(vx) > Math.abs(vy)){
-                        if (vx > 0){
-                            this.entity.set('anim.anim', 'walk_right');
-                            this.entity.set('xform.dir', 'right');
-                        } else {
-                            this.entity.set('anim.anim', 'walk_left');
-                            this.entity.set('xform.dir', 'left');
-                        }
-                    } else {
-                        if (vy < 0){
-                            this.entity.set('anim.anim', 'walk_up');
-                            this.entity.set('xform.dir', 'up');
-                        } else {
-                            this.entity.set('anim.anim', 'walk_down');
-                            this.entity.set('xform.dir', 'down');
-                        }
-                    }
-                }
-            } else {
-                this.entity.set('anim.play', false)   
-            }
-        }
-    });
-    Component.register('judge.movement', JudgeMovementComponent);
-
-    return JudgeMovementComponent;
-});
-define('dreddrl/components/deaddrop',['sge'], function(sge){
-    var DeadDrop = sge.Component.extend({
-        init: function(entity, data){
-            this._super(entity, data);
-            this.drop = this.drop.bind(this);
-            this.entity.addListener('kill', this.drop);
-        },
-        drop: function(){
-            var dropDir = null;
-            var tileX = Math.floor(this.entity.get('xform.tx')/32)
-            var tileY = Math.floor(this.entity.get('xform.ty')/32)
-            var allDirs = [[1,0],[-1,0],[0,1],[0,-1]];
-            while (allDirs.length){
-                var dir = allDirs.shift()
-                var tile = this.state.map.getTile(tileX + dir[0], tileY + dir[1]);
-                if (tile.passable){
-                    dropDir = [32 * (tileX + dir[0] + 0.5), 32 * (tileY + dir[1] + 0.5)];
-                    break;
-                }
-            }
-            if (dropDir===null){
-                return;
-            }
-            var newItem = this.state.factory((Math.random() > 0.5 ? 'rammen' : 'gun'), {
-                xform: {
-    				tx: dropDir[0],
-					ty: dropDir[1],
-				}});
-
-            this.state.addEntity(newItem);
-        }
-    });
-    sge.Component.register('deaddrop', DeadDrop);
-    return DeadDrop
-});
-define('dreddrl/components/freeitem',['sge'], function(sge){
-    var FreeItem = sge.Component.extend({
-        init: function(entity, data){
-            this._super(entity, data);
-            this.data.name = data.name || "Item";
-            console.log('Created', data.name)
-            var keys = Object.keys(data);
-            for (var i = keys.length - 1; i >= 0; i--) {
-                this.data[keys[i]] = data[keys[i]];
-            };
-            this.pickup = this.pickup.bind(this);
-            this.entity.addListener('contact.start', this.pickup);
-        },
-        pickup: function(entity){
-            if (entity.hasTag('pc')){
-                entity.fireEvent('pickup', this.entity);
-                this.entity.fireEvent('kill');
-            }
-        },
-    	register: function(state){
-			this.state = state;
-		},
-		unregister: function(){
-			this.state = null;
-		}
-    });
-    sge.Component.register('freeitem', FreeItem);
-    return FreeItem
-});
-define('dreddrl/components/inventory',['sge','jquery'],function(sge, $){
-
-	var InventoryComponent = sge.Component.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.data.ammo = data.ammo || 100;
-			this.data.items = []
-			this.data.objects = {};
-			this._elem_ammo = $('span.ammo');
-			this.entity.addListener('pickup', this.pickup.bind(this));
-		},
-		pickup: function(entity){
-			var freeitem = entity.get('freeitem');
-			var newAmmo = freeitem.get('inventory.ammo');
-			var keys = Object.keys(freeitem.data);
-			this.entity.fireEvent('log', 'Picked up ' + freeitem.get('name'));
-			keys = _.without(keys,'name');
-			for (var i = keys.length - 1; i >= 0; i--) {
-				var key = keys[i];
-				if (key=='inventory.add'){
-					this.data.items.push(freeitem.data[key]);
-				} else {
-					console.log(key, freeitem.data[key])
-					this.entity.set(key, freeitem.data[key], 'add');
-				}
-			}
-
-		},
-		subtractProperty: function(prop, value){
-			value = value || 1;
-			value = this.get(prop) - value;
-			this.set(prop, value);
-		}
-	})
-	sge.Component.register('inventory', InventoryComponent);
-    return InventoryComponent;
-})		;
-define('dreddrl/components/interaction',['sge'], function(sge){
-    var Interact = sge.Component.extend({
-        init: function(entity, data){
-            this._super(entity, data);
-            this.data.fillStyle = 'green';
-            this.data.strokeStyle = 'black';
-            this.data.targets = data.targets || null;
-            this.data.width = data.width || 32;
-            this.data.height = data.height || 32;
-            this.data.dist = data.dist || 96;
-            this.active = false;
-            this.interact = this.interact.bind(this);
-            this.entity.addListener('focus.gain', this.activate.bind(this));
-            this.entity.addListener('focus.lose', this.deactivate.bind(this));
-        },
-        activate: function(coord){
-            this.activeCoord = coord;
-            this.active = true;
-            this.state.input.addListener('keydown:enter', this.interact);
-        },
-        deactivate: function(){
-            this.active = false;
-            this.state.input.removeListener('keydown:enter', this.interact);
-        },
-        interact: function(){
-            this.entity.fireEvent('interact');
-        },
-        deregister: function(){
-            this._super();
-            this.state.input.removeListener('keydown:enter', this.interact);
-        }
-    });
-    sge.Component.register('interact', Interact);
-    return Interact
-});
-var DOOROPENTILE1 = { srcX : 2, srcY: 36}
-var DOOROPENTILE2 = { srcX : 2, srcY: 37}
-var DOORCLOSEDTILE1 = { srcX : 1, srcY: 36}
-var DOORCLOSEDTILE2 = { srcX : 1, srcY: 37}
-
-define('dreddrl/components/door',['sge'], function(sge){
-    var Door = sge.Component.extend({
-        init: function(entity, data){
-            this._super(entity, data);
-            this.room = data.room;
-            this.data.locked = data.locked || false;
-            this.data.open = data.open===undefined ?  true : data.open;
-            this.interact = this.interact.bind(this);
-            this.entity.addListener('interact', this.interact);
-        },
-        interact: function(){
-            if (this.get('locked')){
-                this.entity.fireEvent('log','Door is locked');
-            } else {
-                this.set('open', !this.get('open'));
-                this.room.update();
-                this.updateTiles();
-            }
-        },
-        updateTiles : function(){
-            var tx = Math.floor(this.entity.get('xform.tx') / 32);
-            var ty = Math.floor(this.entity.get('xform.ty') / 32);
-            if (this.get('open')==true){
-                tile = this.map.getTile(tx,ty-2);
-                tile.passable=true;
-                tile = this.map.getTile(tx,ty-1);
-                tile.layers['layer1'] = DOOROPENTILE1;
-                tile.passable=true;
-                tile = this.map.getTile(tx,ty);
-                tile.passable=true;
-                tile.layers['layer1'] = DOOROPENTILE2;
-            } else {
-                tile = this.map.getTile(tx,ty-2);
-                tile.passable=false;
-                tile = this.map.getTile(tx,ty-1);
-                tile.layers['layer1'] = DOORCLOSEDTILE1;
-                tile.passable=false;
-                tile = this.map.getTile(tx,ty);
-                tile.layers['layer1'] = DOORCLOSEDTILE2;
-                tile.passable=false;
-            }
-            this.map.renderTiles(this.state.game.renderer, [[tx,ty-2],[tx, ty-1],[tx,ty]]);
-            this.map.renderTiles(this.state.game.renderer, this.room.getTiles());
-            
-        },
-
-    	register: function(state){
-			this.state = state;
-            this.map = state.map;
-            this.updateTiles();
-		},
-		unregister: function(){
-			this.state = null;
-            this.map = null;
-		}
-    });
-    sge.Component.register('door', Door);
-    return Door
-});
-define('dreddrl/action',['sge'], function(sge){
-	var Action = sge.Class.extend({
-		init: function(entity, data){
-			this.entity = entity;
-			this.children = []
-			this.label = null;
-
-			if(data.type === undefined) {
-                data.type = 'action';
-	        }
-	        if(data.label === undefined) {
-	            data.label = data.type;
-	        }
-	        if(data.children === undefined) {
-	            data.children = [];
-	        }
-	        if(data.args === undefined) {
-	            data.args = [];
-	        }
-	        this.type = data.type;
-	        this.args = data.args;
-	        this.label = data.label;
-	        this.leaf = true;
-	        this.loadChildren(data);
-			},
-		add : function(child) {
-	        this.children.push(child);
-	    },
-	    remove : function(child) {
-		        this.children.remove(child);
-		    },
-	    uiInterface : function(){
-		        return null;
-	    },
-	    
-	    loadChildren : function(data) {
-		        for(var i = 0; i < data.children.length; i++) {
-		            var child = data.children[i];
-		            var action = rpg.Action.Load(child);
-		            this.add(action);
-		        }
-	    },
-	    run : function(state) {
-	    		this.state = state;
-		        this.start.apply(this, this.args);
-	    },
-	    start : function() {
-
-	    },
-	    end : function() {
-		        var eventSystem = this.getEngine().getPlugin('event');
-		        eventSystem.actions = eventSystem.actions.without(this);
-		        this.getEvent().run();
-	    },
-	    evalExpr : function(expr, ctx) {
-	        //DANGEROUS;
-	        var expr_ = this.parseExpr(expr, ctx);
-	        var evaled = eval(expr_);
-	        return evaled;
-	    },
-	    parseExpr : function(expr, ctx) {
-	        var parsedExpr = expr;
-	        var matches = (expr + "").match(/\$\{(@?[\w()"'\.]+)\}/g);
-	        if(matches) {
-	            _.each(matches, function(variable) {
-	                var path = variable.match(/\$\{(@?[\w()\.]+)\}/)[1];
-	                var value = this.evalValue(path, ctx);
-	                parsedExpr = parsedExpr.replace(variable, value);
-	            }.bind(this));
-	        }
-	        return parsedExpr;
-	    },
-	    evalValue : function(path, ctx){
-	        var _ctx = ctx;
-	        if (path.match(/^@/)){
-	            var name = path.split('.')[0];
-	            name = name.replace('@(','').replace(')','');
-	            if (name=='state'){
-	            	_ctx = this.state;
-	            } else {
-		            _ctx = this.state.getEntitiesWithTag(name)[0];
-		        }
-	            path = path.replace('@(' + name + ').', '');
-	        }
-	        return _ctx.get(path);
-	    },
-	    setAttr : function(path, value, method) {
-	    	_ctx = this.entity;
-	    	console.log('PATH', path)
-	        if (path.match(/^@/)){
-	            var name = path.split('.')[0];
-	            name = name.replace('@(','').replace(')','');
-	            if (name=='state'){
-	            	_ctx = this.state;
-	            } else {
-		            _ctx = this.state.getEntitiesWithTag(name)[0];
-		        }
-	            path = path.replace('@(' + name + ').', '');
-	        }
-	        return _ctx.set(path, value, method);
-	    },
-	});
-
-	Action._classHash = {};
-
-	Action.Load = function(entity, data) {
-		var type = data.type;
-	    var cls = Action._classHash[type];
-	    if(cls === undefined) {
-	        return null;
-	    }
-	    var comp = new cls(entity, data);
-	    comp.type = type;
-	    return comp;
-	};
-
-	Action.register = function(name, klass){
-		Action._classHash[name] = klass;
-	};
-
-	Action.Exists = function(type) {
-	    return Action._classHash.keys().include(type);
-	};
-
-	Action.List = function(type) {
-	    return rpg.Action._classHash.keys();
-	};
-
-
-	return Action;
-});
-define('dreddrl/components/actions',['sge', '../action'], function(sge, Action){
-    var ActionComponent = sge.Component.extend({
-        init: function(entity, data){
-            this._super(entity, data);
-            var keys = Object.keys(data);
-            for (var i = keys.length - 1; i >= 0; i--) {
-                //console.log(data[keys[i]])
-                var callbackData = data[keys[i]].slice(0);
-                var callback = function(){
-                    var actionData = callbackData.slice(0);
-                    console.log('Data:', callbackData)
-                    var actionType = actionData.shift();
-                    var action = Action.Load(this.entity, {type: actionType, args: actionData});
-                    action.run(this.state);
-                }.bind(this);
-                this.data[keys[i]] = callback;
-                this.entity.addListener(keys[i], callback);
-            }
-        },
-        interact: function(){
-            var dialog = this.get('dialog');
-            if (typeof dialog === 'string'){
-                this.state.startDialog(this.get('dialog'));
-            } else{
-                console.log(dialog)
-                dialogData = dialog.slice(0);
-                var type = dialogData.shift();
-                var action = Action.Load(this.entity, {type: type, args: dialogData});
-                action.run(this.state);
-            }
-        },
-    	register: function(state){
-			this.state = state;
-            this.map = state.map;
-		},
-		unregister: function(){
-			this.state = null;
-            this.map = null;
-		}
-    });
-    sge.Component.register('actions', ActionComponent);
-    return ActionComponent
-});
-define('dreddrl/components/elevator',['sge'], function(sge){
-    var Elevator = sge.Component.extend({
-        init: function(entity, data){
-            this._super(entity, data);
-            this.data.open = data.open || true;
-            this.interact = this.interact.bind(this);
-            this.entity.addListener('interact', this.interact);
-        },
-        interact: function(){
-
-        },
-        updateTiles : function(){
-            var tx = Math.floor(this.entity.get('xform.tx') / 32)-1;
-            var ty = Math.floor(this.entity.get('xform.ty') / 32)-2
-            
-            for (var y=0;y<3;y++){
-                for (var x=0;x<3;x++){
-                    tile = this.map.getTile(tx+x,ty+y);
-                    //tile.passable=true;
-                    tile.layers['layer1'] = {srcX: x,srcY: 32+y, spriteSheet:"future1"}
-                }
-            }
-        },
-
-    	register: function(state){
-			this._super(state);
-            this.map = state.map;
-            this.updateTiles();
-		},
-    });
-    sge.Component.register('elevator', Elevator);
-    return Elevator
-});
-define('dreddrl/components/quest',['sge'],function(sge){
-
-	var QuestComponent = sge.Component.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.data.status = 0;
-			this.data.total = 3;
-		},
-		tick: function(delta){
-			if (this.get('status')>=(this.get('total'))){
-				this.state.game.fsm.gameWin();
-			}
-		}
-	})
-	sge.Component.register('quest', QuestComponent);
-    return QuestComponent;
-})		;
-define('dreddrl/components/encounter',['sge'], function(sge){
-	var EncounterComponent = sge.Component.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.encounter = data.encounter.add(this);
-			this.data.status = data.status || 0;
-		},
-		_get_status : function(){
-			return this.encounter.status;
-		},
-		_set_status : function(status){
-			this.encounter.status = status;
-			this.encounter.update(status);
-			return this.encounter.status;
-		}
-	});
-	sge.Component.register('encounter', EncounterComponent);
-	return EncounterComponent;
-});
-define('dreddrl/components/stats',['sge'],function(sge){
-
-	var StatsComponent = sge.Component.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.data.xp = data.xp || 0;
-			this.data.alignment = data.alignment || 'evil';
-		},
-		addStat : function(stat, value){
-			value = value || 1;
-			this.set(stat, this.get(stat) + value);
-		},
-		subtractStat : function(stat, value){
-			value = value || 1;
-			this.set(stat, this.get(stat) - value);
-		},
-	})
-	sge.Component.register('stats', StatsComponent);
-    return StatsComponent;
-})		;
-define('dreddrl/components/health',['sge/component'], function(Component){
-	var HealthComponent = Component.extend({
-		init: function(entity, data){
-            this._super(entity, data);
-            this.data.visible = data.visible === undefined ? true : data.visible;
-            this.data.life = data.life || 100;
-            this.data.maxLife = data.maxLife || data.life || 100;
-            this.data.alignment = data.alignment || 0;
-            this.entity.addListener('contact.start', function(entity){
-                if (!entity.get('health')){
-                    return;
-                }
-                var alignA = this.get('alignment');
-                var alignB = entity.get('health.alignment');
-                if ((alignA==0)||(alignB==0)){
-                    return;
-                }
-                if ((alignA<0)&&(alignB<0)){
-                    return
-                }
-                if ((alignA>0)&&(alignB>0)){
-                    return
-                }
-            	this.set('life', -1, 'add');
-                if (this.data.life <= 0){
-                    this.data.life = 0;
-                    this.entity.fireEvent('kill', 'Ran out of health.');
-                } else {
-                    this.entity.fireEvent('tint', 'red', 0.25);
-                }
-            }.bind(this));
-        },
-        register: function(state){
-            this._super(state);
-            this.scene = this.state.scene;
-            this.container = new CAAT.ActorContainer().setLocation(0,-24);;
-            bg = new CAAT.Actor().setSize(32,6).setFillStyle('black');
-            this.container.addChild(bg);
-            this.lifebar = new CAAT.Actor().setSize(30,4).setFillStyle('green').setLocation(1,1);
-            this.container.addChild(this.lifebar);
-            this.container.setVisible(this.get('alignment')!=0)
-            this.entity.get('xform.container').addChild(this.container);
-        },
-        deregister: function(state){
-            this.entity.get('xform.container').removeChild(this.container);
-            this._super(state);
-        },
-        _set_life : function(value, method){
-            var life = this.__set_value('life', value, method);
-            this.data.life = Math.min(life, this.get('maxLife'));
-            console.log(this.data.life)
-            this.lifebar.setSize(30*(this.data.life/this.get('maxLife')),4)
-            return this.data.life
-        }
-	})
-	Component.register('health', HealthComponent);
-
-    return HealthComponent;
-});
-
-define('dreddrl/components/simpleai',['sge/component', 'sge/vendor/state-machine'], function(Component, StateMachine){
-	var SimpleAIComponent = Component.extend({
-		init: function(entity, data){
-            this._super(entity, data);
-            this.data.tracking = data.tracking || null;
-            this.data.territory = data.territory;
-            this.fsm = StateMachine.create({
-                initial: 'idle',
-                events: [
-                    {name: 'seePlayer', from: 'idle', to: 'tracking'},
-                    {name: 'losePlayer', from:'tracking', to: 'idle'}
-                ],
-            })
-            this.data.radius = 96;
-            this._idleCounter = 0;
-
-        },
-        register: function(state){
-            this._super(state);
-            this.map = this.state.map;
-        },
-        getPC: function(){
-            return this.entity.state.getEntitiesWithTag(this.get('tracking'))[0] || null;
-        },
-        getPCPosition: function(){
-            var pc = this.getPC();
-            var dx = this.entity.get('xform.tx') - pc.get('xform.tx');
-            var dy = this.entity.get('xform.ty') - pc.get('xform.ty');
-            var dist = Math.sqrt((dx*dx)+(dy*dy));
-            return [pc, dx, dy, dist];
-        },
-        tick : function(delta){
-            if (this.entity.state){
-                var stateName = this.fsm.current;
-                if (this.getPC()===null){
-                    this.wander(delta);
-                } else {
-                    method = this['tick_' + stateName];
-                    if (method){
-                        method.call(this, delta);
-                    }
-                }
-            }
-        },
-        tick_tracking: function(delta){
-            var pcData = this.getPCPosition();
-            var dx = pcData[1]
-            var dy = pcData[2]
-            var dist = pcData[3]
-            if (dist >= this.data.radius){
-                this.fsm.losePlayer();
-            } else {
-                var vx = 0;
-                var vy = 0;
-                vx = -64 * (pcData[1] / dist);
-                vy = -64 * (dy / dist);
-                this.entity.set('xform.vx', vx);
-                this.entity.set('xform.vy', vy);
-            }
-        },
-        tick_idle: function(delta){
-            if (this.get('tracking')!==null){
-                var pcData = this.getPCPosition();
-                var dx = pcData[1]
-                var dy = pcData[2]
-                var dist = pcData[3]
-                if (pcData[3] <= this.data.radius){
-                    this.fsm.seePlayer();
-                } else {
-                    this.wander();
-                }
-            } else {
-                this.wander();
-            }
-        },
-        wander: function(){
-            if (this._idleCounter<0){
-                this._idleCounter=30 + (Math.random() * 30);
-                var hasDir = false;
-                var tx = this.entity.get('xform.tx');
-                var ty = this.entity.get('xform.ty');
-                var vx = 0;
-                var vy = 0;
-                for (var i=0;i<5;i++){
-                    if (Math.random() > 0.5){
-                        var vx = 64 * ((Math.random() * 2) - 1);
-                        var vy = 64 * ((Math.random() * 2) - 1);
-                    }
-                    if (this.data.territory!==undefined){
-                        var tile = this.map.getTile(Math.floor((tx+vx)/32),Math.floor((ty+vy)/32))
-                        if (tile){
-                            if (tile.data.territory==this.data.territory){
-                                break;
-                            }
-                        }
-                        vx = 0;
-                        vy = 0;
-                    } else {
-                        break;
-                    }
-                }
-                this.entity.set('xform.vx', vx);
-                this.entity.set('xform.vy', vy);
-            } else {
-                this._idleCounter--;
-            }
-        }
-	})
-	Component.register('simpleai', SimpleAIComponent);
-
-    return SimpleAIComponent;
-});
-define('dreddrl/components/emote',['sge'], function(sge){
-	var Emote = sge.Component.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this._visible = false;
-			this.data.text = data.text || "";
-			this.entity.addListener('emote.msg', function(msg){
-				this.container.setVisible(true);
-				this.set('text', msg);
-				this.entity.state.createTimeout(1, function(){
-					this.container.setVisible(false);
-				}.bind(this));
-			}.bind(this))
-		},
-		register: function(state){
-            this._super(state);
-            this.scene = this.state.scene;
-            this.container = new CAAT.ActorContainer().setLocation(32,-24);
-            this.bg = new CAAT.Actor().setSize(32,16).setFillStyle('black');
-            this.container.addChild(this.bg);
-            this.text = new CAAT.TextActor().setLocation(1,1);
-            this.container.addChild(this.text);
-            this.container.setVisible(false);
-            this.entity.get('xform').container.addChild(this.container);
-        },
-        deregister: function(state){
-            this.entity.get('xform').container.removeChild(this.container);
-            this._super(state);
-        },
-        _set_text: function(text){
-        	this.text.setText(text);
-        	this.text.calcTextSize(this.state.game.renderer);
-        	this.bg.setSize(this.text.textWidth+4, 16);
-        	return text;
-        }
-	});
-
-	sge.Component.register('emote', Emote);
-
-	return Emote;
-});
-define('dreddrl/actions/dialog',['sge','../action'], function(sge, Action){
-	var DialogAction = Action.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.async = true;
-		},
-		start: function(text){
-			this.state.startDialog(text);
-		}
-	})
-	Action.register('dialog', DialogAction);
-	return DialogAction
-});
-define('dreddrl/actions/if',['sge','../action'], function(sge, Action){
-	var IfAction = Action.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.async = true;
-		},
-		start: function(expr, trueActions, falseActions){
-	        var parsedExpr = this.parseExpr(expr, this.entity);
-	        var result = Boolean(this.evalExpr(parsedExpr, this.entity));
-	        var actionList = [];
-	        if(result) {
-	            actionList = trueActions.slice(0);
-	        } else {
-	            actionList = falseActions.slice(0);
-	        }
-	        _.each(actionList, function(actionData) {
-	        	actionData = actionData.slice(0);
-	            var type = actionData.shift();
-                var action = Action.Load(this.entity, {type: type, args: actionData});
-                action.run(this.state);
-	        }.bind(this));
-		}
-	});
-	Action.register('if', IfAction);
-	return IfAction
-});
-define('dreddrl/actions/set',['sge','../action'], function(sge, Action){
-	var SetAction = Action.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.async = true;
-		},
-		start: function(path, value, method){
-			var val = this.evalExpr(value);
-			this.setAttr(path, value, method);
-		}
-	})
-	Action.register('set', SetAction);
-	return SetAction
-});
-define('dreddrl/actions/switch',['sge','../action'], function(sge, Action){
-	var SwitchAction = Action.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.async = true;
-		},
-		start: function(){
-			var args = Array.prototype.slice.call(arguments);
-			var expr = args.shift()
-	        var parsedExpr = this.parseExpr(expr, this.entity);
-	        var result = parseInt(this.evalExpr(parsedExpr, this.entity));
-	        var actionList = args[result];
-	        _.each(actionList, function(actionData) {
-	        	actionData = actionData.slice(0);
-	            var type = actionData.shift();
-                var action = Action.Load(this.entity, {type: type, args: actionData});
-                action.run(this.state);
-	        }.bind(this));
-		}
-	});
-	Action.register('switch', SwitchAction);
-	return SwitchAction
-});
-define('dreddrl/actions/event',['sge','../action'], function(sge, Action){
-    var EventAction = Action.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.async = true;
-		},
-		start: function(){
-            var args = Array.prototype.slice.call(arguments);
-            var entityId = args.shift();
-            if (entityId=='this'){
-            	var entity = this.entity;
-            } else {
-				var entity = this.state.getEntityWithTag(entityId);
-			}
-            entity.fireEvent.apply(entity, args);
-		}
-	});
-	Action.register('event', EventAction);
-	return EventAction
-});
-define('dreddrl/factory',[
-	'sge',
-	'./components/weapons',
-	'./components/physics',
-	'./components/judgemovement',
-	'./components/deaddrop',
-	'./components/freeitem',
-    './components/inventory',
-    './components/interaction',
-    './components/door',
-    './components/actions',
-    './components/elevator',
-    './components/quest',
-    './components/encounter',
-    './components/stats',
-    './components/health',
-    './components/simpleai',
-    './components/emote',
-
-    './actions/dialog',
-    './actions/if',
-    './actions/set',
-    './actions/switch',
-    './actions/event'
-	], 
-	function(sge){
-        var NPCSHEETS = [
-            'gang_1',
-            'gang_2',
-            'gang_6',
-            'women_1',
-            'women_2',
-            'women_3',
-            'women_4',
-            'women_5',
-            'women_6',
-            'women_7',
-            'women_8',
-        ];
-
-
-		var FACTORYDATA = {
-            chara : function(){return{
-                xform : {},
-                sprite : {
-                    width: 32,
-                    offsetY: -8,
-                    scale: 2
-                },
-                anim : {
-                    frames: {
-                        walk_down : [0,1,2],
-                        walk_up : [9,10,11],
-                        walk_right : [6,7,8],
-                        walk_left : [3,4,5]
-                    },
-                },
-                physics : {},
-                inventory : {},
-            }},
-			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
-                    controls : {},
-                    sprite : {
-                        src : 'assets/sprites/judge.png',
-                    },
-                    'judge.movement' : {
-                        map: this.map,
-                        speed: 64
-                    },
-                    health : {alignment:5, life: 10},
-                    weapons: {},
-                    stats: {},
-                    emote: {},
-                })},
-            npc : function(){return deepExtend(FACTORYDATA['chara'](), {
-                    movement : {
-                        map: this.map,
-                        speed: 16
-                    },
-                    //simpleai: {territory: 'neutral'},
-                    health : {alignment:0, life: 1},
-                    sprite : {
-                        src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
-                    },
-                })},
-            enemy : function(){
-                var msgs = [
-                    'I am the law.',
-                    'Objection noted.',
-                    'Sentence. Execution!',
-                    "You've been found guilt.",
-                ]
-                return deepExtend(FACTORYDATA['npc'](), {
-                    sprite : {
-                        src : 'assets/sprites/albert.png',
-                    },
-                    health : {alignment:-10, life: 3},
-                    //simpleai : { tracking: 'pc', territory: 'albert'},
-                    deaddrop: {},
-                    actions: {
-                        kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs)]]]
-                    }
-                }
-            )},
-            gangboss : function(){return deepExtend(FACTORYDATA['enemy'](), {
-                sprite : {
-                    src : 'assets/sprites/albertbrownhair.png',
-                },
-                health : {alignment:-10, life: 6},
-                deaddrop: {}
-            })},
-            freeitem : function(){ return {
-                xform: {},
-                physics: {},
-                sprite : {
-                    src : 'assets/sprites/scifi_icons_1.png',
-                    width: 24,
-                    offsetY: 0,
-                    scale: 2,
-                    frame: 1
-                },
-
-            }},
-            gun : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
-                freeitem: {
-                    'inventory.ammo': 10,
-                    'name' : 'Gun'
-                }
-            })},
-            rammen : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
-                sprite : {
-                        frame: 123
-                },
-                freeitem: {
-                    'health.life' : 5,
-                    'name' : 'Ramen'
-                }
-            })},
-            keycard : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
-                sprite : {
-                        frame: 56
-                    },
-                freeitem: {
-                    'inventory.add' : 'keycard.blue'
-                }
-            })},
-            door : function(){return {
-                xform: {},
-                interact : {},
-                door: {}
-            }},
-            elevator : function(){return {
-                xform: {},
-                interact : {},
-                elevator: {}
-            }},
-            man: function(){return deepExtend(FACTORYDATA['npc'](), {
-                sprite : {
-                    src : 'assets/sprites/gang_' + sge.random.item([1,2,6]) +'.png',
-                },
-            })},
-            'woman.old' : function(){return deepExtend(FACTORYDATA['npc'](), {
-                sprite : {
-                    src : 'assets/sprites/women_' + sge.random.item([4,8]) +'.png',
-                },
-            })},
-            'woman' : function(){return deepExtend(FACTORYDATA['npc'](), {
-                sprite : {
-                    src : 'assets/sprites/women_' + sge.random.item([2,3,6,7]) +'.png',
-                },
-            })},
-            'woman.young' : function(){return deepExtend(FACTORYDATA['npc'](), {
-                sprite : {
-                    src : 'assets/sprites/women_' + sge.random.item([1,5]) +'.png',
-                },
-            })}
-		}
-
-		var deepExtend = function(destination, source) {
-		  for (var property in source) {
-		    if (source[property] && source[property].constructor &&
-		     source[property].constructor === Object) {
-		      destination[property] = destination[property] || {};
-		      arguments.callee(destination[property], source[property]);
-		    } else {
-		      destination[property] = source[property];
-		    }
-		  }
-		  return destination;
-		};
-
-		var Factory = function(type, options){
-			options = options || {};
-			var data = deepExtend(FACTORYDATA[type](), options);
-			return new sge.Entity(data);
-		}
-
-		return Factory
-	}
-);
 /*
 The MIT License
 
@@ -44599,6 +40707,4429 @@ define("sge/vendor/caat", (function (global) {
     };
 }(this)));
 
+/* Simple JavaScript Inheritance
+ * By John Resig http://ejohn.org/
+ * MIT Licensed.
+ */
+// Inspired by base2 and Prototype
+define('sge/lib/class',[],function(){
+  var initializing = false, fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
+ 
+  // The base Class implementation (does nothing)
+  this.Class = function(){};
+ 
+  // Create a new Class that inherits from this class
+  Class.extend = function(prop) {
+    var _super = this.prototype;
+   
+    // Instantiate a base class (but only create the instance,
+    // don't run the init constructor)
+    initializing = true;
+    var prototype = new this();
+    initializing = false;
+   
+    // Copy the properties over onto the new prototype
+    for (var name in prop) {
+      // Check if we're overwriting an existing function
+      prototype[name] = typeof prop[name] == "function" &&
+        typeof _super[name] == "function" && fnTest.test(prop[name]) ?
+        (function(name, fn){
+          return function() {
+            var tmp = this._super;
+           
+            // Add a new ._super() method that is the same method
+            // but on the super-class
+            this._super = _super[name];
+           
+            // The method only need to be bound temporarily, so we
+            // remove it when we're done executing
+            var ret = fn.apply(this, arguments);        
+            this._super = tmp;
+           
+            return ret;
+          };
+        })(name, prop[name]) :
+        prop[name];
+    }
+   
+    // The dummy class constructor
+    function Class() {
+      // All construction is actually done in the init method
+      if ( !initializing && this.init )
+        this.init.apply(this, arguments);
+    }
+   
+    // Populate our constructed prototype object
+    Class.prototype = prototype;
+   
+    // Enforce the constructor to be what we expect
+    Class.prototype.constructor = Class;
+ 
+    // And make this class extendable
+    Class.extend = arguments.callee;
+   
+    return Class;
+  };
+
+  return Class
+});
+define('sge/renderer',['jquery', 'sge/vendor/caat', 'sge/lib/class'], function($, CAAT, Class){
+    var Renderer = {
+    	SPRITESHEETS : {}
+    };
+    return Renderer;
+});
+define('sge/engine',['sge/lib/class',], function(Class){
+
+	var Engine = Class.extend({
+		init: function(){
+			this.interval = null;
+			this.entities = {};
+			this._ids =[];
+			this._lastTick = 0;
+			this._debug=0;
+			this._debugTick = false;
+		},
+
+		run: function(fps) {
+			if (fps==undefined){
+				fps = 30.0;
+			};
+			this._lastTick = Date.now();
+			this.interval = setInterval(this.tickCallback.bind(this), 1000.0 / fps);
+		},
+
+		stop: function(){
+			clearInterval(this.interval);
+			this.interval = null;
+		},
+
+		tickCallback: function(){
+			//*
+			this._debug--;
+			if (this._debug<0){
+				this._debugTick = true;
+			}
+			//*/
+			var now = Date.now();
+			var delta = now - this._lastTick;
+			this._lastTick = now;
+			this.tick(delta/1000);
+			//*
+			if (this._debugTick==true){
+				this._debugTick = false;
+				this._debug=30;
+				console.log('Tick Length:', (Date.now() - now));
+			}
+			//*/
+		}
+	});
+	return Engine
+});
+define('sge/observable',[
+    'sge/lib/class',
+    ], function(Class){
+    var Observable = Class.extend({
+    	init: function () {
+            this._listeners = {};
+        },
+
+        addListener: function (type, listener) {
+            if (!this._listeners[type]) {
+                this._listeners[type] = [];
+            }
+            this._listeners[type].push(listener);
+        },
+
+        fireEvent: function () {
+        	args = Array.prototype.slice.call(arguments);
+        	event = args.shift();
+            if (typeof(event) == "string") {
+                event = {
+                    type: event
+                };
+            }
+            if (!event.target) {
+                event.target = this;
+            }
+
+            if (!event.type) { //falsy
+                throw new Error("Event object missing 'type' property.");
+            }
+            if (this._listeners[event.type]) {
+                var listeners = this._listeners[event.type].slice(0);
+                for (var i = 0, len = listeners.length; i < len; i++) {
+                    try {
+                        listeners[i].apply(this, args);
+                    } catch(err) {
+                        console.log("SandboxObservableError: " + err);
+                        console.log(err.stack);
+                        console.trace();
+                    }
+                }
+            }
+        },
+
+        removeListener: function (type, listener) {
+            if (this._listeners[type] instanceof Array) {
+                var listeners = this._listeners[type];
+                for (var i = 0, len = listeners.length; i < len; i++) {
+                    if (listeners[i] === listener) {
+                        var func = listeners.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+        }
+	})
+
+    return Observable;
+});
+define('sge/component',['sge/lib/class'], function(Class){
+	var factory_map = {};
+
+	var Component = Class.extend({
+		init: function(entity, data){
+			this.entity = entity;
+			this.data = {};
+			this._listeners = {};
+		},
+		get : function(path){
+			var val = null
+			if (this['_get_' + path] !== undefined){
+				val = this['_get_' + path]();
+			} else {
+				val = this.data[path];
+			}
+			return val;
+		},
+		set : function(path, value, method){
+			var newValue = null;
+					
+			if (this['_set_' + path] !== undefined){
+				newValue = this['_set_' + path](value, method);
+			} else {
+				newValue = this.__set_value(path, value, method);
+			}
+			return newValue;
+		},
+		__set_value : function(path, value, method){
+			switch (method){
+				case 'add':
+					var tmp = this.get(path);
+					newValue = this.data[path] = tmp + value;
+					break;
+				case 'subtract':
+					var tmp = this.get(path);
+					newValue = this.data[path] = tmp - value;
+					break;
+				case 'set':
+				default:
+					newValue = this.data[path] = value;
+					break;
+			}
+			return newValue;
+		},
+		render : function(){},
+		tick : function(){},
+		register: function(state){
+			this.state = state;
+		},
+		deregister: function(state){
+			this.state = null;
+		},
+		createInputListener: function(event, callback){
+			this._listeners[callback] = callback.bind(this);
+		}
+	});
+
+	Component.register = function(name, klass){
+		factory_map[name] = klass;
+	};
+
+	Component.Factory = function(name, entity, data){
+		return new factory_map[name](entity, data);
+	}
+
+	return Component;
+});
+define('sge/spritesheet',[],function(){
+
+	var SpriteSheet = function(image, spriteWidth, spriteHeight){
+		if (spriteHeight ===undefined){
+			spriteHeight  = spriteWidth;
+
+		}
+		this.ready = false;
+		this.spriteWidth = spriteWidth;
+		this.spriteHeight = spriteHeight;
+		this.offsetX = this.spriteWidth / -2;
+		this.offsetY = this.spriteHeight / -2;
+
+		if (SpriteSheet.SpriteSheetImages[image]===undefined){
+			this.image = new Image();
+			this.buffer = this.image;
+			this.image.onload = this.onLoadImage.bind(this);
+			this.image.src = image;
+			SpriteSheet.SpriteSheetImages[image]=this.image;
+		} else {
+			this.image = SpriteSheet.SpriteSheetImages[image];
+			this.buffer = this.image;
+			this.onLoadImage();
+		}
+
+	};
+
+	SpriteSheet.SpriteSheetImages = {};
+
+	SpriteSheet.prototype.onLoadImage = function(){
+		this.imageWidth = this.image.width;
+		this.imageHeight = this.image.height;
+		this.horzSprites = this.imageWidth / this.spriteWidth;
+		this.vertSprites = this.imageHeight / this.spriteHeight;
+		this._image_tint = document.createElement('canvas');
+        this._image_tint.width = this.image.width;
+        this._image_tint.height = this.image.height;
+        
+        
+        this._image_buffer = document.createElement('canvas');
+        this._image_buffer.width = this.image.width;
+        this._image_buffer.height = this.image.height;
+
+        this.buffer = this.image;
+
+		this.ready = true;
+	};
+
+	SpriteSheet.prototype.getSrcRect = function(sprite){
+		var x = null;
+		var y = null;
+		if (sprite[0] != undefined){
+			x = sprite[0];
+			y = sprite[1];
+		} else {
+		    x = sprite % this.horzSprites;
+		    y = Math.floor(sprite / this.horzSprites);
+		}
+		var srcX = x * this.spriteWidth;
+		var srcY = y * this.spriteHeight;
+		return [srcX, srcY, this.spriteWidth, this.spriteHeight];
+	}
+
+	SpriteSheet.prototype.tint = function(color){
+		if (color===undefined){
+			this.buffer = this.image;
+		} else {
+			ctx = this._image_tint.getContext('2d');
+	        
+	        ctx.fillStyle = color;
+	        ctx.fillRect(0,0,this._image_tint.width, this._image_tint.height);
+	        ctx.globalCompositeOperation = "destination-atop";
+	        ctx.drawImage(this.image, 0, 0);
+	        
+	        ctx = this._image_buffer.getContext('2d');
+	        ctx.drawImage(this.image, 0, 0);
+	        if (this.tint_alpha > 0){
+	            ctx.globalAlpha = this.tint_alpha;
+	            ctx.drawImage(this._image_tint, 0, 0);
+	            ctx.globalAlpha = 1;
+	        }
+
+	        this.buffer = this._image_tint;
+	    }
+	}
+
+	return SpriteSheet;
+});
+define('sge/components/sprite',['sge/component', 'sge/spritesheet', 'sge/config', 'sge/renderer'], function(Component, SpriteSheet, config, Renderer){
+	var SpriteComponent = Component.extend({
+		init : function(entity, data){
+			this._super(entity, data)
+			this.data.frame = data.frame || 0;
+			this.data.scale = data.scale || 1;
+			this.data.mirror = true;
+			this.data.offsetX = data.offsetX || 0;
+			this.data.offsetY = data.offsetY || 0;
+			var subpath = data.src.split('/');
+			var name = subpath[subpath.length-1].split('.')[0];
+			this.spriteSheet = Renderer.SPRITESHEETS[name];
+            //new SpriteSheet(config.baseUrl + data.src, data.width, data.height);
+            /*
+			this.tintCallback = function(color, length){
+				this.spriteSheet.tint(color);
+				var timer = this.entity.state.createTimeout(length, function(){
+					this.spriteSheet.tint();
+				}.bind(this));
+			}.bind(this);
+			this.entity.addListener('tint', this.tintCallback);
+			*/
+		},
+		register: function(state){
+			this._super(state);
+			this.actor = new CAAT.Actor().
+			        setLocation(this.get('offsetX'),this.get('offsetY')).
+			        setBackgroundImage(this.spriteSheet).
+                    setSpriteIndex( 0 )
+			this.entity.get('xform.container').addChild(this.actor);
+		},
+		deregister: function(state){
+			this.entity.get('xform.container').removeChild(this.actor);
+			this._super(state);
+		},
+		
+		render : function(renderer, layer){
+			this.actor.setSpriteIndex(this.get('frame'));
+		}
+			
+	});
+	Component.register('sprite', SpriteComponent);
+	return SpriteComponent;
+});
+define('sge/components/anim',['sge/component'], function(Component){
+	var AnimComponent = Component.extend({
+		init : function(entity, data){
+			this._super(entity, data);
+			this.data.play = false;
+			this.frame = 0;
+			var keys = Object.keys(data.frames);
+			this.animData = {};
+			for (var i = keys.length - 1; i >= 0; i--) {
+				var key = keys[i];
+				var val = data.frames[key];
+				if (val.frames===undefined){
+					val = { frames: val }
+				}
+				this.animData[key] = val;
+			};
+			this.current = null;
+			this.currentAnim = null;
+			this.frameLength = null;
+			this.setAnim("walk_right");
+		},
+		tick : function(){
+			if (this.data.play){
+				this.frame++;
+				if (this.frame>=this.frameLength){
+					this.frame=0;
+				}
+				this.entity.set('sprite.frame', this.currentAnim[this.frame]);
+			}
+		},
+		_set_anim : function(value) {
+			if (value != this.current){
+				this.setAnim(value);
+			}
+		},
+		setAnim : function(name){
+			this.current = name;
+			var mirrored = (this.animData[name].mirror === true);
+			this.entity.set('sprite.mirror', mirrored);
+			this.currentAnim = this.animData[name].frames;
+			this.frameLength = this.currentAnim.length;
+			this.data.anim = name;
+		}
+	});
+	Component.register('anim', AnimComponent);
+	return AnimComponent
+});
+define('sge/components/xform',['sge/component'], function(Component){
+	var XFormComponent = Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.data.tx = data.tx || 0;
+			this.data.ty = data.ty || 0;
+			this.data.vx = data.vx || 0;
+			this.data.vy = data.vy || 0;
+			this.data.dir = data.dir || 'down';
+			this.container = new CAAT.ActorContainer();
+		},
+		_get_container: function(){
+			return this.container;
+		},
+		_set_tx : function(tx, method){
+			this.data.tx = this.__set_value('tx', tx, method);
+			this.entity.fireEvent('xform.move');
+			return this.data.tx;
+		},
+		_set_ty : function(ty, method){
+			this.data.ty = this.__set_value('ty', ty, method);
+			this.entity.fireEvent('xform.move');
+			return this.data.ty;
+		},
+		register: function(state){
+            this._super(state);
+            this.scene = this.state.scene;
+            this.scene.addChild(this.container);
+        },
+        deregister: function(state){
+            this.scene.removeChild(this.container);
+            this._super(state);
+        },
+		render: function(renderer, layer){
+			var tx = this.entity.get('xform.tx');
+            var ty = this.entity.get('xform.ty');
+			this.container.setLocation(tx, ty);
+		}
+	});
+	Component.register('xform', XFormComponent);
+	return XFormComponent
+});
+define('sge/components/movement',['sge/component'], function(Component){
+    var MovementComponent = Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.data.speed = 8;
+            this.data.width = data.width || 640;
+            this.data.height = data.height || 480;
+            this.data.map = data.map || null;
+            this._isKeyDown = {};
+        },
+        tick: function(delta){
+            var vx = this.entity.get('xform.vx') * delta;
+            var vy = this.entity.get('xform.vy') * delta;
+            if ((Math.abs(vx) > 0) || (Math.abs(vy) > 0)){
+                this.entity.set('anim.play', true)
+                if (Math.abs(vx) > Math.abs(vy)){
+                    if (vx > 0){
+                        this.entity.set('anim.anim', 'walk_right');
+                        this.entity.set('xform.dir', 'right');
+                    } else {
+                        this.entity.set('anim.anim', 'walk_left');
+                        this.entity.set('xform.dir', 'left');
+                    }
+                } else {
+                    if (vy < 0){
+                        this.entity.set('anim.anim', 'walk_up');
+                        this.entity.set('xform.dir', 'up');
+                    } else {
+                        this.entity.set('anim.anim', 'walk_down');
+                        this.entity.set('xform.dir', 'down');
+                    }
+                }
+            } else {
+                this.entity.set('anim.play', false)   
+            }
+        }
+    });
+    Component.register('movement', MovementComponent);
+
+    return MovementComponent;
+});
+define('sge/components/controls',['sge/component'], function(Component){
+    var ControlsComponent = Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.data.speed = 128;
+        },
+        register: function(state){
+            this.input = state.input;
+        },
+        deregister: function(state){
+            this.input = undefined;
+        },
+        tick : function(){
+            if (this.input===undefined){
+                return;
+            }
+            var xaxis = 0;
+            var yaxis = 0;
+            if (this.input.isPressed('down') || this.input.isPressed('S')){
+                yaxis++;
+            }
+            if (this.input.isPressed('up') || this.input.isPressed('W')){
+                yaxis--;
+            }
+            if (this.input.isPressed('right') || this.input.isPressed('D')){
+                xaxis++;
+            }
+            if (this.input.isPressed('left') || this.input.isPressed('A')){
+                xaxis--;
+            }
+            this.entity.set('xform.vx', xaxis * this.data.speed);
+            this.entity.set('xform.vy', yaxis * this.data.speed);
+        }
+    });
+    Component.register('controls', ControlsComponent);
+    return ControlsComponent;
+});
+define('sge/components/debug',['sge/component'], function(Component){
+	var DebugComponent = Component.extend({
+		init: function(entity, data){
+            this._super(entity, data);
+            this.data.fillStyle = 'yellow';
+            this.data.strokeStyle = 'black';
+            this.entity.addListener('contact.start', function(){
+            	this.data.fillStyle = 'red';
+            }.bind(this))
+            this.entity.addListener('contact.end', function(){
+            	this.data.fillStyle = 'yellow';
+            }.bind(this))
+        },
+		render : function(renderer, layer){
+            var tx = this.entity.get('xform.tx');
+            var ty = this.entity.get('xform.ty');
+            var width = this.entity.get('physics.width');
+            var height = this.entity.get('physics.height');
+            //renderer.drawRect(layer, tx - width/2, ty - height/2, width, height, {fillStyle: this.get('fillStyle'), strokeStyle: this.get('strokeStyle')})
+        }
+	})
+	Component.register('debug', DebugComponent);
+
+    return DebugComponent;
+});
+define('sge/components/eventmgr',['sge/component'], function(Component){
+	var EventManagerComponent = Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			var keys = Object.keys(data.callbacks);
+			for (var i = keys.length - 1; i >= 0; i--) {
+				var key = keys[i];
+				this.entity.addListener(key, data.callbacks[key]);
+			};
+		}
+	});
+	Component.register('eventmgr', EventManagerComponent);
+    return EventManagerComponent;
+});
+define('sge/entity',[
+	'sge/lib/class',
+    'sge/observable',
+	'sge/component',
+	'sge/components/sprite',
+	'sge/components/anim',
+	'sge/components/xform',
+	'sge/components/movement',
+	'sge/components/controls',
+	'sge/components/debug',
+	'sge/components/eventmgr'
+	], function(Class, Observable, Component){
+
+
+
+	var Entity = Observable.extend({
+		init: function(componentData){
+			this._super();
+			this.id = null;
+			this.components = {}
+			this.tags = [];
+			var keys = Object.keys(componentData);
+			keys.reverse();
+			for (var j = keys.length - 1; j >= 0; j--) {
+				var key = keys[j];
+				var comp = Component.Factory(key, this, componentData[key]);
+				this.components[key] = comp;
+			};
+		},
+		componentCall: function(){
+			var args = Array.prototype.slice.call(arguments);
+			var method = args.shift();
+			var keys = Object.keys(this.components);
+			for (var i = keys.length - 1; i >= 0; i--) {
+				var comp = this.components[keys[i]];
+				comp[method].apply(comp, args);
+			};
+		},
+		get : function(path){
+			var subpaths = path.split('.');
+			var compName = subpaths.shift();
+			var comp = this.components[compName];
+			if (subpaths.length){
+				return comp.get(subpaths.join('.'));
+			} else {
+				return comp;
+			}
+		},
+		set : function(path, value, method){
+			var subpaths = path.split('.');
+			var compName = subpaths.shift();
+			var comp = this.components[compName];
+			return comp.set(subpaths.join('.'), value, method);
+		},
+		hasTag : function(tag){
+			return (this.tags.indexOf(tag)>=0);
+		},
+		register : function(state){
+			this.componentCall('register', state)
+		},
+		deregister : function(state){
+			this.componentCall('deregister', state)
+		}
+	});
+	return Entity;
+});
+/*
+
+  Javascript State Machine Library - https://github.com/jakesgordon/javascript-state-machine
+
+  Copyright (c) 2012, 2013 Jake Gordon and contributors
+  Released under the MIT license - https://github.com/jakesgordon/javascript-state-machine/blob/master/LICENSE
+
+*/
+
+(function (window) {
+
+  var StateMachine = {
+
+    //---------------------------------------------------------------------------
+
+    VERSION: "2.2.0",
+
+    //---------------------------------------------------------------------------
+
+    Result: {
+      SUCCEEDED:    1, // the event transitioned successfully from one state to another
+      NOTRANSITION: 2, // the event was successfull but no state transition was necessary
+      CANCELLED:    3, // the event was cancelled by the caller in a beforeEvent callback
+      PENDING:      4  // the event is asynchronous and the caller is in control of when the transition occurs
+    },
+
+    Error: {
+      INVALID_TRANSITION: 100, // caller tried to fire an event that was innapropriate in the current state
+      PENDING_TRANSITION: 200, // caller tried to fire an event while an async transition was still pending
+      INVALID_CALLBACK:   300 // caller provided callback function threw an exception
+    },
+
+    WILDCARD: '*',
+    ASYNC: 'async',
+
+    //---------------------------------------------------------------------------
+
+    create: function(cfg, target) {
+
+      var initial   = (typeof cfg.initial == 'string') ? { state: cfg.initial } : cfg.initial; // allow for a simple string, or an object with { state: 'foo', event: 'setup', defer: true|false }
+      var terminal  = cfg.terminal || cfg['final'];
+      var fsm       = target || cfg.target  || {};
+      var events    = cfg.events || [];
+      var callbacks = cfg.callbacks || {};
+      var map       = {};
+
+      var add = function(e) {
+        var from = (e.from instanceof Array) ? e.from : (e.from ? [e.from] : [StateMachine.WILDCARD]); // allow 'wildcard' transition if 'from' is not specified
+        map[e.name] = map[e.name] || {};
+        for (var n = 0 ; n < from.length ; n++)
+          map[e.name][from[n]] = e.to || from[n]; // allow no-op transition if 'to' is not specified
+      };
+
+      if (initial) {
+        initial.event = initial.event || 'startup';
+        add({ name: initial.event, from: 'none', to: initial.state });
+      }
+
+      for(var n = 0 ; n < events.length ; n++)
+        add(events[n]);
+
+      for(var name in map) {
+        if (map.hasOwnProperty(name))
+          fsm[name] = StateMachine.buildEvent(name, map[name]);
+      }
+
+      for(var name in callbacks) {
+        if (callbacks.hasOwnProperty(name))
+          fsm[name] = callbacks[name]
+      }
+
+      fsm.current = 'none';
+      fsm.is      = function(state) { return (state instanceof Array) ? (state.indexOf(this.current) >= 0) : (this.current === state); };
+      fsm.can     = function(event) { return !this.transition && (map[event].hasOwnProperty(this.current) || map[event].hasOwnProperty(StateMachine.WILDCARD)); }
+      fsm.cannot  = function(event) { return !this.can(event); };
+      fsm.error   = cfg.error || function(name, from, to, args, error, msg, e) { throw e || msg; }; // default behavior when something unexpected happens is to throw an exception, but caller can override this behavior if desired (see github issue #3 and #17)
+
+      fsm.isFinished = function() { return this.is(terminal); };
+
+      if (initial && !initial.defer)
+        fsm[initial.event]();
+
+      return fsm;
+
+    },
+
+    //===========================================================================
+
+    doCallback: function(fsm, func, name, from, to, args) {
+      if (func) {
+        try {
+          return func.apply(fsm, [name, from, to].concat(args));
+        }
+        catch(e) {
+          return fsm.error(name, from, to, args, StateMachine.Error.INVALID_CALLBACK, "an exception occurred in a caller-provided callback function", e);
+        }
+      }
+    },
+
+    beforeAnyEvent:  function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onbeforeevent'],                       name, from, to, args); },
+    afterAnyEvent:   function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onafterevent'] || fsm['onevent'],      name, from, to, args); },
+    leaveAnyState:   function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onleavestate'],                        name, from, to, args); },
+    enterAnyState:   function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onenterstate'] || fsm['onstate'],      name, from, to, args); },
+    changeState:     function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onchangestate'],                       name, from, to, args); },
+
+    beforeThisEvent: function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onbefore' + name],                     name, from, to, args); },
+    afterThisEvent:  function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onafter'  + name] || fsm['on' + name], name, from, to, args); },
+    leaveThisState:  function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onleave'  + from],                     name, from, to, args); },
+    enterThisState:  function(fsm, name, from, to, args) { return StateMachine.doCallback(fsm, fsm['onenter'  + to]   || fsm['on' + to],   name, from, to, args); },
+
+    beforeEvent: function(fsm, name, from, to, args) {
+      if ((false === StateMachine.beforeThisEvent(fsm, name, from, to, args)) ||
+          (false === StateMachine.beforeAnyEvent( fsm, name, from, to, args)))
+        return false;
+    },
+
+    afterEvent: function(fsm, name, from, to, args) {
+      StateMachine.afterThisEvent(fsm, name, from, to, args);
+      StateMachine.afterAnyEvent( fsm, name, from, to, args);
+    },
+
+    leaveState: function(fsm, name, from, to, args) {
+      var specific = StateMachine.leaveThisState(fsm, name, from, to, args),
+          general  = StateMachine.leaveAnyState( fsm, name, from, to, args);
+      if ((false === specific) || (false === general))
+        return false;
+      else if ((StateMachine.ASYNC === specific) || (StateMachine.ASYNC === general))
+        return StateMachine.ASYNC;
+    },
+
+    enterState: function(fsm, name, from, to, args) {
+      StateMachine.enterThisState(fsm, name, from, to, args);
+      StateMachine.enterAnyState( fsm, name, from, to, args);
+    },
+
+    //===========================================================================
+
+    buildEvent: function(name, map) {
+      return function() {
+
+        var from  = this.current;
+        var to    = map[from] || map[StateMachine.WILDCARD] || from;
+        var args  = Array.prototype.slice.call(arguments); // turn arguments into pure array
+
+        if (this.transition)
+          return this.error(name, from, to, args, StateMachine.Error.PENDING_TRANSITION, "event " + name + " inappropriate because previous transition did not complete");
+
+        if (this.cannot(name))
+          return this.error(name, from, to, args, StateMachine.Error.INVALID_TRANSITION, "event " + name + " inappropriate in current state " + this.current);
+
+        if (false === StateMachine.beforeEvent(this, name, from, to, args))
+          return StateMachine.Result.CANCELLED;
+
+        if (from === to) {
+          StateMachine.afterEvent(this, name, from, to, args);
+          return StateMachine.Result.NOTRANSITION;
+        }
+
+        // prepare a transition method for use EITHER lower down, or by caller if they want an async transition (indicated by an ASYNC return value from leaveState)
+        var fsm = this;
+        this.transition = function() {
+          fsm.transition = null; // this method should only ever be called once
+          fsm.current = to;
+          StateMachine.enterState( fsm, name, from, to, args);
+          StateMachine.changeState(fsm, name, from, to, args);
+          StateMachine.afterEvent( fsm, name, from, to, args);
+          return StateMachine.Result.SUCCEEDED;
+        };
+        this.transition.cancel = function() { // provide a way for caller to cancel async transition if desired (issue #22)
+          fsm.transition = null;
+          StateMachine.afterEvent(fsm, name, from, to, args);
+        }
+
+        var leave = StateMachine.leaveState(this, name, from, to, args);
+        if (false === leave) {
+          this.transition = null;
+          return StateMachine.Result.CANCELLED;
+        }
+        else if (StateMachine.ASYNC === leave) {
+          return StateMachine.Result.PENDING;
+        }
+        else {
+          if (this.transition) // need to check in case user manually called transition() but forgot to return StateMachine.ASYNC
+            return this.transition();
+        }
+
+      };
+    }
+
+  }; // StateMachine
+
+  //===========================================================================
+
+  if ("function" === typeof define) {
+    define('sge/vendor/state-machine',['require'],function(require) { return StateMachine; });
+  }
+  else {
+    window.StateMachine = StateMachine;
+  }
+
+}(this));
+
+
+//     Underscore.js 1.4.4
+//     http://underscorejs.org
+//     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud Inc.
+//     Underscore may be freely distributed under the MIT license.
+
+(function() {
+
+  // Baseline setup
+  // --------------
+
+  // Establish the root object, `window` in the browser, or `global` on the server.
+  var root = this;
+
+  // Save the previous value of the `_` variable.
+  var previousUnderscore = root._;
+
+  // Establish the object that gets returned to break out of a loop iteration.
+  var breaker = {};
+
+  // Save bytes in the minified (but not gzipped) version:
+  var ArrayProto = Array.prototype, ObjProto = Object.prototype, FuncProto = Function.prototype;
+
+  // Create quick reference variables for speed access to core prototypes.
+  var push             = ArrayProto.push,
+      slice            = ArrayProto.slice,
+      concat           = ArrayProto.concat,
+      toString         = ObjProto.toString,
+      hasOwnProperty   = ObjProto.hasOwnProperty;
+
+  // All **ECMAScript 5** native function implementations that we hope to use
+  // are declared here.
+  var
+    nativeForEach      = ArrayProto.forEach,
+    nativeMap          = ArrayProto.map,
+    nativeReduce       = ArrayProto.reduce,
+    nativeReduceRight  = ArrayProto.reduceRight,
+    nativeFilter       = ArrayProto.filter,
+    nativeEvery        = ArrayProto.every,
+    nativeSome         = ArrayProto.some,
+    nativeIndexOf      = ArrayProto.indexOf,
+    nativeLastIndexOf  = ArrayProto.lastIndexOf,
+    nativeIsArray      = Array.isArray,
+    nativeKeys         = Object.keys,
+    nativeBind         = FuncProto.bind;
+
+  // Create a safe reference to the Underscore object for use below.
+  var _ = function(obj) {
+    if (obj instanceof _) return obj;
+    if (!(this instanceof _)) return new _(obj);
+    this._wrapped = obj;
+  };
+
+  // Export the Underscore object for **Node.js**, with
+  // backwards-compatibility for the old `require()` API. If we're in
+  // the browser, add `_` as a global object via a string identifier,
+  // for Closure Compiler "advanced" mode.
+  if (typeof exports !== 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) {
+      exports = module.exports = _;
+    }
+    exports._ = _;
+  } else {
+    root._ = _;
+  }
+
+  // Current version.
+  _.VERSION = '1.4.4';
+
+  // Collection Functions
+  // --------------------
+
+  // The cornerstone, an `each` implementation, aka `forEach`.
+  // Handles objects with the built-in `forEach`, arrays, and raw objects.
+  // Delegates to **ECMAScript 5**'s native `forEach` if available.
+  var each = _.each = _.forEach = function(obj, iterator, context) {
+    if (obj == null) return;
+    if (nativeForEach && obj.forEach === nativeForEach) {
+      obj.forEach(iterator, context);
+    } else if (obj.length === +obj.length) {
+      for (var i = 0, l = obj.length; i < l; i++) {
+        if (iterator.call(context, obj[i], i, obj) === breaker) return;
+      }
+    } else {
+      for (var key in obj) {
+        if (_.has(obj, key)) {
+          if (iterator.call(context, obj[key], key, obj) === breaker) return;
+        }
+      }
+    }
+  };
+
+  // Return the results of applying the iterator to each element.
+  // Delegates to **ECMAScript 5**'s native `map` if available.
+  _.map = _.collect = function(obj, iterator, context) {
+    var results = [];
+    if (obj == null) return results;
+    if (nativeMap && obj.map === nativeMap) return obj.map(iterator, context);
+    each(obj, function(value, index, list) {
+      results[results.length] = iterator.call(context, value, index, list);
+    });
+    return results;
+  };
+
+  var reduceError = 'Reduce of empty array with no initial value';
+
+  // **Reduce** builds up a single result from a list of values, aka `inject`,
+  // or `foldl`. Delegates to **ECMAScript 5**'s native `reduce` if available.
+  _.reduce = _.foldl = _.inject = function(obj, iterator, memo, context) {
+    var initial = arguments.length > 2;
+    if (obj == null) obj = [];
+    if (nativeReduce && obj.reduce === nativeReduce) {
+      if (context) iterator = _.bind(iterator, context);
+      return initial ? obj.reduce(iterator, memo) : obj.reduce(iterator);
+    }
+    each(obj, function(value, index, list) {
+      if (!initial) {
+        memo = value;
+        initial = true;
+      } else {
+        memo = iterator.call(context, memo, value, index, list);
+      }
+    });
+    if (!initial) throw new TypeError(reduceError);
+    return memo;
+  };
+
+  // The right-associative version of reduce, also known as `foldr`.
+  // Delegates to **ECMAScript 5**'s native `reduceRight` if available.
+  _.reduceRight = _.foldr = function(obj, iterator, memo, context) {
+    var initial = arguments.length > 2;
+    if (obj == null) obj = [];
+    if (nativeReduceRight && obj.reduceRight === nativeReduceRight) {
+      if (context) iterator = _.bind(iterator, context);
+      return initial ? obj.reduceRight(iterator, memo) : obj.reduceRight(iterator);
+    }
+    var length = obj.length;
+    if (length !== +length) {
+      var keys = _.keys(obj);
+      length = keys.length;
+    }
+    each(obj, function(value, index, list) {
+      index = keys ? keys[--length] : --length;
+      if (!initial) {
+        memo = obj[index];
+        initial = true;
+      } else {
+        memo = iterator.call(context, memo, obj[index], index, list);
+      }
+    });
+    if (!initial) throw new TypeError(reduceError);
+    return memo;
+  };
+
+  // Return the first value which passes a truth test. Aliased as `detect`.
+  _.find = _.detect = function(obj, iterator, context) {
+    var result;
+    any(obj, function(value, index, list) {
+      if (iterator.call(context, value, index, list)) {
+        result = value;
+        return true;
+      }
+    });
+    return result;
+  };
+
+  // Return all the elements that pass a truth test.
+  // Delegates to **ECMAScript 5**'s native `filter` if available.
+  // Aliased as `select`.
+  _.filter = _.select = function(obj, iterator, context) {
+    var results = [];
+    if (obj == null) return results;
+    if (nativeFilter && obj.filter === nativeFilter) return obj.filter(iterator, context);
+    each(obj, function(value, index, list) {
+      if (iterator.call(context, value, index, list)) results[results.length] = value;
+    });
+    return results;
+  };
+
+  // Return all the elements for which a truth test fails.
+  _.reject = function(obj, iterator, context) {
+    return _.filter(obj, function(value, index, list) {
+      return !iterator.call(context, value, index, list);
+    }, context);
+  };
+
+  // Determine whether all of the elements match a truth test.
+  // Delegates to **ECMAScript 5**'s native `every` if available.
+  // Aliased as `all`.
+  _.every = _.all = function(obj, iterator, context) {
+    iterator || (iterator = _.identity);
+    var result = true;
+    if (obj == null) return result;
+    if (nativeEvery && obj.every === nativeEvery) return obj.every(iterator, context);
+    each(obj, function(value, index, list) {
+      if (!(result = result && iterator.call(context, value, index, list))) return breaker;
+    });
+    return !!result;
+  };
+
+  // Determine if at least one element in the object matches a truth test.
+  // Delegates to **ECMAScript 5**'s native `some` if available.
+  // Aliased as `any`.
+  var any = _.some = _.any = function(obj, iterator, context) {
+    iterator || (iterator = _.identity);
+    var result = false;
+    if (obj == null) return result;
+    if (nativeSome && obj.some === nativeSome) return obj.some(iterator, context);
+    each(obj, function(value, index, list) {
+      if (result || (result = iterator.call(context, value, index, list))) return breaker;
+    });
+    return !!result;
+  };
+
+  // Determine if the array or object contains a given value (using `===`).
+  // Aliased as `include`.
+  _.contains = _.include = function(obj, target) {
+    if (obj == null) return false;
+    if (nativeIndexOf && obj.indexOf === nativeIndexOf) return obj.indexOf(target) != -1;
+    return any(obj, function(value) {
+      return value === target;
+    });
+  };
+
+  // Invoke a method (with arguments) on every item in a collection.
+  _.invoke = function(obj, method) {
+    var args = slice.call(arguments, 2);
+    var isFunc = _.isFunction(method);
+    return _.map(obj, function(value) {
+      return (isFunc ? method : value[method]).apply(value, args);
+    });
+  };
+
+  // Convenience version of a common use case of `map`: fetching a property.
+  _.pluck = function(obj, key) {
+    return _.map(obj, function(value){ return value[key]; });
+  };
+
+  // Convenience version of a common use case of `filter`: selecting only objects
+  // containing specific `key:value` pairs.
+  _.where = function(obj, attrs, first) {
+    if (_.isEmpty(attrs)) return first ? void 0 : [];
+    return _[first ? 'find' : 'filter'](obj, function(value) {
+      for (var key in attrs) {
+        if (attrs[key] !== value[key]) return false;
+      }
+      return true;
+    });
+  };
+
+  // Convenience version of a common use case of `find`: getting the first object
+  // containing specific `key:value` pairs.
+  _.findWhere = function(obj, attrs) {
+    return _.where(obj, attrs, true);
+  };
+
+  // Return the maximum element or (element-based computation).
+  // Can't optimize arrays of integers longer than 65,535 elements.
+  // See: https://bugs.webkit.org/show_bug.cgi?id=80797
+  _.max = function(obj, iterator, context) {
+    if (!iterator && _.isArray(obj) && obj[0] === +obj[0] && obj.length < 65535) {
+      return Math.max.apply(Math, obj);
+    }
+    if (!iterator && _.isEmpty(obj)) return -Infinity;
+    var result = {computed : -Infinity, value: -Infinity};
+    each(obj, function(value, index, list) {
+      var computed = iterator ? iterator.call(context, value, index, list) : value;
+      computed >= result.computed && (result = {value : value, computed : computed});
+    });
+    return result.value;
+  };
+
+  // Return the minimum element (or element-based computation).
+  _.min = function(obj, iterator, context) {
+    if (!iterator && _.isArray(obj) && obj[0] === +obj[0] && obj.length < 65535) {
+      return Math.min.apply(Math, obj);
+    }
+    if (!iterator && _.isEmpty(obj)) return Infinity;
+    var result = {computed : Infinity, value: Infinity};
+    each(obj, function(value, index, list) {
+      var computed = iterator ? iterator.call(context, value, index, list) : value;
+      computed < result.computed && (result = {value : value, computed : computed});
+    });
+    return result.value;
+  };
+
+  // Shuffle an array.
+  _.shuffle = function(obj) {
+    var rand;
+    var index = 0;
+    var shuffled = [];
+    each(obj, function(value) {
+      rand = _.random(index++);
+      shuffled[index - 1] = shuffled[rand];
+      shuffled[rand] = value;
+    });
+    return shuffled;
+  };
+
+  // An internal function to generate lookup iterators.
+  var lookupIterator = function(value) {
+    return _.isFunction(value) ? value : function(obj){ return obj[value]; };
+  };
+
+  // Sort the object's values by a criterion produced by an iterator.
+  _.sortBy = function(obj, value, context) {
+    var iterator = lookupIterator(value);
+    return _.pluck(_.map(obj, function(value, index, list) {
+      return {
+        value : value,
+        index : index,
+        criteria : iterator.call(context, value, index, list)
+      };
+    }).sort(function(left, right) {
+      var a = left.criteria;
+      var b = right.criteria;
+      if (a !== b) {
+        if (a > b || a === void 0) return 1;
+        if (a < b || b === void 0) return -1;
+      }
+      return left.index < right.index ? -1 : 1;
+    }), 'value');
+  };
+
+  // An internal function used for aggregate "group by" operations.
+  var group = function(obj, value, context, behavior) {
+    var result = {};
+    var iterator = lookupIterator(value == null ? _.identity : value);
+    each(obj, function(value, index) {
+      var key = iterator.call(context, value, index, obj);
+      behavior(result, key, value);
+    });
+    return result;
+  };
+
+  // Groups the object's values by a criterion. Pass either a string attribute
+  // to group by, or a function that returns the criterion.
+  _.groupBy = function(obj, value, context) {
+    return group(obj, value, context, function(result, key, value) {
+      (_.has(result, key) ? result[key] : (result[key] = [])).push(value);
+    });
+  };
+
+  // Counts instances of an object that group by a certain criterion. Pass
+  // either a string attribute to count by, or a function that returns the
+  // criterion.
+  _.countBy = function(obj, value, context) {
+    return group(obj, value, context, function(result, key) {
+      if (!_.has(result, key)) result[key] = 0;
+      result[key]++;
+    });
+  };
+
+  // Use a comparator function to figure out the smallest index at which
+  // an object should be inserted so as to maintain order. Uses binary search.
+  _.sortedIndex = function(array, obj, iterator, context) {
+    iterator = iterator == null ? _.identity : lookupIterator(iterator);
+    var value = iterator.call(context, obj);
+    var low = 0, high = array.length;
+    while (low < high) {
+      var mid = (low + high) >>> 1;
+      iterator.call(context, array[mid]) < value ? low = mid + 1 : high = mid;
+    }
+    return low;
+  };
+
+  // Safely convert anything iterable into a real, live array.
+  _.toArray = function(obj) {
+    if (!obj) return [];
+    if (_.isArray(obj)) return slice.call(obj);
+    if (obj.length === +obj.length) return _.map(obj, _.identity);
+    return _.values(obj);
+  };
+
+  // Return the number of elements in an object.
+  _.size = function(obj) {
+    if (obj == null) return 0;
+    return (obj.length === +obj.length) ? obj.length : _.keys(obj).length;
+  };
+
+  // Array Functions
+  // ---------------
+
+  // Get the first element of an array. Passing **n** will return the first N
+  // values in the array. Aliased as `head` and `take`. The **guard** check
+  // allows it to work with `_.map`.
+  _.first = _.head = _.take = function(array, n, guard) {
+    if (array == null) return void 0;
+    return (n != null) && !guard ? slice.call(array, 0, n) : array[0];
+  };
+
+  // Returns everything but the last entry of the array. Especially useful on
+  // the arguments object. Passing **n** will return all the values in
+  // the array, excluding the last N. The **guard** check allows it to work with
+  // `_.map`.
+  _.initial = function(array, n, guard) {
+    return slice.call(array, 0, array.length - ((n == null) || guard ? 1 : n));
+  };
+
+  // Get the last element of an array. Passing **n** will return the last N
+  // values in the array. The **guard** check allows it to work with `_.map`.
+  _.last = function(array, n, guard) {
+    if (array == null) return void 0;
+    if ((n != null) && !guard) {
+      return slice.call(array, Math.max(array.length - n, 0));
+    } else {
+      return array[array.length - 1];
+    }
+  };
+
+  // Returns everything but the first entry of the array. Aliased as `tail` and `drop`.
+  // Especially useful on the arguments object. Passing an **n** will return
+  // the rest N values in the array. The **guard**
+  // check allows it to work with `_.map`.
+  _.rest = _.tail = _.drop = function(array, n, guard) {
+    return slice.call(array, (n == null) || guard ? 1 : n);
+  };
+
+  // Trim out all falsy values from an array.
+  _.compact = function(array) {
+    return _.filter(array, _.identity);
+  };
+
+  // Internal implementation of a recursive `flatten` function.
+  var flatten = function(input, shallow, output) {
+    each(input, function(value) {
+      if (_.isArray(value)) {
+        shallow ? push.apply(output, value) : flatten(value, shallow, output);
+      } else {
+        output.push(value);
+      }
+    });
+    return output;
+  };
+
+  // Return a completely flattened version of an array.
+  _.flatten = function(array, shallow) {
+    return flatten(array, shallow, []);
+  };
+
+  // Return a version of the array that does not contain the specified value(s).
+  _.without = function(array) {
+    return _.difference(array, slice.call(arguments, 1));
+  };
+
+  // Produce a duplicate-free version of the array. If the array has already
+  // been sorted, you have the option of using a faster algorithm.
+  // Aliased as `unique`.
+  _.uniq = _.unique = function(array, isSorted, iterator, context) {
+    if (_.isFunction(isSorted)) {
+      context = iterator;
+      iterator = isSorted;
+      isSorted = false;
+    }
+    var initial = iterator ? _.map(array, iterator, context) : array;
+    var results = [];
+    var seen = [];
+    each(initial, function(value, index) {
+      if (isSorted ? (!index || seen[seen.length - 1] !== value) : !_.contains(seen, value)) {
+        seen.push(value);
+        results.push(array[index]);
+      }
+    });
+    return results;
+  };
+
+  // Produce an array that contains the union: each distinct element from all of
+  // the passed-in arrays.
+  _.union = function() {
+    return _.uniq(concat.apply(ArrayProto, arguments));
+  };
+
+  // Produce an array that contains every item shared between all the
+  // passed-in arrays.
+  _.intersection = function(array) {
+    var rest = slice.call(arguments, 1);
+    return _.filter(_.uniq(array), function(item) {
+      return _.every(rest, function(other) {
+        return _.indexOf(other, item) >= 0;
+      });
+    });
+  };
+
+  // Take the difference between one array and a number of other arrays.
+  // Only the elements present in just the first array will remain.
+  _.difference = function(array) {
+    var rest = concat.apply(ArrayProto, slice.call(arguments, 1));
+    return _.filter(array, function(value){ return !_.contains(rest, value); });
+  };
+
+  // Zip together multiple lists into a single array -- elements that share
+  // an index go together.
+  _.zip = function() {
+    var args = slice.call(arguments);
+    var length = _.max(_.pluck(args, 'length'));
+    var results = new Array(length);
+    for (var i = 0; i < length; i++) {
+      results[i] = _.pluck(args, "" + i);
+    }
+    return results;
+  };
+
+  // Converts lists into objects. Pass either a single array of `[key, value]`
+  // pairs, or two parallel arrays of the same length -- one of keys, and one of
+  // the corresponding values.
+  _.object = function(list, values) {
+    if (list == null) return {};
+    var result = {};
+    for (var i = 0, l = list.length; i < l; i++) {
+      if (values) {
+        result[list[i]] = values[i];
+      } else {
+        result[list[i][0]] = list[i][1];
+      }
+    }
+    return result;
+  };
+
+  // If the browser doesn't supply us with indexOf (I'm looking at you, **MSIE**),
+  // we need this function. Return the position of the first occurrence of an
+  // item in an array, or -1 if the item is not included in the array.
+  // Delegates to **ECMAScript 5**'s native `indexOf` if available.
+  // If the array is large and already in sort order, pass `true`
+  // for **isSorted** to use binary search.
+  _.indexOf = function(array, item, isSorted) {
+    if (array == null) return -1;
+    var i = 0, l = array.length;
+    if (isSorted) {
+      if (typeof isSorted == 'number') {
+        i = (isSorted < 0 ? Math.max(0, l + isSorted) : isSorted);
+      } else {
+        i = _.sortedIndex(array, item);
+        return array[i] === item ? i : -1;
+      }
+    }
+    if (nativeIndexOf && array.indexOf === nativeIndexOf) return array.indexOf(item, isSorted);
+    for (; i < l; i++) if (array[i] === item) return i;
+    return -1;
+  };
+
+  // Delegates to **ECMAScript 5**'s native `lastIndexOf` if available.
+  _.lastIndexOf = function(array, item, from) {
+    if (array == null) return -1;
+    var hasIndex = from != null;
+    if (nativeLastIndexOf && array.lastIndexOf === nativeLastIndexOf) {
+      return hasIndex ? array.lastIndexOf(item, from) : array.lastIndexOf(item);
+    }
+    var i = (hasIndex ? from : array.length);
+    while (i--) if (array[i] === item) return i;
+    return -1;
+  };
+
+  // Generate an integer Array containing an arithmetic progression. A port of
+  // the native Python `range()` function. See
+  // [the Python documentation](http://docs.python.org/library/functions.html#range).
+  _.range = function(start, stop, step) {
+    if (arguments.length <= 1) {
+      stop = start || 0;
+      start = 0;
+    }
+    step = arguments[2] || 1;
+
+    var len = Math.max(Math.ceil((stop - start) / step), 0);
+    var idx = 0;
+    var range = new Array(len);
+
+    while(idx < len) {
+      range[idx++] = start;
+      start += step;
+    }
+
+    return range;
+  };
+
+  // Function (ahem) Functions
+  // ------------------
+
+  // Reusable constructor function for prototype setting.
+  var ctor = function(){};
+
+  // Create a function bound to a given object (assigning `this`, and arguments,
+  // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if
+  // available.
+  _.bind = function(func, context) {
+    var args, bound;
+    if (func.bind === nativeBind && nativeBind) return nativeBind.apply(func, slice.call(arguments, 1));
+    if (!_.isFunction(func)) throw new TypeError;
+    args = slice.call(arguments, 2);
+    return bound = function() {
+      if (!(this instanceof bound)) return func.apply(context, args.concat(slice.call(arguments)));
+      ctor.prototype = func.prototype;
+      var self = new ctor;
+      ctor.prototype = null;
+      var result = func.apply(self, args.concat(slice.call(arguments)));
+      if (Object(result) === result) return result;
+      return self;
+    };
+  };
+
+  // Partially apply a function by creating a version that has had some of its
+  // arguments pre-filled, without changing its dynamic `this` context.
+  _.partial = function(func) {
+    var args = slice.call(arguments, 1);
+    return function() {
+      return func.apply(this, args.concat(slice.call(arguments)));
+    };
+  };
+
+  // Bind all of an object's methods to that object. Useful for ensuring that
+  // all callbacks defined on an object belong to it.
+  _.bindAll = function(obj) {
+    var funcs = slice.call(arguments, 1);
+    if (funcs.length === 0) throw new Error("bindAll must be passed function names");
+    each(funcs, function(f) { obj[f] = _.bind(obj[f], obj); });
+    return obj;
+  };
+
+  // Memoize an expensive function by storing its results.
+  _.memoize = function(func, hasher) {
+    var memo = {};
+    hasher || (hasher = _.identity);
+    return function() {
+      var key = hasher.apply(this, arguments);
+      return _.has(memo, key) ? memo[key] : (memo[key] = func.apply(this, arguments));
+    };
+  };
+
+  // Delays a function for the given number of milliseconds, and then calls
+  // it with the arguments supplied.
+  _.delay = function(func, wait) {
+    var args = slice.call(arguments, 2);
+    return setTimeout(function(){ return func.apply(null, args); }, wait);
+  };
+
+  // Defers a function, scheduling it to run after the current call stack has
+  // cleared.
+  _.defer = function(func) {
+    return _.delay.apply(_, [func, 1].concat(slice.call(arguments, 1)));
+  };
+
+  // Returns a function, that, when invoked, will only be triggered at most once
+  // during a given window of time.
+  _.throttle = function(func, wait) {
+    var context, args, timeout, result;
+    var previous = 0;
+    var later = function() {
+      previous = new Date;
+      timeout = null;
+      result = func.apply(context, args);
+    };
+    return function() {
+      var now = new Date;
+      var remaining = wait - (now - previous);
+      context = this;
+      args = arguments;
+      if (remaining <= 0) {
+        clearTimeout(timeout);
+        timeout = null;
+        previous = now;
+        result = func.apply(context, args);
+      } else if (!timeout) {
+        timeout = setTimeout(later, remaining);
+      }
+      return result;
+    };
+  };
+
+  // Returns a function, that, as long as it continues to be invoked, will not
+  // be triggered. The function will be called after it stops being called for
+  // N milliseconds. If `immediate` is passed, trigger the function on the
+  // leading edge, instead of the trailing.
+  _.debounce = function(func, wait, immediate) {
+    var timeout, result;
+    return function() {
+      var context = this, args = arguments;
+      var later = function() {
+        timeout = null;
+        if (!immediate) result = func.apply(context, args);
+      };
+      var callNow = immediate && !timeout;
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+      if (callNow) result = func.apply(context, args);
+      return result;
+    };
+  };
+
+  // Returns a function that will be executed at most one time, no matter how
+  // often you call it. Useful for lazy initialization.
+  _.once = function(func) {
+    var ran = false, memo;
+    return function() {
+      if (ran) return memo;
+      ran = true;
+      memo = func.apply(this, arguments);
+      func = null;
+      return memo;
+    };
+  };
+
+  // Returns the first function passed as an argument to the second,
+  // allowing you to adjust arguments, run code before and after, and
+  // conditionally execute the original function.
+  _.wrap = function(func, wrapper) {
+    return function() {
+      var args = [func];
+      push.apply(args, arguments);
+      return wrapper.apply(this, args);
+    };
+  };
+
+  // Returns a function that is the composition of a list of functions, each
+  // consuming the return value of the function that follows.
+  _.compose = function() {
+    var funcs = arguments;
+    return function() {
+      var args = arguments;
+      for (var i = funcs.length - 1; i >= 0; i--) {
+        args = [funcs[i].apply(this, args)];
+      }
+      return args[0];
+    };
+  };
+
+  // Returns a function that will only be executed after being called N times.
+  _.after = function(times, func) {
+    if (times <= 0) return func();
+    return function() {
+      if (--times < 1) {
+        return func.apply(this, arguments);
+      }
+    };
+  };
+
+  // Object Functions
+  // ----------------
+
+  // Retrieve the names of an object's properties.
+  // Delegates to **ECMAScript 5**'s native `Object.keys`
+  _.keys = nativeKeys || function(obj) {
+    if (obj !== Object(obj)) throw new TypeError('Invalid object');
+    var keys = [];
+    for (var key in obj) if (_.has(obj, key)) keys[keys.length] = key;
+    return keys;
+  };
+
+  // Retrieve the values of an object's properties.
+  _.values = function(obj) {
+    var values = [];
+    for (var key in obj) if (_.has(obj, key)) values.push(obj[key]);
+    return values;
+  };
+
+  // Convert an object into a list of `[key, value]` pairs.
+  _.pairs = function(obj) {
+    var pairs = [];
+    for (var key in obj) if (_.has(obj, key)) pairs.push([key, obj[key]]);
+    return pairs;
+  };
+
+  // Invert the keys and values of an object. The values must be serializable.
+  _.invert = function(obj) {
+    var result = {};
+    for (var key in obj) if (_.has(obj, key)) result[obj[key]] = key;
+    return result;
+  };
+
+  // Return a sorted list of the function names available on the object.
+  // Aliased as `methods`
+  _.functions = _.methods = function(obj) {
+    var names = [];
+    for (var key in obj) {
+      if (_.isFunction(obj[key])) names.push(key);
+    }
+    return names.sort();
+  };
+
+  // Extend a given object with all the properties in passed-in object(s).
+  _.extend = function(obj) {
+    each(slice.call(arguments, 1), function(source) {
+      if (source) {
+        for (var prop in source) {
+          obj[prop] = source[prop];
+        }
+      }
+    });
+    return obj;
+  };
+
+  // Return a copy of the object only containing the whitelisted properties.
+  _.pick = function(obj) {
+    var copy = {};
+    var keys = concat.apply(ArrayProto, slice.call(arguments, 1));
+    each(keys, function(key) {
+      if (key in obj) copy[key] = obj[key];
+    });
+    return copy;
+  };
+
+   // Return a copy of the object without the blacklisted properties.
+  _.omit = function(obj) {
+    var copy = {};
+    var keys = concat.apply(ArrayProto, slice.call(arguments, 1));
+    for (var key in obj) {
+      if (!_.contains(keys, key)) copy[key] = obj[key];
+    }
+    return copy;
+  };
+
+  // Fill in a given object with default properties.
+  _.defaults = function(obj) {
+    each(slice.call(arguments, 1), function(source) {
+      if (source) {
+        for (var prop in source) {
+          if (obj[prop] === void 0) obj[prop] = source[prop];
+        }
+      }
+    });
+    return obj;
+  };
+
+  // Create a (shallow-cloned) duplicate of an object.
+  _.clone = function(obj) {
+    if (!_.isObject(obj)) return obj;
+    return _.isArray(obj) ? obj.slice() : _.extend({}, obj);
+  };
+
+  // Invokes interceptor with the obj, and then returns obj.
+  // The primary purpose of this method is to "tap into" a method chain, in
+  // order to perform operations on intermediate results within the chain.
+  _.tap = function(obj, interceptor) {
+    interceptor(obj);
+    return obj;
+  };
+
+  // Internal recursive comparison function for `isEqual`.
+  var eq = function(a, b, aStack, bStack) {
+    // Identical objects are equal. `0 === -0`, but they aren't identical.
+    // See the Harmony `egal` proposal: http://wiki.ecmascript.org/doku.php?id=harmony:egal.
+    if (a === b) return a !== 0 || 1 / a == 1 / b;
+    // A strict comparison is necessary because `null == undefined`.
+    if (a == null || b == null) return a === b;
+    // Unwrap any wrapped objects.
+    if (a instanceof _) a = a._wrapped;
+    if (b instanceof _) b = b._wrapped;
+    // Compare `[[Class]]` names.
+    var className = toString.call(a);
+    if (className != toString.call(b)) return false;
+    switch (className) {
+      // Strings, numbers, dates, and booleans are compared by value.
+      case '[object String]':
+        // Primitives and their corresponding object wrappers are equivalent; thus, `"5"` is
+        // equivalent to `new String("5")`.
+        return a == String(b);
+      case '[object Number]':
+        // `NaN`s are equivalent, but non-reflexive. An `egal` comparison is performed for
+        // other numeric values.
+        return a != +a ? b != +b : (a == 0 ? 1 / a == 1 / b : a == +b);
+      case '[object Date]':
+      case '[object Boolean]':
+        // Coerce dates and booleans to numeric primitive values. Dates are compared by their
+        // millisecond representations. Note that invalid dates with millisecond representations
+        // of `NaN` are not equivalent.
+        return +a == +b;
+      // RegExps are compared by their source patterns and flags.
+      case '[object RegExp]':
+        return a.source == b.source &&
+               a.global == b.global &&
+               a.multiline == b.multiline &&
+               a.ignoreCase == b.ignoreCase;
+    }
+    if (typeof a != 'object' || typeof b != 'object') return false;
+    // Assume equality for cyclic structures. The algorithm for detecting cyclic
+    // structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.
+    var length = aStack.length;
+    while (length--) {
+      // Linear search. Performance is inversely proportional to the number of
+      // unique nested structures.
+      if (aStack[length] == a) return bStack[length] == b;
+    }
+    // Add the first object to the stack of traversed objects.
+    aStack.push(a);
+    bStack.push(b);
+    var size = 0, result = true;
+    // Recursively compare objects and arrays.
+    if (className == '[object Array]') {
+      // Compare array lengths to determine if a deep comparison is necessary.
+      size = a.length;
+      result = size == b.length;
+      if (result) {
+        // Deep compare the contents, ignoring non-numeric properties.
+        while (size--) {
+          if (!(result = eq(a[size], b[size], aStack, bStack))) break;
+        }
+      }
+    } else {
+      // Objects with different constructors are not equivalent, but `Object`s
+      // from different frames are.
+      var aCtor = a.constructor, bCtor = b.constructor;
+      if (aCtor !== bCtor && !(_.isFunction(aCtor) && (aCtor instanceof aCtor) &&
+                               _.isFunction(bCtor) && (bCtor instanceof bCtor))) {
+        return false;
+      }
+      // Deep compare objects.
+      for (var key in a) {
+        if (_.has(a, key)) {
+          // Count the expected number of properties.
+          size++;
+          // Deep compare each member.
+          if (!(result = _.has(b, key) && eq(a[key], b[key], aStack, bStack))) break;
+        }
+      }
+      // Ensure that both objects contain the same number of properties.
+      if (result) {
+        for (key in b) {
+          if (_.has(b, key) && !(size--)) break;
+        }
+        result = !size;
+      }
+    }
+    // Remove the first object from the stack of traversed objects.
+    aStack.pop();
+    bStack.pop();
+    return result;
+  };
+
+  // Perform a deep comparison to check if two objects are equal.
+  _.isEqual = function(a, b) {
+    return eq(a, b, [], []);
+  };
+
+  // Is a given array, string, or object empty?
+  // An "empty" object has no enumerable own-properties.
+  _.isEmpty = function(obj) {
+    if (obj == null) return true;
+    if (_.isArray(obj) || _.isString(obj)) return obj.length === 0;
+    for (var key in obj) if (_.has(obj, key)) return false;
+    return true;
+  };
+
+  // Is a given value a DOM element?
+  _.isElement = function(obj) {
+    return !!(obj && obj.nodeType === 1);
+  };
+
+  // Is a given value an array?
+  // Delegates to ECMA5's native Array.isArray
+  _.isArray = nativeIsArray || function(obj) {
+    return toString.call(obj) == '[object Array]';
+  };
+
+  // Is a given variable an object?
+  _.isObject = function(obj) {
+    return obj === Object(obj);
+  };
+
+  // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp.
+  each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp'], function(name) {
+    _['is' + name] = function(obj) {
+      return toString.call(obj) == '[object ' + name + ']';
+    };
+  });
+
+  // Define a fallback version of the method in browsers (ahem, IE), where
+  // there isn't any inspectable "Arguments" type.
+  if (!_.isArguments(arguments)) {
+    _.isArguments = function(obj) {
+      return !!(obj && _.has(obj, 'callee'));
+    };
+  }
+
+  // Optimize `isFunction` if appropriate.
+  if (typeof (/./) !== 'function') {
+    _.isFunction = function(obj) {
+      return typeof obj === 'function';
+    };
+  }
+
+  // Is a given object a finite number?
+  _.isFinite = function(obj) {
+    return isFinite(obj) && !isNaN(parseFloat(obj));
+  };
+
+  // Is the given value `NaN`? (NaN is the only number which does not equal itself).
+  _.isNaN = function(obj) {
+    return _.isNumber(obj) && obj != +obj;
+  };
+
+  // Is a given value a boolean?
+  _.isBoolean = function(obj) {
+    return obj === true || obj === false || toString.call(obj) == '[object Boolean]';
+  };
+
+  // Is a given value equal to null?
+  _.isNull = function(obj) {
+    return obj === null;
+  };
+
+  // Is a given variable undefined?
+  _.isUndefined = function(obj) {
+    return obj === void 0;
+  };
+
+  // Shortcut function for checking if an object has a given property directly
+  // on itself (in other words, not on a prototype).
+  _.has = function(obj, key) {
+    return hasOwnProperty.call(obj, key);
+  };
+
+  // Utility Functions
+  // -----------------
+
+  // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
+  // previous owner. Returns a reference to the Underscore object.
+  _.noConflict = function() {
+    root._ = previousUnderscore;
+    return this;
+  };
+
+  // Keep the identity function around for default iterators.
+  _.identity = function(value) {
+    return value;
+  };
+
+  // Run a function **n** times.
+  _.times = function(n, iterator, context) {
+    var accum = Array(n);
+    for (var i = 0; i < n; i++) accum[i] = iterator.call(context, i);
+    return accum;
+  };
+
+  // Return a random integer between min and max (inclusive).
+  _.random = function(min, max) {
+    if (max == null) {
+      max = min;
+      min = 0;
+    }
+    return min + Math.floor(Math.random() * (max - min + 1));
+  };
+
+  // List of HTML entities for escaping.
+  var entityMap = {
+    escape: {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;',
+      '/': '&#x2F;'
+    }
+  };
+  entityMap.unescape = _.invert(entityMap.escape);
+
+  // Regexes containing the keys and values listed immediately above.
+  var entityRegexes = {
+    escape:   new RegExp('[' + _.keys(entityMap.escape).join('') + ']', 'g'),
+    unescape: new RegExp('(' + _.keys(entityMap.unescape).join('|') + ')', 'g')
+  };
+
+  // Functions for escaping and unescaping strings to/from HTML interpolation.
+  _.each(['escape', 'unescape'], function(method) {
+    _[method] = function(string) {
+      if (string == null) return '';
+      return ('' + string).replace(entityRegexes[method], function(match) {
+        return entityMap[method][match];
+      });
+    };
+  });
+
+  // If the value of the named property is a function then invoke it;
+  // otherwise, return it.
+  _.result = function(object, property) {
+    if (object == null) return void 0;
+    var value = object[property];
+    return _.isFunction(value) ? value.call(object) : value;
+  };
+
+  // Add your own custom functions to the Underscore object.
+  _.mixin = function(obj) {
+    each(_.functions(obj), function(name){
+      var func = _[name] = obj[name];
+      _.prototype[name] = function() {
+        var args = [this._wrapped];
+        push.apply(args, arguments);
+        return result.call(this, func.apply(_, args));
+      };
+    });
+  };
+
+  // Generate a unique integer id (unique within the entire client session).
+  // Useful for temporary DOM ids.
+  var idCounter = 0;
+  _.uniqueId = function(prefix) {
+    var id = ++idCounter + '';
+    return prefix ? prefix + id : id;
+  };
+
+  // By default, Underscore uses ERB-style template delimiters, change the
+  // following template settings to use alternative delimiters.
+  _.templateSettings = {
+    evaluate    : /<%([\s\S]+?)%>/g,
+    interpolate : /<%=([\s\S]+?)%>/g,
+    escape      : /<%-([\s\S]+?)%>/g
+  };
+
+  // When customizing `templateSettings`, if you don't want to define an
+  // interpolation, evaluation or escaping regex, we need one that is
+  // guaranteed not to match.
+  var noMatch = /(.)^/;
+
+  // Certain characters need to be escaped so that they can be put into a
+  // string literal.
+  var escapes = {
+    "'":      "'",
+    '\\':     '\\',
+    '\r':     'r',
+    '\n':     'n',
+    '\t':     't',
+    '\u2028': 'u2028',
+    '\u2029': 'u2029'
+  };
+
+  var escaper = /\\|'|\r|\n|\t|\u2028|\u2029/g;
+
+  // JavaScript micro-templating, similar to John Resig's implementation.
+  // Underscore templating handles arbitrary delimiters, preserves whitespace,
+  // and correctly escapes quotes within interpolated code.
+  _.template = function(text, data, settings) {
+    var render;
+    settings = _.defaults({}, settings, _.templateSettings);
+
+    // Combine delimiters into one regular expression via alternation.
+    var matcher = new RegExp([
+      (settings.escape || noMatch).source,
+      (settings.interpolate || noMatch).source,
+      (settings.evaluate || noMatch).source
+    ].join('|') + '|$', 'g');
+
+    // Compile the template source, escaping string literals appropriately.
+    var index = 0;
+    var source = "__p+='";
+    text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {
+      source += text.slice(index, offset)
+        .replace(escaper, function(match) { return '\\' + escapes[match]; });
+
+      if (escape) {
+        source += "'+\n((__t=(" + escape + "))==null?'':_.escape(__t))+\n'";
+      }
+      if (interpolate) {
+        source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
+      }
+      if (evaluate) {
+        source += "';\n" + evaluate + "\n__p+='";
+      }
+      index = offset + match.length;
+      return match;
+    });
+    source += "';\n";
+
+    // If a variable is not specified, place data values in local scope.
+    if (!settings.variable) source = 'with(obj||{}){\n' + source + '}\n';
+
+    source = "var __t,__p='',__j=Array.prototype.join," +
+      "print=function(){__p+=__j.call(arguments,'');};\n" +
+      source + "return __p;\n";
+
+    try {
+      render = new Function(settings.variable || 'obj', '_', source);
+    } catch (e) {
+      e.source = source;
+      throw e;
+    }
+
+    if (data) return render(data, _);
+    var template = function(data) {
+      return render.call(this, data, _);
+    };
+
+    // Provide the compiled function source as a convenience for precompilation.
+    template.source = 'function(' + (settings.variable || 'obj') + '){\n' + source + '}';
+
+    return template;
+  };
+
+  // Add a "chain" function, which will delegate to the wrapper.
+  _.chain = function(obj) {
+    return _(obj).chain();
+  };
+
+  // OOP
+  // ---------------
+  // If Underscore is called as a function, it returns a wrapped object that
+  // can be used OO-style. This wrapper holds altered versions of all the
+  // underscore functions. Wrapped objects may be chained.
+
+  // Helper function to continue chaining intermediate results.
+  var result = function(obj) {
+    return this._chain ? _(obj).chain() : obj;
+  };
+
+  // Add all of the Underscore functions to the wrapper object.
+  _.mixin(_);
+
+  // Add all mutator Array functions to the wrapper.
+  each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {
+    var method = ArrayProto[name];
+    _.prototype[name] = function() {
+      var obj = this._wrapped;
+      method.apply(obj, arguments);
+      if ((name == 'shift' || name == 'splice') && obj.length === 0) delete obj[0];
+      return result.call(this, obj);
+    };
+  });
+
+  // Add all accessor Array functions to the wrapper.
+  each(['concat', 'join', 'slice'], function(name) {
+    var method = ArrayProto[name];
+    _.prototype[name] = function() {
+      return result.call(this, method.apply(this._wrapped, arguments));
+    };
+  });
+
+  _.extend(_.prototype, {
+
+    // Start chaining a wrapped Underscore object.
+    chain: function() {
+      this._chain = true;
+      return this;
+    },
+
+    // Extracts the result from a wrapped and chained object.
+    value: function() {
+      return this._wrapped;
+    }
+
+  });
+
+}).call(this);
+
+define("sge/vendor/underscore", (function (global) {
+    return function () {
+        var ret, fn;
+        return ret || global._;
+    };
+}(this)));
+
+define('sge/gamestate',['sge/lib/class', 'sge/vendor/underscore'],
+	function(Class, _, PxLoader){
+
+	var Timeout = Class.extend({
+		init: function(length, callback){
+			this._length = length;
+			this.callback = callback;
+		},
+		tick : function(delta){
+			this._length = this._length - delta;
+			if (this._length<=0){
+				this.callback()
+				return false;
+			}
+			return true;
+		}
+	})
+
+
+	var GameState = Class.extend({
+		init: function(game, name, options){
+			this.game = game;
+			this._sceneIndex = game.renderer.scenes.length;
+			var scene = game.renderer.createScene();
+			this.scene = new CAAT.ActorContainer();
+			scene.addChild(this.scene);
+			this.scene.setBounds(0,0,640,480);
+			this.input = game.input.createProxy();
+			this.entities = {};
+
+			this._name = name;
+			this._entity_ids = [];
+			this.initState(options);
+			this._timeouts = [];
+		},
+		createTimeout : function(length, callback){
+			var timeout = new Timeout(length, callback);
+			this._timeouts.push(timeout);
+		},
+		tickTimeouts : function(delta){
+			this._timeouts = _.filter(this._timeouts, function(t){return t.tick(delta)});
+		},
+		initState: function(){
+
+        },
+        startState : function(){
+        	//console.log('Start:', this._name);
+        	this.input.enable = true;
+        	this.game.renderer.setScene(this._sceneIndex);
+        },
+        endState : function(){
+        	//console.log('End:', this._name);
+        	this.input.enable = false;
+        },
+        destroyState : function(){
+        	
+        },
+        tick : function(){
+        	_.each(this._entity_ids, function(id){
+        		var entity = this.entities[id];
+        		entity.componentCall('tick');
+        	}.bind(this))
+        	_.each(this._entity_ids, function(id){
+        		var entity = this.entities[id];
+        		entity.componentCall('render', this.game.renderer, 'main');
+        	}.bind(this))
+        },
+
+		getNextId: function(){
+			var id = 0;
+			while (this._entity_ids.indexOf(id) > -1){
+				id++;
+			}
+			return id;
+		},
+
+		addEntity: function(entity){
+			var id = this.getNextId();
+			entity.id = id;
+			this._entity_ids.push(id);
+			this.entities[id] = entity;
+			entity.state = this;
+			entity.register(this);
+			return entity;
+		},
+
+		getEntity: function(id){
+			return this.entities[id];
+		},
+
+		getEntities : function(){
+			var entities = []
+			_.each(this._entity_ids, function(id){
+        		entities.push(this.entities[id]);
+        	}.bind(this));
+        	return entities;
+		},
+
+		getEntitiesWithTag: function(tag){
+			return _.filter(this.getEntities(), function(e){
+				return _.include(e.tags, tag);
+			});
+		},
+		getEntityWithTag: function(tag){
+			return _.filter(this.getEntities(), function(e){
+				return _.include(e.tags, tag);
+			})[0];
+		},
+
+		getEntitiesWithComponent: function(comp){
+			return _.filter(this.getEntities(), function(e){
+				return (e.components[comp]!==undefined);
+			});
+		},
+
+		removeEntity: function(entity){
+			var id = entity.id;
+			this._entity_ids = _.without(this._entity_ids, id);
+			this.entities[id] = undefined;
+			entity.deregister();
+			entity.id = null;
+			entity.state = null;
+			return entity;
+		}
+	});
+	return GameState;
+});
+
+define('sge/input',['sge/lib/class', 'sge/observable'], function(Class, Observable){
+	var KEYCODES = {
+        "backspace" : 8,
+        "tab" : 9,
+        "enter" : 13,
+        "shift" : 16,
+        "ctrl" : 17,
+        "alt" : 18,
+        "pause" : 19,
+        "capslock" : 20,
+        "escape" : 27,
+        "space" : 32,
+        "pageup" : 33,
+        "pagedown" : 34,
+        "end" : 35,
+        "home" : 36,
+        "left" : 37,
+        "up" : 38,
+        "right" : 39,
+        "down" : 40,
+        "insert" : 45,
+        "delete" : 46,
+        "0" : 48,
+        "1" : 49,
+        "2" : 50,
+        "3" : 51,
+        "4" : 52,
+        "5" : 53,
+        "6" : 54,
+        "7" : 55,
+        "8" : 56,
+        "9" : 57,
+        "A" : 65,
+        "B" : 66,
+        "C" : 67,
+        "D" : 68,
+        "E" : 69,
+        "F" : 70,
+        "G" : 71,
+        "H" : 72,
+        "I" : 73,
+        "J" : 74,
+        "K" : 75,
+        "L" : 76,
+        "M" : 77,
+        "N" : 78,
+        "O" : 79,
+        "P" : 80,
+        "Q" : 81,
+        "R" : 82,
+        "S" : 83,
+        "T" : 84,
+        "U" : 85,
+        "V" : 86,
+        "W" : 87,
+        "X" : 88,
+        "Y" : 89,
+        "Z" : 90,
+        "left-window-key" : 91,
+        "right-window-key" : 92,
+        "select" : 93,
+        "numpad0" : 96,
+        "numpad1" : 97,
+        "numpad2" : 98,
+        "numpad3" : 99,
+        "numpad4" : 100,
+        "numpad5" : 101,
+        "numpad6" : 102,
+        "numpad7" : 103,
+        "numpad8" : 104,
+        "numpad9" : 105,
+        "multiply" : 106,
+        "add" : 107,
+        "subtract" : 109,
+        "decimal-point" : 110,
+        "divide" : 111,
+        "F1" : 112,
+        "F2" : 113,
+        "F3" : 114,
+        "F4" : 115,
+        "F5" : 116,
+        "F6" : 117,
+        "F7" : 118,
+        "F8" : 119,
+        "F9" : 120,
+        "F10" : 121,
+        "F11" : 122,
+        "F12" : 123,
+        "numlock" : 144,
+        "scrolllock" : 145,
+        "semi-colon" : 186,
+        "equals" : 187,
+        "comma" : 188,
+        "dash" : 189,
+        "period" : 190,
+        "slash" : 191,
+        "accent" : 192,
+        "lbracket" : 219,
+        "backslash" : 220,
+        "rbraket" : 221,
+        "singlequote" : 222
+    };
+
+    var REVERSE_KEYCODES = {};
+    var keys = Object.keys(KEYCODES);
+    for (var i=0; i<keys.length; i++){
+        var key = keys[i];
+        var value = KEYCODES[key];
+        REVERSE_KEYCODES[value] = key;
+    }
+
+    var InputProxy = Observable.extend({
+        init: function(input){
+            this._super();
+            this._input = input
+            this.enable = false;
+        },
+        fireEvent: function(){
+            var args = Array.prototype.slice.call(arguments);
+            if (this.enable){
+                this._super.apply(this, args);
+            }
+        },
+        isPressed: function(keyCode){
+            return this._input.isPressed(keyCode);
+        }
+    });
+
+	var Input = Observable.extend({
+		init: function(){
+            this._super()
+			this._isNewKeyDown = {}
+            this._isKeyDown = {};
+            this._proxies = [];
+            document.onkeydown = this.keyDownCallback.bind(this);
+            document.onkeyup = this.keyUpCallback.bind(this);
+        },
+        keyDownCallback : function(e){
+            //console.log('keydown:' + REVERSE_KEYCODES[e.keyCode]);
+            if (!this._isKeyDown[e.keyCode]){
+                this._isNewKeyDown[e.keyCode] = true;
+            }
+        },
+        keyUpCallback : function(e){
+            //console.log('keyup:' + REVERSE_KEYCODES[e.keyCode]);
+            this._isKeyDown[e.keyCode] = undefined;
+        },
+        isPressed : function(keyCode){
+            return (this._isKeyDown[KEYCODES[keyCode]] === true);
+        },
+        tick : function(){
+           var keys = Object.keys(this._isNewKeyDown);
+           for (var i = keys.length - 1; i >= 0; i--) {
+           		var keyCode = keys[i];
+           		this._isKeyDown[keyCode] = true;
+           		delete this._isNewKeyDown[keyCode];
+
+                this.fireEvent('keydown:' + REVERSE_KEYCODES[keyCode])
+           };
+        },
+        createProxy: function(){
+            var proxy = new InputProxy(this);
+            this._proxies.push(proxy);
+            return proxy;
+        },
+        fireEvent: function(){
+            var args = Array.prototype.slice.call(arguments);
+            this._super.apply(this, args);
+            var proxies = _.filter(this._proxies, function(p){return p.enable});
+            for (var i = proxies.length - 1; i >= 0; i--) {
+                proxies[i].fireEvent.apply(proxies[i], args);
+            };
+        }
+	});
+
+	return Input
+});
+/*global define: true */ 
+
+define('sge/vendor/pxloader',[], function() {
+
+    /*
+     * PixelLab Resource Loader
+     * Loads resources while providing progress updates.
+     */
+    function PxLoader(settings) {
+
+        // merge settings with defaults
+        settings = settings || {};
+        this.settings = settings;
+
+        // how frequently we poll resources for progress
+        if (settings.statusInterval == null) {
+            settings.statusInterval = 5000; // every 5 seconds by default
+        }
+
+        // delay before logging since last progress change
+        if (settings.loggingDelay == null) {
+            settings.loggingDelay = 20 * 1000; // log stragglers after 20 secs
+        }
+
+        // stop waiting if no progress has been made in the moving time window
+        if (settings.noProgressTimeout == null) {
+            settings.noProgressTimeout = Infinity; // do not stop waiting by default
+        }
+
+        var entries = [],
+            // holds resources to be loaded with their status
+            progressListeners = [],
+            timeStarted, progressChanged = Date.now();
+
+        /**
+         * The status of a resource
+         * @enum {number}
+         */
+        var ResourceState = {
+            QUEUED: 0,
+            WAITING: 1,
+            LOADED: 2,
+            ERROR: 3,
+            TIMEOUT: 4
+        };
+
+        // places non-array values into an array.
+        var ensureArray = function(val) {
+            if (val == null) {
+                return [];
+            }
+
+            if (Array.isArray(val)) {
+                return val;
+            }
+
+            return [val];
+        };
+
+        // add an entry to the list of resources to be loaded
+        this.add = function(resource) {
+
+            // ensure tags are in an object
+            resource.tags = new PxLoaderTags(resource.tags);
+
+            // ensure priority is set
+            if (resource.priority == null) {
+                resource.priority = Infinity;
+            }
+
+            entries.push({
+                resource: resource,
+                status: ResourceState.QUEUED
+            });
+        };
+
+        this.addProgressListener = function(callback, tags) {
+            progressListeners.push({
+                callback: callback,
+                tags: new PxLoaderTags(tags)
+            });
+        };
+
+        this.addCompletionListener = function(callback, tags) {
+            progressListeners.push({
+                tags: new PxLoaderTags(tags),
+                callback: function(e) {
+                    if (e.completedCount === e.totalCount) {
+                        callback(e);
+                    }
+                }
+            });
+        };
+
+        // creates a comparison function for resources
+        var getResourceSort = function(orderedTags) {
+
+            // helper to get the top tag's order for a resource
+            orderedTags = ensureArray(orderedTags);
+            var getTagOrder = function(entry) {
+                var resource = entry.resource,
+                    bestIndex = Infinity;
+                for (var i = 0; i < resource.tags.length; i++) {
+                    for (var j = 0; j < Math.min(orderedTags.length, bestIndex); j++) {
+                        if (resource.tags[i] === orderedTags[j] && j < bestIndex) {
+                            bestIndex = j;
+                            if (bestIndex === 0) {
+                                break;
+                            }
+                        }
+                        if (bestIndex === 0) {
+                            break;
+                        }
+                    }
+                }
+                return bestIndex;
+            };
+            return function(a, b) {
+                // check tag order first
+                var aOrder = getTagOrder(a),
+                    bOrder = getTagOrder(b);
+                if (aOrder < bOrder) { return -1; }
+                if (aOrder > bOrder) { return 1; }
+
+                // now check priority
+                if (a.priority < b.priority) { return -1; }
+                if (a.priority > b.priority) { return 1; }
+                return 0;
+            };
+        };
+
+        this.start = function(orderedTags) {
+            timeStarted = Date.now();
+
+            // first order the resources
+            var compareResources = getResourceSort(orderedTags);
+            entries.sort(compareResources);
+
+            // trigger requests for each resource
+            for (var i = 0, len = entries.length; i < len; i++) {
+                var entry = entries[i];
+                entry.status = ResourceState.WAITING;
+                entry.resource.start(this);
+            }
+
+            // do an initial status check soon since items may be loaded from the cache
+            setTimeout(statusCheck, 100);
+        };
+
+        var statusCheck = function() {
+            var checkAgain = false,
+                noProgressTime = Date.now() - progressChanged,
+                timedOut = (noProgressTime >= settings.noProgressTimeout),
+                shouldLog = (noProgressTime >= settings.loggingDelay);
+
+            for (var i = 0, len = entries.length; i < len; i++) {
+                var entry = entries[i];
+                if (entry.status !== ResourceState.WAITING) {
+                    continue;
+                }
+
+                // see if the resource has loaded
+                if (entry.resource.checkStatus) {
+                    entry.resource.checkStatus();
+                }
+
+                // if still waiting, mark as timed out or make sure we check again
+                if (entry.status === ResourceState.WAITING) {
+                    if (timedOut) {
+                        entry.resource.onTimeout();
+                    } else {
+                        checkAgain = true;
+                    }
+                }
+            }
+
+            // log any resources that are still pending
+            if (shouldLog && checkAgain) {
+                log();
+            }
+
+            if (checkAgain) {
+                setTimeout(statusCheck, settings.statusInterval);
+            }
+        };
+
+        this.isBusy = function() {
+            for (var i = 0, len = entries.length; i < len; i++) {
+                if (entries[i].status === ResourceState.QUEUED || entries[i].status === ResourceState.WAITING) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        var onProgress = function(resource, statusType) {
+            
+            var entry = null,
+                i, len, numResourceTags, listener, shouldCall;
+
+            // find the entry for the resource    
+            for (i = 0, len = entries.length; i < len; i++) {
+                if (entries[i].resource === resource) {
+                    entry = entries[i];
+                    break;
+                }
+            }
+
+            // we have already updated the status of the resource
+            if (entry == null || entry.status !== ResourceState.WAITING) {
+                return;
+            }
+            entry.status = statusType;
+            progressChanged = Date.now();
+
+            numResourceTags = resource.tags.length;
+
+            // fire callbacks for interested listeners
+            for (i = 0, len = progressListeners.length; i < len; i++) {
+                
+                listener = progressListeners[i];
+                if (listener.tags.length === 0) {
+                    // no tags specified so always tell the listener
+                    shouldCall = true;
+                } else {
+                    // listener only wants to hear about certain tags
+                    shouldCall = resource.tags.contains(listener.tags);
+                }
+
+                if (shouldCall) {
+                    sendProgress(entry, listener);
+                }
+            }
+        };
+
+        this.onLoad = function(resource) {
+            onProgress(resource, ResourceState.LOADED);
+        };
+        this.onError = function(resource) {
+            onProgress(resource, ResourceState.ERROR);
+        };
+        this.onTimeout = function(resource) {
+            onProgress(resource, ResourceState.TIMEOUT);
+        };
+
+        // sends a progress report to a listener
+        var sendProgress = function(updatedEntry, listener) {
+            // find stats for all the resources the caller is interested in
+            var completed = 0,
+                total = 0,
+                i, len, entry, includeResource;
+            for (i = 0, len = entries.length; i < len; i++) {
+                
+                entry = entries[i];
+                includeResource = false;
+
+                if (listener.tags.length === 0) {
+                    // no tags specified so always tell the listener
+                    includeResource = true;
+                } else {
+                    includeResource = entry.resource.tags.contains(listener.tags);
+                }
+
+                if (includeResource) {
+                    total++;
+                    if (entry.status === ResourceState.LOADED ||
+                        entry.status === ResourceState.ERROR ||
+                        entry.status === ResourceState.TIMEOUT) {
+
+                        completed++;
+                    }
+                }
+            }
+
+            listener.callback({
+                // info about the resource that changed
+                resource: updatedEntry.resource,
+
+                // should we expose StatusType instead?
+                loaded: (updatedEntry.status === ResourceState.LOADED),
+                error: (updatedEntry.status === ResourceState.ERROR),
+                timeout: (updatedEntry.status === ResourceState.TIMEOUT),
+
+                // updated stats for all resources
+                completedCount: completed,
+                totalCount: total
+            });
+        };
+
+        // prints the status of each resource to the console
+        var log = this.log = function(showAll) {
+            if (!window.console) {
+                return;
+            }
+
+            var elapsedSeconds = Math.round((Date.now() - timeStarted) / 1000);
+            window.console.log('PxLoader elapsed: ' + elapsedSeconds + ' sec');
+
+            for (var i = 0, len = entries.length; i < len; i++) {
+                var entry = entries[i];
+                if (!showAll && entry.status !== ResourceState.WAITING) {
+                    continue;
+                }
+
+                var message = 'PxLoader: #' + i + ' ' + entry.resource.getName();
+                switch(entry.status) {
+                    case ResourceState.QUEUED:
+                        message += ' (Not Started)';
+                        break;
+                    case ResourceState.WAITING:
+                        message += ' (Waiting)';
+                        break;
+                    case ResourceState.LOADED:
+                        message += ' (Loaded)';
+                        break;
+                    case ResourceState.ERROR:
+                        message += ' (Error)';
+                        break;
+                    case ResourceState.TIMEOUT:
+                        message += ' (Timeout)';
+                        break;
+                }
+
+                if (entry.resource.tags.length > 0) {
+                    message += ' Tags: [' + entry.resource.tags.array.join(',') + ']';
+                }
+
+                window.console.log(message);
+            }
+        };
+    }
+
+
+    // Tag object to handle tag intersection; once created not meant to be changed
+    // Performance rationale: http://jsperf.com/lists-indexof-vs-in-operator/3
+     
+    function PxLoaderTags(values) {
+     
+        this.array = [];
+        this.object = {};
+        this.value = null; // single value
+        this.length = 0;
+     
+        if (values !== null && values !== undefined) {
+            if (Array.isArray(values)) {
+                this.array = values;
+            } else if (typeof values === 'object') {
+                for (var key in values) {
+                    this.array.push(key);
+                }
+            } else {
+                this.array.push(values);
+                this.value = values;
+            }
+     
+            this.length = this.array.length;
+     
+            // convert array values to object with truthy values, used by contains function below
+            for (var i = 0; i < this.length; i++) {
+                this.object[this.array[i]] = true;
+            }
+        }
+    }
+
+    // compare this object with another; return true if they share at least one value
+    PxLoaderTags.prototype.contains = function(other) {
+        if (this.length === 0 || other.length === 0) {
+            return false;
+        } else if (this.length === 1 && this.value !== null) {
+            if (other.length === 1) {
+                return this.value === other.value;
+            } else {
+                return other.object.hasOwnProperty(this.value);
+            }
+        } else if (other.length < this.length) {
+            return other.contains(this); // better to loop through the smaller object
+        } else {
+            for (var key in this.object) {
+                if (other.object[key]) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    };
+    // AMD module support
+    function PxLoaderImage(url, tags, priority) {
+        var self = this,
+            loader = null;
+
+        this.img = new Image();
+        this.tags = tags;
+        this.priority = priority;
+
+        var onReadyStateChange = function() {
+            if (self.img.readyState === 'complete') {
+                removeEventHandlers();
+                loader.onLoad(self);
+            }
+        };
+
+        var onLoad = function() {
+            removeEventHandlers();
+            loader.onLoad(self);
+        };
+
+        var onError = function() {
+            removeEventHandlers();
+            loader.onError(self);
+        };
+
+        var removeEventHandlers = function() {
+            self.unbind('load', onLoad);
+            self.unbind('readystatechange', onReadyStateChange);
+            self.unbind('error', onError);
+        };
+
+        this.start = function(pxLoader) {
+            // we need the loader ref so we can notify upon completion
+            loader = pxLoader;
+
+            // NOTE: Must add event listeners before the src is set. We
+            // also need to use the readystatechange because sometimes
+            // load doesn't fire when an image is in the cache.
+            self.bind('load', onLoad);
+            self.bind('readystatechange', onReadyStateChange);
+            self.bind('error', onError);
+
+            self.img.src = url;
+        };
+
+        // called by PxLoader to check status of image (fallback in case
+        // the event listeners are not triggered).
+        this.checkStatus = function() {
+            if (self.img.complete) {
+                removeEventHandlers();
+                loader.onLoad(self);
+            }
+        };
+
+        // called by PxLoader when it is no longer waiting
+        this.onTimeout = function() {
+            removeEventHandlers();
+            if (self.img.complete) {
+                loader.onLoad(self);
+            } else {
+                loader.onTimeout(self);
+            }
+        };
+
+        // returns a name for the resource that can be used in logging
+        this.getName = function() {
+            return url;
+        };
+
+        // cross-browser event binding
+        this.bind = function(eventName, eventHandler) {
+            if (self.img.addEventListener) {
+                self.img.addEventListener(eventName, eventHandler, false);
+            } else if (self.img.attachEvent) {
+                self.img.attachEvent('on' + eventName, eventHandler);
+            }
+        };
+
+        // cross-browser event un-binding
+        this.unbind = function(eventName, eventHandler) {
+            if (self.img.removeEventListener) {
+                self.img.removeEventListener(eventName, eventHandler, false);
+            } else if (self.img.detachEvent) {
+                self.img.detachEvent('on' + eventName, eventHandler);
+            }
+        };
+
+    }
+
+    // add a convenience method to PxLoader for adding an image
+    PxLoader.prototype.addImage = function(url, tags, priority) {
+        var imageLoader = new PxLoaderImage(url, tags, priority);
+        this.add(imageLoader);
+
+        // return the img element to the caller
+        return imageLoader.img;
+    };
+    // exports
+    return PxLoader;
+
+});
+
+// Date.now() shim for older browsers
+if (!Date.now) {
+    Date.now = function now() {
+        return new Date().getTime();
+    };
+}
+
+// shims to ensure we have newer Array utility methods
+// https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/isArray
+if (!Array.isArray) {
+    Array.isArray = function(arg) {
+        return Object.prototype.toString.call(arg) === '[object Array]';
+    };
+}
+
+
+
+;
+define('sge/game',['jquery', 'sge/lib/class' ,'sge/vendor/caat', 'sge/vendor/state-machine','sge/engine','sge/gamestate', 'sge/input','sge/renderer', 'sge/vendor/pxloader'],
+function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoader, PxLoaderImage){
+    var LoadState = GameState.extend({
+        initState: function(){
+            var title = new CAAT.TextActor().setText('Loading').setLocation(320,240);
+            //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            this.scene.addChild(title);
+            //this.scene.addChild(instruct);
+        },
+        startState : function(){
+            this._super();
+            if (this.game._states['game'].loader){
+                this.game._states['game'].loader.start();
+            }
+            if (this.elem){
+                this.elem.fadeIn();
+            }
+        },
+        endState : function(){
+            this._super();
+            if (this.elem){
+                this.elem.fadeOut();
+            }
+        }
+    });
+
+    var MainMenuState = GameState.extend({
+        initState: function(){
+            var title = new CAAT.TextActor().setText('DreddRL').setLocation(320,240);
+            var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            this.scene.addChild(title);
+            this.scene.addChild(instruct);
+            this.startGame = function(){
+                this.game._states['game'] = new this.game._gameState(this.game, 'Game');
+                this.game.fsm.startGame();    
+            }.bind(this);
+            this.startState();
+            this.input.addListener('keydown:enter', this.startGame);
+        },
+        startState : function(){
+            this._super();
+            if (this.elem){
+                this.elem.fadeIn();
+            }
+        },
+        endState : function(){
+            this._super();
+            if (this.elem){
+                this.elem.fadeOut();
+            }
+        },
+        tick : function(delta){
+
+        }
+    })
+
+    var GameOverState = GameState.extend({
+        initState: function(){
+            var title = new CAAT.TextActor().setText('Game Over').setLocation(320,240);
+            //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            this.scene.addChild(title);
+            //this.scene.addChild(instruct);
+            this.startGame = function(){
+                this.game._states['game'] = new this.game._gameState(this.game);
+                this.game.fsm.loadMainMenu();
+            }.bind(this);
+            this.input.addListener('keydown:enter', this.startGame);
+        },
+        startState : function(){
+            this._super();
+            if (this.elem){
+                this.elem.fadeIn();
+            }
+        },
+        endState : function(){
+            this._super();
+            //this.input.removeListener('keydown:enter', this.startGame);
+            if (this.elem){
+                this.elem.fadeOut();
+            }
+        },
+        tick : function(delta){
+
+        }
+    })
+
+    var GameWinState = GameState.extend({
+        initState: function(){
+            var title = new CAAT.TextActor().setText('Win').setLocation(320,240);
+            //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            this.scene.addChild(title);
+            //this.scene.addChild(instruct);
+            this.startGame = function(){
+                this.game._states['game'] = new this.game._gameState(this.game);
+                this.game.fsm.loadMainMenu();
+            }.bind(this);
+            this.input.addListener('keydown:enter', this.startGame);
+        },
+        startState : function(){
+            this._super();
+            if (this.elem){
+                this.elem.fadeIn();
+            }
+        },
+        endState : function(){
+            this._super();
+            if (this.elem){
+                this.elem.fadeOut();
+            }
+        },
+        tick : function(delta){
+
+        }
+    })
+
+    var PauseState = GameState.extend({
+        initState: function(){
+            var title = new CAAT.TextActor().setText('Paused').setLocation(320,240);
+            //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            this.scene.addChild(title);
+            //this.scene.addChild(instruct);
+            this.unpause = function(){
+                this.game.fsm.unpause();
+            }.bind(this);
+            this.input.addListener('keydown:space', this.unpause);
+        },
+        startState : function(){
+            this._super();
+            if (this.elem){
+                this.elem.fadeIn();
+            }
+        },
+        endState : function(){
+            this._super();
+            if (this.elem){
+                this.elem.fadeOut();
+            }
+        },
+        tick : function(delta){
+            func = this.game._states['game']._paused_tick;
+            if (func){
+                func.call(this.game._states['game'], delta);
+            }
+        }
+    });
+
+    var DefaultGame = GameState.extend({
+        initState: function(){
+            setTimeout(function(){
+                this.game.fsm.finishLoad();
+                setTimeout(function(){
+                    this.game.fsm.gameWin();
+                }.bind(this), 5000);
+            }.bind(this), 1000)
+        }
+    })
+
+    var Game = Class.extend({
+        init: function(options){
+            console.log('GAME')
+            this.options = $.extend({
+                elem: null
+            }, options || {});
+            this.engine = new Engine();
+            this.loader = new PxLoader();
+            this.input = new Input();
+            this._tick = 0;
+            this._last = 0;
+            this._lastRender = 0;
+            this._gameState = DefaultGame;
+            this._debugElem = $('.fps');
+            if (this.options.elem!==null){
+                this.elem = $(this.options.elem);
+            } else {
+                console.log('[SGE ERROR] Need an element to render in. Use elem option to constructor.')
+                this.elem = null;
+            }
+            this.renderer = new CAAT.Director().initialize(640,480, $('#game')[0]);
+
+            //this.renderer.onRenderStart= function(director_time) {console.log('tick',this.renderer.scenes.indexOf(this.renderer.currentScene))}.bind(this);
+            this.engine.tick = function(delta){
+                this.tick(delta);
+            }.bind(this);
+
+            this.fsm = StateMachine.create({
+                initial: 'mainmenu',
+                events: [
+                    {name: 'startLoad', from: ['game','menu','mainmenu'], to:'loading'},
+                    {name: 'finishLoad', from: 'loading', to: 'game'},
+                    {name: 'pause', from: 'game', to:'paused'},
+                    {name: 'unpause', from: ['paused','menu'], to:'game'},
+                    {name: 'startGame', from: 'mainmenu', to:'loading'},
+                    {name: 'loadMainMenu', from: ['game','gameover','gamewin','menu','pause'], to: 'mainmenu'},
+                    {name: 'gameOver', from: 'game', to: 'gameover'},
+                    {name: 'gameWin', from: 'game', to:'gamewin'},
+                    {name: 'startDialog', from: 'game', to:'dialog'},
+                    {name: 'endDialog', from:'dialog', to:'game'}
+                ],
+                callbacks: {
+                    onleavestate: function(evt, from, to){
+                        if (from=="none"){return};
+                        //console.log('Leaving:', from)
+                        this._states[from].endState(evt, from, to);
+                    }.bind(this),
+                    onenterstate: function(evt, from, to){
+                        if (from=="none"){return};
+                        //console.log('Entering:', to)
+                        this._states[to].startState(evt, from, to);
+                        this.state = this._states[to];
+                    }.bind(this)
+                }
+            });
+
+            this._states = {
+                'game' : null,
+                'mainmenu' : new MainMenuState(this, 'Main Menu'),
+                'loading' : new LoadState(this, 'Loading'),
+                'paused' : new PauseState(this, 'Paused'),
+                'gameover' : new GameOverState(this, 'Game Over'),
+                'gamewin' : new GameWinState(this, 'Game Win')
+            }
+            this.state = this._states['loading'];
+            this.initGame(options);
+        },
+        setGameState : function(StateClass){
+            this._gameState = StateClass
+        },
+        addState: function(label, value){
+            this._states[label] = value;
+            return value;
+        },
+        initGame: function(){},
+        preRender: function(){},
+        postRender: function(){},
+        tick: function(delta){
+            this.input.tick();
+            if (this.state!=null){
+                this.state.tick(delta);
+            } else {
+                //Do Something;
+            }
+        },
+        start: function(){
+            window.onblur = function(){
+                this.fsm.pause();
+            }.bind(this);
+            this.engine.run(15);
+            CAAT.loop(30);
+        }
+    });
+
+    return Game;
+});
+
+define('sge/lib/random',[],function(){
+	var unit = function(){
+			return Math.random();
+	}
+	var range = function(min, max){
+		var delta = max - min;
+		return ((Math.random() * delta) + min);
+	}
+	var rangeInt = function(min, max){
+		return Math.round(range(min, max));
+	}
+	var item = function(array){
+		var length = array.length-1;
+		return array[Math.round(Math.random() * length)];
+	}
+	return {
+		unit : unit,
+		range : range,
+		rangeInt : rangeInt,
+		item : item
+	}
+});
+define('sge/lib/collision',[],function(){
+	var lineIntersect = function(x1,y1,x2,y2, x3,y3,x4,y4) {
+        var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+        var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
+        if (isNaN(x)||isNaN(y)) {
+            return false;
+        } else {
+            if (x1>=x2) {
+                if (!(x2<=x&&x<=x1)) {return false;}
+            } else {
+                if (!(x1<=x&&x<=x2)) {return false;}
+            }
+            if (y1>=y2) {
+                if (!(y2<=y&&y<=y1)) {return false;}
+            } else {
+                if (!(y1<=y&&y<=y2)) {return false;}
+            }
+            if (x3>=x4) {
+                if (!(x4<=x&&x<=x3)) {return false;}
+            } else {
+                if (!(x3<=x&&x<=x4)) {return false;}
+            }
+            if (y3>=y4) {
+                if (!(y4<=y&&y<=y3)) {return false;}
+            } else {
+                if (!(y3<=y&&y<=y4)) {return false;}
+            }
+        }
+        return [x,y];
+    }
+
+	var rectIntersect = function(r1, r2) {
+	    return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);
+	}
+
+	var lineRectIntersect = function(x1, y1, x2, y2, rect){
+		coords = [[rect.left,rect.top,rect.right,rect.top],[rect.left,rect.bottom,rect.right,rect.bottom],[rect.left,rect.top,rect.left,rect.bottom],[rect.right,rect.top,rect.right,rect.bottom]];
+        var intersection = false;
+        for (var i = coords.length - 1; i >= 0; i--) {
+            var coord = coords[i];
+            intersection = lineIntersect(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
+            if (intersection){
+                break;
+            }
+        }
+        return intersection;
+	}
+
+    pointRectIntersect = function(x, y, rect){
+        return (rect.left<x && rect.right>x && rect.top < y && rect.bottom > y);
+    }
+
+	return {
+		lineIntersect : lineIntersect,
+		rectIntersect : rectIntersect,
+		lineRectIntersect : lineRectIntersect,
+        pointRectIntersect : pointRectIntersect
+	}
+});
+define('sge/main',['sge/config',
+        'sge/renderer',
+        'sge/engine',
+        'sge/entity',
+        'sge/component',
+        'sge/game',
+        'sge/gamestate',
+        'sge/vendor/pxloader',
+        'sge/lib/class',
+        'sge/lib/random',
+        'sge/lib/collision',
+        'sge/spritesheet'
+        ],
+function(
+      config,
+      Renderer,
+      Engine,
+      Entity,
+      Component,
+      Game,
+      GameState,
+      PxLoader,
+      Class,
+      random,
+      collision,
+      SpriteSheet
+        ){
+   return {
+        config: config,
+        Renderer: Renderer,
+        Engine : Engine,
+        Entity : Entity,
+        Component : Component,
+        Game : Game,
+        GameState : GameState,
+        vendor : {
+          PxLoader : PxLoader
+        },
+        Class : Class,
+        random : random,
+        collision : collision,
+        SpriteSheet : SpriteSheet
+   };
+});
+define('sge', ['sge/main'], function (main) { return main; });
+
+define('dreddrl/components/bullet',['sge'],function(sge){
+
+	var BulletComponent = sge.Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.kill = this.kill.bind(this);
+			this.hit = this.hit.bind(this);
+		},
+		hit: function(){
+			console.log('Hit');
+		},
+		kill: function(){
+			this.entity.fireEvent('kill');
+		},
+		register: function(state){
+            this._super(state);
+            this.entity.addListener('contact.tile', this.kill);
+            this.scene = this.state.scene;
+            this.container = new CAAT.ActorContainer().setLocation(12,12);
+            var sizeX = 6;
+            var sizeY = 32;
+            if (Math.abs(this.entity.get('xform.vx')) > Math.abs(this.entity.get('xform.vy'))){
+            	sizeX = 32;
+            	sizeY = 6;
+            }
+            this.actor = new CAAT.Actor().setSize(sizeX,sizeY).setFillStyle('yellow').setLocation(0,0);
+            this.container.addChild(this.actor);
+            this.entity.get('xform.container').addChild(this.container);
+        },
+        deregister: function(state){
+        	this.entity.removeListener('contact.tile', this.kill);
+            this.entity.get('xform.container').removeChild(this.container);
+            this._super(state);
+        },
+		tick: function(delta){
+			this.entity.set('physics.width', Math.max(Math.abs(this.entity.get('xform.vx')) * delta, 2)*2);
+			this.entity.set('physics.height', Math.max(Math.abs(this.entity.get('xform.vy')) * delta, 2)*2);
+		}
+	});
+	sge.Component.register('bullet', BulletComponent);
+    return BulletComponent;
+})		;
+define('dreddrl/components/weapons',['sge', './bullet'],function(sge){
+
+	var WeaponsComponent = sge.Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.fire = this.fire.bind(this);
+		},
+		fire: function(){
+			var ammo = this.entity.get('inventory.ammo');
+			if (ammo<=0){
+				/*blink ammo red*/
+				return;
+			}
+			this.entity.set('inventory.ammo', ammo-1);
+
+			var speed = 1024;
+			var vx = 0;
+			var vy = 0;
+			switch( this.entity.get('xform.dir')){
+				case 'up':
+					vy = -1;
+					break;
+				case 'down':
+					vy = 1;
+					break;
+				case 'left':
+					vx = -1;
+					break;
+				case 'right':
+					vx = 1;
+					break;
+			}
+			var bullet = new sge.Entity({
+				xform: {
+					tx: this.entity.get('xform.tx') + (vx * 24 * 0),
+					ty: this.entity.get('xform.ty') + (vy * 24 * 0),
+					vx: vx * speed,
+					vy: vy * speed
+				},
+				physics: { width: (4 + Math.abs(vx*48)), height: (4+Math.abs(vy*48))},
+				bullet:{},
+				debug: {},
+				health: {life: 1, alignment: this.entity.get('health.alignment'), visible: false}
+			});
+			this.state.addEntity(bullet);
+		},
+		register: function(state){
+			this.state = state;
+			this.entity.state.input.addListener('keydown:X', this.fire);
+		},
+		unregister: function(){
+			this.entity.state.input.removeListener('keydown:X', this.fire);
+			this.state = null;
+		}
+	});
+	sge.Component.register('weapons', WeaponsComponent);
+    return WeaponsComponent;
+});
+define('dreddrl/components/physics',['sge'], function(sge){
+	var PhysicsComponent = sge.Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.data.width = data.width || 16;
+			this.data.height = data.height || 16;
+			this.data.type = data.type || 0;
+		}
+	})
+	sge.Component.register('physics', PhysicsComponent);
+    return PhysicsComponent;
+});
+define('dreddrl/components/judgemovement',['sge/component'], function(Component){
+    var JudgeMovementComponent = Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.data.speed = 8;
+            this.data.width = data.width || 640;
+            this.data.height = data.height || 480;
+            this.data.map = data.map || null;
+            this._isKeyDown = {};
+        },
+        register: function(state){
+            this.input = state.input;
+        },
+        deregister: function(state){
+            this.input = undefined;
+        },
+        tick: function(delta){
+            var vx = this.entity.get('xform.vx') * delta;
+            var vy = this.entity.get('xform.vy') * delta;
+            if ((Math.abs(vx) > 0) || (Math.abs(vy) > 0)){
+                this.entity.set('anim.play', true)
+                if (!this.input.isPressed('Z')){
+                    if (Math.abs(vx) > Math.abs(vy)){
+                        if (vx > 0){
+                            this.entity.set('anim.anim', 'walk_right');
+                            this.entity.set('xform.dir', 'right');
+                        } else {
+                            this.entity.set('anim.anim', 'walk_left');
+                            this.entity.set('xform.dir', 'left');
+                        }
+                    } else {
+                        if (vy < 0){
+                            this.entity.set('anim.anim', 'walk_up');
+                            this.entity.set('xform.dir', 'up');
+                        } else {
+                            this.entity.set('anim.anim', 'walk_down');
+                            this.entity.set('xform.dir', 'down');
+                        }
+                    }
+                }
+            } else {
+                this.entity.set('anim.play', false)   
+            }
+        }
+    });
+    Component.register('judge.movement', JudgeMovementComponent);
+
+    return JudgeMovementComponent;
+});
+define('dreddrl/components/deaddrop',['sge'], function(sge){
+    var DeadDrop = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.drop = this.drop.bind(this);
+            this.entity.addListener('kill', this.drop);
+        },
+        drop: function(){
+            var dropDir = null;
+            var tileX = Math.floor(this.entity.get('xform.tx')/32)
+            var tileY = Math.floor(this.entity.get('xform.ty')/32)
+            var allDirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            while (allDirs.length){
+                var dir = allDirs.shift()
+                var tile = this.state.map.getTile(tileX + dir[0], tileY + dir[1]);
+                if (tile.passable){
+                    dropDir = [32 * (tileX + dir[0] + 0.5), 32 * (tileY + dir[1] + 0.5)];
+                    break;
+                }
+            }
+            if (dropDir===null){
+                return;
+            }
+            var newItem = this.state.factory((Math.random() > 0.5 ? 'rammen' : 'gun'), {
+                xform: {
+    				tx: dropDir[0],
+					ty: dropDir[1],
+				}});
+
+            this.state.addEntity(newItem);
+        }
+    });
+    sge.Component.register('deaddrop', DeadDrop);
+    return DeadDrop
+});
+define('dreddrl/components/freeitem',['sge'], function(sge){
+    var FreeItem = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.data.name = data.name || "Item";
+            console.log('Created', data.name)
+            var keys = Object.keys(data);
+            for (var i = keys.length - 1; i >= 0; i--) {
+                this.data[keys[i]] = data[keys[i]];
+            };
+            this.pickup = this.pickup.bind(this);
+            this.entity.addListener('contact.start', this.pickup);
+        },
+        pickup: function(entity){
+            if (entity.hasTag('pc')){
+                entity.fireEvent('pickup', this.entity);
+                this.entity.fireEvent('kill');
+            }
+        },
+    	register: function(state){
+			this.state = state;
+		},
+		unregister: function(){
+			this.state = null;
+		}
+    });
+    sge.Component.register('freeitem', FreeItem);
+    return FreeItem
+});
+define('dreddrl/components/inventory',['sge','jquery'],function(sge, $){
+
+	var InventoryComponent = sge.Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.data.ammo = data.ammo || 100;
+			this.data.items = []
+			this.data.objects = {};
+			this._elem_ammo = $('span.ammo');
+			this.entity.addListener('pickup', this.pickup.bind(this));
+		},
+		pickup: function(entity){
+			var freeitem = entity.get('freeitem');
+			var newAmmo = freeitem.get('inventory.ammo');
+			var keys = Object.keys(freeitem.data);
+			this.entity.fireEvent('log', 'Picked up ' + freeitem.get('name'));
+			keys = _.without(keys,'name');
+			for (var i = keys.length - 1; i >= 0; i--) {
+				var key = keys[i];
+				if (key=='inventory.add'){
+					this.data.items.push(freeitem.data[key]);
+				} else {
+					console.log(key, freeitem.data[key])
+					this.entity.set(key, freeitem.data[key], 'add');
+				}
+			}
+
+		},
+		subtractProperty: function(prop, value){
+			value = value || 1;
+			value = this.get(prop) - value;
+			this.set(prop, value);
+		}
+	})
+	sge.Component.register('inventory', InventoryComponent);
+    return InventoryComponent;
+})		;
+define('dreddrl/components/interaction',['sge'], function(sge){
+    var Interact = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.data.fillStyle = 'green';
+            this.data.strokeStyle = 'black';
+            this.data.targets = data.targets || null;
+            this.data.width = data.width || 32;
+            this.data.height = data.height || 32;
+            this.data.dist = data.dist || 96;
+            this.active = false;
+            this.interact = this.interact.bind(this);
+            this.entity.addListener('focus.gain', this.activate.bind(this));
+            this.entity.addListener('focus.lose', this.deactivate.bind(this));
+        },
+        activate: function(coord){
+            this.activeCoord = coord;
+            this.active = true;
+            this.state.input.addListener('keydown:enter', this.interact);
+        },
+        deactivate: function(){
+            this.active = false;
+            this.state.input.removeListener('keydown:enter', this.interact);
+        },
+        interact: function(){
+            this.entity.fireEvent('interact');
+        },
+        deregister: function(){
+            this._super();
+            this.state.input.removeListener('keydown:enter', this.interact);
+        }
+    });
+    sge.Component.register('interact', Interact);
+    return Interact
+});
+var DOOROPENTILE1 = { srcX : 2, srcY: 36}
+var DOOROPENTILE2 = { srcX : 2, srcY: 37}
+var DOORCLOSEDTILE1 = { srcX : 1, srcY: 36}
+var DOORCLOSEDTILE2 = { srcX : 1, srcY: 37}
+
+define('dreddrl/components/door',['sge'], function(sge){
+    var Door = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.room = data.room;
+            this.data.locked = data.locked || false;
+            this.data.open = data.open===undefined ?  true : data.open;
+            this.interact = this.interact.bind(this);
+            this.entity.addListener('interact', this.interact);
+        },
+        interact: function(){
+            if (this.get('locked')){
+                this.entity.fireEvent('log','Door is locked');
+            } else {
+                this.set('open', !this.get('open'));
+                this.room.update();
+                this.updateTiles();
+            }
+        },
+        updateTiles : function(){
+            var tx = Math.floor(this.entity.get('xform.tx') / 32);
+            var ty = Math.floor(this.entity.get('xform.ty') / 32);
+            if (this.get('open')==true){
+                tile = this.map.getTile(tx,ty-2);
+                tile.passable=true;
+                tile = this.map.getTile(tx,ty-1);
+                tile.layers['layer1'] = DOOROPENTILE1;
+                tile.passable=true;
+                tile = this.map.getTile(tx,ty);
+                tile.passable=true;
+                tile.layers['layer1'] = DOOROPENTILE2;
+            } else {
+                tile = this.map.getTile(tx,ty-2);
+                tile.passable=false;
+                tile = this.map.getTile(tx,ty-1);
+                tile.layers['layer1'] = DOORCLOSEDTILE1;
+                tile.passable=false;
+                tile = this.map.getTile(tx,ty);
+                tile.layers['layer1'] = DOORCLOSEDTILE2;
+                tile.passable=false;
+            }
+            this.map.renderTiles(this.state.game.renderer, [[tx,ty-2],[tx, ty-1],[tx,ty]]);
+            this.map.renderTiles(this.state.game.renderer, this.room.getTiles());
+            
+        },
+
+    	register: function(state){
+			this.state = state;
+            this.map = state.map;
+            this.updateTiles();
+		},
+		unregister: function(){
+			this.state = null;
+            this.map = null;
+		}
+    });
+    sge.Component.register('door', Door);
+    return Door
+});
+define('dreddrl/action',['sge'], function(sge){
+	var Action = sge.Class.extend({
+		init: function(entity, data){
+			this.entity = entity;
+			this.children = []
+			this.label = null;
+
+			if(data.type === undefined) {
+                data.type = 'action';
+	        }
+	        if(data.label === undefined) {
+	            data.label = data.type;
+	        }
+	        if(data.children === undefined) {
+	            data.children = [];
+	        }
+	        if(data.args === undefined) {
+	            data.args = [];
+	        }
+	        this.type = data.type;
+	        this.args = data.args;
+	        this.label = data.label;
+	        this.leaf = true;
+	        this.loadChildren(data);
+			},
+		add : function(child) {
+	        this.children.push(child);
+	    },
+	    remove : function(child) {
+		        this.children.remove(child);
+		    },
+	    uiInterface : function(){
+		        return null;
+	    },
+	    
+	    loadChildren : function(data) {
+		        for(var i = 0; i < data.children.length; i++) {
+		            var child = data.children[i];
+		            var action = rpg.Action.Load(child);
+		            this.add(action);
+		        }
+	    },
+	    run : function(state) {
+	    		this.state = state;
+		        this.start.apply(this, this.args);
+	    },
+	    start : function() {
+
+	    },
+	    end : function() {
+		        var eventSystem = this.getEngine().getPlugin('event');
+		        eventSystem.actions = eventSystem.actions.without(this);
+		        this.getEvent().run();
+	    },
+	    evalExpr : function(expr, ctx) {
+	        //DANGEROUS;
+	        var expr_ = this.parseExpr(expr, ctx);
+	        var evaled = eval(expr_);
+	        return evaled;
+	    },
+	    parseExpr : function(expr, ctx) {
+	        var parsedExpr = expr;
+	        var matches = (expr + "").match(/\$\{(@?[\w()"'\.]+)\}/g);
+	        if(matches) {
+	            _.each(matches, function(variable) {
+	                var path = variable.match(/\$\{(@?[\w()\.]+)\}/)[1];
+	                var value = this.evalValue(path, ctx);
+	                parsedExpr = parsedExpr.replace(variable, value);
+	            }.bind(this));
+	        }
+	        return parsedExpr;
+	    },
+	    evalValue : function(path, ctx){
+	        var _ctx = ctx;
+	        if (path.match(/^@/)){
+	            var name = path.split('.')[0];
+	            name = name.replace('@(','').replace(')','');
+	            if (name=='state'){
+	            	_ctx = this.state;
+	            } else {
+		            _ctx = this.state.getEntitiesWithTag(name)[0];
+		        }
+	            path = path.replace('@(' + name + ').', '');
+	        }
+	        return _ctx.get(path);
+	    },
+	    setAttr : function(path, value, method) {
+	    	_ctx = this.entity;
+	    	console.log('PATH', path)
+	        if (path.match(/^@/)){
+	            var name = path.split('.')[0];
+	            name = name.replace('@(','').replace(')','');
+	            if (name=='state'){
+	            	_ctx = this.state;
+	            } else {
+		            _ctx = this.state.getEntitiesWithTag(name)[0];
+		        }
+	            path = path.replace('@(' + name + ').', '');
+	        }
+	        return _ctx.set(path, value, method);
+	    },
+	});
+
+	Action._classHash = {};
+
+	Action.Load = function(entity, data) {
+		var type = data.type;
+	    var cls = Action._classHash[type];
+	    if(cls === undefined) {
+	        return null;
+	    }
+	    var comp = new cls(entity, data);
+	    comp.type = type;
+	    return comp;
+	};
+
+	Action.register = function(name, klass){
+		Action._classHash[name] = klass;
+	};
+
+	Action.Exists = function(type) {
+	    return Action._classHash.keys().include(type);
+	};
+
+	Action.List = function(type) {
+	    return rpg.Action._classHash.keys();
+	};
+
+
+	return Action;
+});
+define('dreddrl/components/actions',['sge', '../action'], function(sge, Action){
+    var ActionComponent = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            var keys = Object.keys(data);
+            for (var i = keys.length - 1; i >= 0; i--) {
+                //console.log(data[keys[i]])
+                var callbackData = data[keys[i]].slice(0);
+                var callback = function(){
+                    var actionData = callbackData.slice(0);
+                    console.log('Data:', callbackData)
+                    var actionType = actionData.shift();
+                    var action = Action.Load(this.entity, {type: actionType, args: actionData});
+                    action.run(this.state);
+                }.bind(this);
+                this.data[keys[i]] = callback;
+                this.entity.addListener(keys[i], callback);
+            }
+        },
+        interact: function(){
+            var dialog = this.get('dialog');
+            if (typeof dialog === 'string'){
+                this.state.startDialog(this.get('dialog'));
+            } else{
+                console.log(dialog)
+                dialogData = dialog.slice(0);
+                var type = dialogData.shift();
+                var action = Action.Load(this.entity, {type: type, args: dialogData});
+                action.run(this.state);
+            }
+        },
+    	register: function(state){
+			this.state = state;
+            this.map = state.map;
+		},
+		unregister: function(){
+			this.state = null;
+            this.map = null;
+		}
+    });
+    sge.Component.register('actions', ActionComponent);
+    return ActionComponent
+});
+define('dreddrl/components/elevator',['sge'], function(sge){
+    var Elevator = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.data.open = data.open || true;
+            this.interact = this.interact.bind(this);
+            this.entity.addListener('interact', this.interact);
+        },
+        interact: function(){
+
+        },
+        updateTiles : function(){
+            var tx = Math.floor(this.entity.get('xform.tx') / 32)-1;
+            var ty = Math.floor(this.entity.get('xform.ty') / 32)-2
+            
+            for (var y=0;y<3;y++){
+                for (var x=0;x<3;x++){
+                    tile = this.map.getTile(tx+x,ty+y);
+                    //tile.passable=true;
+                    tile.layers['layer1'] = {srcX: x,srcY: 32+y, spriteSheet:"future1"}
+                }
+            }
+        },
+
+    	register: function(state){
+			this._super(state);
+            this.map = state.map;
+            this.updateTiles();
+		},
+    });
+    sge.Component.register('elevator', Elevator);
+    return Elevator
+});
+define('dreddrl/components/quest',['sge'],function(sge){
+
+	var QuestComponent = sge.Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.data.status = 0;
+			this.data.total = 3;
+		},
+		tick: function(delta){
+			if (this.get('status')>=(this.get('total'))){
+				this.state.game.fsm.gameWin();
+			}
+		}
+	})
+	sge.Component.register('quest', QuestComponent);
+    return QuestComponent;
+})		;
+define('dreddrl/components/encounter',['sge'], function(sge){
+	var EncounterComponent = sge.Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.encounter = data.encounter.add(this);
+			this.data.status = data.status || 0;
+		},
+		_get_status : function(){
+			return this.encounter.status;
+		},
+		_set_status : function(status){
+			this.encounter.status = status;
+			this.encounter.update(status);
+			return this.encounter.status;
+		}
+	});
+	sge.Component.register('encounter', EncounterComponent);
+	return EncounterComponent;
+});
+define('dreddrl/components/stats',['sge'],function(sge){
+
+	var StatsComponent = sge.Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.data.xp = data.xp || 0;
+			this.data.alignment = data.alignment || 'evil';
+		},
+		addStat : function(stat, value){
+			value = value || 1;
+			this.set(stat, this.get(stat) + value);
+		},
+		subtractStat : function(stat, value){
+			value = value || 1;
+			this.set(stat, this.get(stat) - value);
+		},
+	})
+	sge.Component.register('stats', StatsComponent);
+    return StatsComponent;
+})		;
+define('dreddrl/components/health',['sge/component'], function(Component){
+	var HealthComponent = Component.extend({
+		init: function(entity, data){
+            this._super(entity, data);
+            this.data.visible = data.visible === undefined ? true : data.visible;
+            this.data.life = data.life || 100;
+            this.data.maxLife = data.maxLife || data.life || 100;
+            this.data.alignment = data.alignment || 0;
+            this.entity.addListener('contact.start', function(entity){
+                if (!entity.get('health')){
+                    return;
+                }
+                var alignA = this.get('alignment');
+                var alignB = entity.get('health.alignment');
+                if ((alignA==0)||(alignB==0)){
+                    return;
+                }
+                if ((alignA<0)&&(alignB<0)){
+                    return
+                }
+                if ((alignA>0)&&(alignB>0)){
+                    return
+                }
+            	this.set('life', -1, 'add');
+                if (this.data.life <= 0){
+                    this.data.life = 0;
+                    this.entity.fireEvent('kill', 'Ran out of health.');
+                } else {
+                    this.entity.fireEvent('tint', 'red', 0.25);
+                }
+            }.bind(this));
+        },
+        register: function(state){
+            this._super(state);
+            this.scene = this.state.scene;
+            this.container = new CAAT.ActorContainer().setLocation(0,-24);;
+            bg = new CAAT.Actor().setSize(32,6).setFillStyle('black');
+            this.container.addChild(bg);
+            this.lifebar = new CAAT.Actor().setSize(30,4).setFillStyle('green').setLocation(1,1);
+            this.container.addChild(this.lifebar);
+            this.container.setVisible(this.get('alignment')!=0 && this.get('visible')!=false)
+            this.entity.get('xform.container').addChild(this.container);
+        },
+        deregister: function(state){
+            this.entity.get('xform.container').removeChild(this.container);
+            this._super(state);
+        },
+        _set_life : function(value, method){
+            var life = this.__set_value('life', value, method);
+            this.data.life = Math.min(life, this.get('maxLife'));
+            console.log(this.data.life)
+            this.lifebar.setSize(30*(this.data.life/this.get('maxLife')),4)
+            return this.data.life
+        }
+	})
+	Component.register('health', HealthComponent);
+
+    return HealthComponent;
+});
+
+define('dreddrl/components/simpleai',['sge/component', 'sge/vendor/state-machine'], function(Component, StateMachine){
+	var SimpleAIComponent = Component.extend({
+		init: function(entity, data){
+            this._super(entity, data);
+            this.data.tracking = data.tracking || null;
+            this.data.territory = data.territory;
+            this.fsm = StateMachine.create({
+                initial: 'idle',
+                events: [
+                    {name: 'seePlayer', from: 'idle', to: 'tracking'},
+                    {name: 'losePlayer', from:'tracking', to: 'idle'}
+                ],
+            })
+            this.data.radius = 96;
+            this._idleCounter = 0;
+
+        },
+        register: function(state){
+            this._super(state);
+            this.map = this.state.map;
+        },
+        getPC: function(){
+            return this.entity.state.getEntitiesWithTag(this.get('tracking'))[0] || null;
+        },
+        getPCPosition: function(){
+            var pc = this.getPC();
+            var dx = this.entity.get('xform.tx') - pc.get('xform.tx');
+            var dy = this.entity.get('xform.ty') - pc.get('xform.ty');
+            var dist = Math.sqrt((dx*dx)+(dy*dy));
+            return [pc, dx, dy, dist];
+        },
+        tick : function(delta){
+            if (this.entity.state){
+                var stateName = this.fsm.current;
+                if (this.getPC()===null){
+                    this.wander(delta);
+                } else {
+                    method = this['tick_' + stateName];
+                    if (method){
+                        method.call(this, delta);
+                    }
+                }
+            }
+        },
+        tick_tracking: function(delta){
+            var pcData = this.getPCPosition();
+            var dx = pcData[1]
+            var dy = pcData[2]
+            var dist = pcData[3]
+            if (dist >= this.data.radius){
+                this.fsm.losePlayer();
+            } else {
+                var vx = 0;
+                var vy = 0;
+                vx = -64 * (pcData[1] / dist);
+                vy = -64 * (dy / dist);
+                this.entity.set('xform.vx', vx);
+                this.entity.set('xform.vy', vy);
+            }
+        },
+        tick_idle: function(delta){
+            if (this.get('tracking')!==null){
+                var pcData = this.getPCPosition();
+                var dx = pcData[1]
+                var dy = pcData[2]
+                var dist = pcData[3]
+                if (pcData[3] <= this.data.radius){
+                    this.fsm.seePlayer();
+                } else {
+                    this.wander();
+                }
+            } else {
+                this.wander();
+            }
+        },
+        wander: function(){
+            if (this._idleCounter<0){
+                this._idleCounter=30 + (Math.random() * 30);
+                var hasDir = false;
+                var tx = this.entity.get('xform.tx');
+                var ty = this.entity.get('xform.ty');
+                var vx = 0;
+                var vy = 0;
+                for (var i=0;i<5;i++){
+                    if (Math.random() > 0.5){
+                        var vx = 64 * ((Math.random() * 2) - 1);
+                        var vy = 64 * ((Math.random() * 2) - 1);
+                    }
+                    if (this.data.territory!==undefined){
+                        var tile = this.map.getTile(Math.floor((tx+vx)/32),Math.floor((ty+vy)/32))
+                        if (tile){
+                            if (tile.data.territory==this.data.territory){
+                                break;
+                            }
+                        }
+                        vx = 0;
+                        vy = 0;
+                    } else {
+                        break;
+                    }
+                }
+                this.entity.set('xform.vx', vx);
+                this.entity.set('xform.vy', vy);
+            } else {
+                this._idleCounter--;
+            }
+        }
+	})
+	Component.register('simpleai', SimpleAIComponent);
+
+    return SimpleAIComponent;
+});
+define('dreddrl/components/emote',['sge'], function(sge){
+	var Emote = sge.Component.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this._visible = false;
+			this.data.text = data.text || "";
+			this.entity.addListener('emote.msg', function(msg){
+				this.container.setVisible(true);
+				this.set('text', msg);
+				this.entity.state.createTimeout(1, function(){
+					this.container.setVisible(false);
+				}.bind(this));
+			}.bind(this))
+		},
+		register: function(state){
+            this._super(state);
+            this.scene = this.state.scene;
+            this.container = new CAAT.ActorContainer().setLocation(32,-24);
+            this.bg = new CAAT.Actor().setSize(32,16).setFillStyle('black');
+            this.container.addChild(this.bg);
+            this.text = new CAAT.TextActor().setLocation(1,1);
+            this.container.addChild(this.text);
+            this.container.setVisible(false);
+            this.entity.get('xform').container.addChild(this.container);
+        },
+        deregister: function(state){
+            this.entity.get('xform').container.removeChild(this.container);
+            this._super(state);
+        },
+        _set_text: function(text){
+        	this.text.setText(text);
+        	this.text.calcTextSize(this.state.game.renderer);
+        	this.bg.setSize(this.text.textWidth+4, 16);
+        	return text;
+        }
+	});
+
+	sge.Component.register('emote', Emote);
+
+	return Emote;
+});
+define('dreddrl/actions/dialog',['sge','../action'], function(sge, Action){
+	var DialogAction = Action.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.async = true;
+		},
+		start: function(text){
+			this.state.startDialog(text);
+		}
+	})
+	Action.register('dialog', DialogAction);
+	return DialogAction
+});
+define('dreddrl/actions/if',['sge','../action'], function(sge, Action){
+	var IfAction = Action.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.async = true;
+		},
+		start: function(expr, trueActions, falseActions){
+	        var parsedExpr = this.parseExpr(expr, this.entity);
+	        var result = Boolean(this.evalExpr(parsedExpr, this.entity));
+	        var actionList = [];
+	        if(result) {
+	            actionList = trueActions.slice(0);
+	        } else {
+	            actionList = falseActions.slice(0);
+	        }
+	        _.each(actionList, function(actionData) {
+	        	actionData = actionData.slice(0);
+	            var type = actionData.shift();
+                var action = Action.Load(this.entity, {type: type, args: actionData});
+                action.run(this.state);
+	        }.bind(this));
+		}
+	});
+	Action.register('if', IfAction);
+	return IfAction
+});
+define('dreddrl/actions/set',['sge','../action'], function(sge, Action){
+	var SetAction = Action.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.async = true;
+		},
+		start: function(path, value, method){
+			var val = this.evalExpr(value);
+			this.setAttr(path, value, method);
+		}
+	})
+	Action.register('set', SetAction);
+	return SetAction
+});
+define('dreddrl/actions/switch',['sge','../action'], function(sge, Action){
+	var SwitchAction = Action.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.async = true;
+		},
+		start: function(){
+			var args = Array.prototype.slice.call(arguments);
+			var expr = args.shift()
+	        var parsedExpr = this.parseExpr(expr, this.entity);
+	        var result = parseInt(this.evalExpr(parsedExpr, this.entity));
+	        var actionList = args[result];
+	        _.each(actionList, function(actionData) {
+	        	actionData = actionData.slice(0);
+	            var type = actionData.shift();
+                var action = Action.Load(this.entity, {type: type, args: actionData});
+                action.run(this.state);
+	        }.bind(this));
+		}
+	});
+	Action.register('switch', SwitchAction);
+	return SwitchAction
+});
+define('dreddrl/actions/event',['sge','../action'], function(sge, Action){
+    var EventAction = Action.extend({
+		init: function(entity, data){
+			this._super(entity, data);
+			this.async = true;
+		},
+		start: function(){
+            var args = Array.prototype.slice.call(arguments);
+            var entityId = args.shift();
+            if (entityId=='this'){
+            	var entity = this.entity;
+            } else {
+				var entity = this.state.getEntityWithTag(entityId);
+			}
+            entity.fireEvent.apply(entity, args);
+		}
+	});
+	Action.register('event', EventAction);
+	return EventAction
+});
+define('dreddrl/factory',[
+	'sge',
+	'./components/weapons',
+	'./components/physics',
+	'./components/judgemovement',
+	'./components/deaddrop',
+	'./components/freeitem',
+    './components/inventory',
+    './components/interaction',
+    './components/door',
+    './components/actions',
+    './components/elevator',
+    './components/quest',
+    './components/encounter',
+    './components/stats',
+    './components/health',
+    './components/simpleai',
+    './components/emote',
+
+    './actions/dialog',
+    './actions/if',
+    './actions/set',
+    './actions/switch',
+    './actions/event'
+	], 
+	function(sge){
+        var NPCSHEETS = [
+            'gang_1',
+            'gang_2',
+            'gang_6',
+            'women_1',
+            'women_2',
+            'women_3',
+            'women_4',
+            'women_5',
+            'women_6',
+            'women_7',
+            'women_8',
+        ];
+
+
+		var FACTORYDATA = {
+            chara : function(){return{
+                xform : {},
+                sprite : {
+                    width: 32,
+                    offsetY: -8,
+                    scale: 2
+                },
+                anim : {
+                    frames: {
+                        walk_down : [0,1,2],
+                        walk_up : [9,10,11],
+                        walk_right : [6,7,8],
+                        walk_left : [3,4,5]
+                    },
+                },
+                physics : {},
+                inventory : {},
+            }},
+			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
+                    controls : {},
+                    sprite : {
+                        src : 'assets/sprites/judge.png',
+                    },
+                    'judge.movement' : {
+                        map: this.map,
+                        speed: 64
+                    },
+                    health : {alignment:5, life: 10},
+                    weapons: {},
+                    stats: {},
+                    emote: {},
+                })},
+            npc : function(){return deepExtend(FACTORYDATA['chara'](), {
+                    movement : {
+                        map: this.map,
+                        speed: 16
+                    },
+                    //simpleai: {territory: 'neutral'},
+                    health : {alignment:0, life: 1},
+                    sprite : {
+                        src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
+                    },
+                })},
+            enemy : function(){
+                var msgs = [
+                    'I am the law.',
+                    'Objection noted.',
+                    'Sentence. Execution!',
+                    "You've been found guilt.",
+                ]
+                return deepExtend(FACTORYDATA['npc'](), {
+                    sprite : {
+                        src : 'assets/sprites/albert.png',
+                    },
+                    health : {alignment:-10, life: 3},
+                    //simpleai : { tracking: 'pc', territory: 'albert'},
+                    deaddrop: {},
+                    actions: {
+                        kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs)]]]
+                    }
+                }
+            )},
+            gangboss : function(){return deepExtend(FACTORYDATA['enemy'](), {
+                sprite : {
+                    src : 'assets/sprites/albertbrownhair.png',
+                },
+                health : {alignment:-10, life: 6},
+                deaddrop: {}
+            })},
+            freeitem : function(){ return {
+                xform: {},
+                physics: {},
+                sprite : {
+                    src : 'assets/sprites/scifi_icons_1.png',
+                    width: 24,
+                    offsetY: 0,
+                    scale: 2,
+                    frame: 1
+                },
+
+            }},
+            gun : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
+                freeitem: {
+                    'inventory.ammo': 10,
+                    'name' : 'Gun'
+                }
+            })},
+            rammen : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
+                sprite : {
+                        frame: 123
+                },
+                freeitem: {
+                    'health.life' : 5,
+                    'name' : 'Ramen'
+                }
+            })},
+            keycard : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
+                sprite : {
+                        frame: 56
+                    },
+                freeitem: {
+                    'inventory.add' : 'keycard.blue'
+                }
+            })},
+            door : function(){return {
+                xform: {},
+                interact : {},
+                door: {}
+            }},
+            elevator : function(){return {
+                xform: {},
+                interact : {},
+                elevator: {}
+            }},
+            man: function(){return deepExtend(FACTORYDATA['npc'](), {
+                sprite : {
+                    src : 'assets/sprites/gang_' + sge.random.item([1,2,6]) +'.png',
+                },
+            })},
+            'woman.old' : function(){return deepExtend(FACTORYDATA['npc'](), {
+                sprite : {
+                    src : 'assets/sprites/women_' + sge.random.item([4,8]) +'.png',
+                },
+            })},
+            'woman' : function(){return deepExtend(FACTORYDATA['npc'](), {
+                sprite : {
+                    src : 'assets/sprites/women_' + sge.random.item([2,3,6,7]) +'.png',
+                },
+            })},
+            'woman.young' : function(){return deepExtend(FACTORYDATA['npc'](), {
+                sprite : {
+                    src : 'assets/sprites/women_' + sge.random.item([1,5]) +'.png',
+                },
+            })}
+		}
+
+		var deepExtend = function(destination, source) {
+		  for (var property in source) {
+		    if (source[property] && source[property].constructor &&
+		     source[property].constructor === Object) {
+		      destination[property] = destination[property] || {};
+		      arguments.callee(destination[property], source[property]);
+		    } else {
+		      destination[property] = source[property];
+		    }
+		  }
+		  return destination;
+		};
+
+		var Factory = function(type, options){
+			options = options || {};
+			var data = deepExtend(FACTORYDATA[type](), options);
+			return new sge.Entity(data);
+		}
+
+		return Factory
+	}
+);
 define('dreddrl/map',['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], function(Class, CAAT, Renderer, config){
 	var Tile = Class.extend({
 		init: function(x, y){
@@ -45841,13 +46372,16 @@ define('dreddrl/dreddrlstate',[
                 var elem = $('<p/>').text(msg);
                 //this._elem_log.prepend($('<li/>').append(elem));
             },
+            _removeFromHash : function(entity){
+                var hash = this._spatialHashReverse[entity.id];
+                    this._spatialHashReverse[entity.id]=undefined;
+                    this._spatialHash[hash] = _.without(this._spatialHash[hash], entity.id);
+            },
             _updateHash : function(entity){
                 var cx = Math.floor(entity.get('xform.tx') / this._spatialHashWidth);
                 var cy = Math.floor(entity.get('xform.ty') / this._spatialHashHeight);
                 if (this._spatialHashReverse[entity.id]!==undefined){
-                    var hash = this._spatialHashReverse[entity.id];
-                    this._spatialHashReverse[entity.id]=undefined;
-                    this._spatialHash[hash] = _.without(this._spatialHash[hash], entity.id);
+                    this._removeFromHash(entity);
                 }
                 var hash = cx + '.' + cy;
                 if (this._spatialHash[hash]==undefined){
@@ -45937,8 +46471,9 @@ define('dreddrl/dreddrlstate',[
                 if (this._debugTick){ var t=Date.now(); console.log('Component Time:', t-debugTime, this._entity_ids.length); debugTime=t};
                 //Prune entities
                 _.each(this._killList, function(e){
+                    this._removeFromHash(e);
                     this.removeEntity(e);
-                }.bind(this))
+                }.bind(this));
                 if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
                 //Tick Encounter System
                 //this.encounterSystem.tick(delta);

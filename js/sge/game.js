@@ -157,6 +157,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
 
     var Game = Class.extend({
         init: function(options){
+            console.log('GAME')
             this.options = $.extend({
                 elem: null
             }, options || {});
@@ -175,6 +176,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
                 this.elem = null;
             }
             this.renderer = new CAAT.Director().initialize(640,480, $('#game')[0]);
+
             //this.renderer.onRenderStart= function(director_time) {console.log('tick',this.renderer.scenes.indexOf(this.renderer.currentScene))}.bind(this);
             this.engine.tick = function(delta){
                 this.tick(delta);
