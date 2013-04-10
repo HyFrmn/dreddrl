@@ -1,5 +1,6 @@
 *.DS_Store
 *.xcf
+*.bak
 
 .c9revisions/
 node_modules
