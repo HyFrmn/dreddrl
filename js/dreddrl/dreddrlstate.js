@@ -268,7 +268,7 @@ define([
                 var tx = this.pc.get('xform.tx');
                 var ty = this.pc.get('xform.ty');
                 this.scene.setLocation(-tx+320,-ty+240);
-                this.logActor.setLocation(-tx,-ty);
+                this.logActor.setLocation(tx,ty+120);
                 //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
                 if (this._debugTick){ var t=Date.now(); console.log('Scene Time:', t-debugTime); debugTime=t};
 
