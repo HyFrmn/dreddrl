@@ -86,7 +86,7 @@ define([
                 this._interaction_actor = new CAAT.Actor().setFillStyle('green').setStrokeStyle('black').setSize(32,32).setVisible(false);
                 this.scene.addChild(this._interaction_actor);
                 this.level = new BlockLevelGenerator(this, this.options);
-                pc = Factory('pc', {
+                var pc = Factory('pc', {
                     xform : {
                         tx: 96,
                         ty: 384,
@@ -109,6 +109,9 @@ define([
                         this.game.fsm.finishLoad();
                 }.bind(this), 1000);
                 this.map.render(this.game.renderer);
+                
+                this.logActor = new CAAT.TextActor();
+                this.scene.addChild(this.logActor);
             },
 
             progressListener : function(e){
@@ -151,7 +154,8 @@ define([
                 this.log(msg);
             },
             log : function(msg){
-                var elem = $('<p/>').text(msg);
+                this.logActor.setText(msg);
+                //var elem = $('<p/>').text(msg);
                 //this._elem_log.prepend($('<li/>').append(elem));
             },
             _removeFromHash : function(entity){
