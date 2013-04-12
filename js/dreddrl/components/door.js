@@ -38,17 +38,23 @@ define(['sge'], function(sge){
             var tx = Math.floor(this.entity.get('xform.tx') / 32);
             var ty = Math.floor(this.entity.get('xform.ty') / 32);
             tile = this.map.getTile(tx,ty-2);
-            tile.passable=true;
             tile = this.map.getTile(tx,ty-1);
             tile.layers['layer1'] = DOOROPENTILE1;
-            tile.passable=true;
             tile = this.map.getTile(tx,ty);
-            tile.passable=true;
             tile.layers['layer1'] = DOOROPENTILE2;
         },
 
         updateTiles : function(){
-            if (this.get('open')){
+            var open = this.get('open');
+            var tx = Math.floor(this.entity.get('xform.tx') / 32);
+            var ty = Math.floor(this.entity.get('xform.ty') / 32);
+            tile = this.map.getTile(tx,ty-2);
+            tile.passable=open;
+            tile = this.map.getTile(tx,ty-1);
+            tile.passable=open;
+            tile = this.map.getTile(tx,ty);
+            tile.passable=open;
+            if (open){
                 this.tileA.setVisible(false);
                 this.tileB.setVisible(false);
             } else {
