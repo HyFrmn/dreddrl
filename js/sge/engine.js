@@ -24,7 +24,7 @@ define(['sge/lib/class',], function(Class){
 		},
 
 		tickCallback: function(){
-			//*
+			/*
 			this._debug--;
 			if (this._debug<0){
 				this._debugTick = true;
@@ -34,7 +34,7 @@ define(['sge/lib/class',], function(Class){
 			var delta = now - this._lastTick;
 			this._lastTick = now;
 			this.tick(delta/1000);
-			//*
+			/*
 			if (this._debugTick==true){
 				this._debugTick = false;
 				this._debug=30;

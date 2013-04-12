@@ -22,41 +22,52 @@ define(['sge'], function(sge){
                 this.updateTiles();
             }
         },
-        updateTiles : function(){
+        createTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32);
             var ty = Math.floor(this.entity.get('xform.ty') / 32);
-            if (this.get('open')==true){
-                tile = this.map.getTile(tx,ty-2);
-                tile.passable=true;
-                tile = this.map.getTile(tx,ty-1);
-                tile.layers['layer1'] = DOOROPENTILE1;
-                tile.passable=true;
-                tile = this.map.getTile(tx,ty);
-                tile.passable=true;
-                tile.layers['layer1'] = DOOROPENTILE2;
-            } else {
-                tile = this.map.getTile(tx,ty-2);
-                tile.passable=false;
-                tile = this.map.getTile(tx,ty-1);
-                tile.layers['layer1'] = DOORCLOSEDTILE1;
-                tile.passable=false;
-                tile = this.map.getTile(tx,ty);
-                tile.layers['layer1'] = DOORCLOSEDTILE2;
-                tile.passable=false;
-            }
-            this.map.renderTiles([[tx,ty-2],[tx, ty-1],[tx,ty]]);
-            this.map.renderTiles(this.room.getTiles());
+            this.tileA = new CAAT.Actor().setLocation(tx*32+16,ty*32+16).setFillStyle('#FF0000').setSize(30,30);
+            this.tileB = new CAAT.Actor().setLocation(tx*32+16,(ty-1)*32+16).setFillStyle('#FF0000').setSize(30,30);
+            var frame = DOORCLOSEDTILE1.srcY * 8 + DOORCLOSEDTILE1.srcX;
+            this.tileB.setBackgroundImage(sge.Renderer.SPRITESHEETS['future2']).setSpriteIndex(frame);
+            var frame = DOORCLOSEDTILE2.srcY * 8 + DOORCLOSEDTILE2.srcX;
+            this.tileA.setBackgroundImage(sge.Renderer.SPRITESHEETS['future2']).setSpriteIndex(frame);
+            this.map.dynamicContainer.addChild(this.tileA);
+            this.map.dynamicContainer.addChild(this.tileB);
+        },
+        updateMapTiles : function(){
+            var tx = Math.floor(this.entity.get('xform.tx') / 32);
+            var ty = Math.floor(this.entity.get('xform.ty') / 32);
+            tile = this.map.getTile(tx,ty-2);
+            tile.passable=true;
+            tile = this.map.getTile(tx,ty-1);
+            tile.layers['layer1'] = DOOROPENTILE1;
+            tile.passable=true;
+            tile = this.map.getTile(tx,ty);
+            tile.passable=true;
+            tile.layers['layer1'] = DOOROPENTILE2;
         },
 
-    	register: function(state){
-			this.state = state;
+        updateTiles : function(){
+            if (this.get('open')){
+                this.tileA.setVisible(false);
+                this.tileB.setVisible(false);
+            } else {
+                this.tileA.setVisible(true);
+                this.tileB.setVisible(true);
+            }
+        },
+
+        register: function(state){
+            this.state = state;
             this.map = state.map;
+            this.updateMapTiles();
+            this.createTiles();
             this.updateTiles();
-		},
-		unregister: function(){
-			this.state = null;
+        },
+        unregister: function(){
+            this.state = null;
             this.map = null;
-		}
+        }
     });
     sge.Component.register('door', Door);
     return Door
