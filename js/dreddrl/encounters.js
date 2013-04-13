@@ -51,6 +51,8 @@ define(['sge'], function(sge){
 			this.encounters = [];
 			this.active = null;
 			this._index = 0;
+			this.compassActor = new CAAT.Actor().setFillStyle('blue').setSize(8,8);
+			this.state.scene.addChild(this.compassActor);
 		},
 		create : function(klass){
 			var encounter = new klass(this);
@@ -80,10 +82,11 @@ define(['sge'], function(sge){
                 var y1 = (pc.get('xform.ty')); 
                 var x2 = entity.get('xform.tx')
                 var y2 = entity.get('xform.ty')
-                var top = 32 + this.state.game.renderer.ty;
-                var bottom = (this.state.game.renderer.height-32) + this.state.game.renderer.ty;
-                var left = 32 + this.state.game.renderer.tx;
-                var right = (this.state.game.renderer.width-32) + this.state.game.renderer.tx;
+                var top = 64-this.state.scene.y;
+                var bottom = (this.state.game.renderer.height-64) - this.state.scene.y;
+                var left = 64-this.state.scene.x;
+                var right = (this.state.game.renderer.width-64) - this.state.scene.x;
+                //console.log(top,bottom,left,right);
                 coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
                 var intersection = false;
                 for (var i = coords.length - 1; i >= 0; i--) {
@@ -121,6 +124,7 @@ define(['sge'], function(sge){
                 if (sge.collision.pointRectIntersect(tx, ty, view)){
                     console.log('WTF!!!');
                 }
+                this.compassActor.setLocation(tx+8, ty+8);
                 //TODO: CAAT 
                 //this.state.game.renderer.drawRect('canopy', tx-4, ty-4, 8, 8, {fillStyle: 'blue'}, 1000000);
             }

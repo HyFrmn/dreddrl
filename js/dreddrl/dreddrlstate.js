@@ -51,6 +51,7 @@ define([
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/judge.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_1.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_2.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_6.png');
@@ -86,6 +87,8 @@ define([
                 this._interaction_actor = new CAAT.Actor().setFillStyle('green').setStrokeStyle('black').setSize(32,32).setVisible(false);
                 this.scene.addChild(this._interaction_actor);
                 this.level = new BlockLevelGenerator(this, this.options);
+                
+
                 var pc = Factory('pc', {
                     xform : {
                         tx: 96,
@@ -97,10 +100,11 @@ define([
                 }.bind(pc));
                 this.addEntity(pc);
                 this.pc = pc;
-                //this.encounterSystem = new encounters.EncounterSystem(this);
                 
-                //this.encounterSystem.create(encounters.CheckupEncounter);
-                //this.encounterSystem.create(encounters.ExecuteEncounter);
+                this.encounterSystem = new encounters.EncounterSystem(this);
+                this.encounterSystem.create(encounters.CheckupEncounter);
+                this.encounterSystem.create(encounters.ExecuteEncounter);
+                
                 this.map.render();
                 this.input.addListener('keydown:Q', function(){
                     this.encounterSystem.switch();
@@ -110,8 +114,20 @@ define([
                 }.bind(this), 1000);
                 this.map.render(this.game.renderer);
                 
-                this.logActor = new CAAT.TextActor();
-                this.scene.addChild(this.logActor);
+                this._logs = [];
+                this._cachedLogLength = this._logs.length;
+                this._logContainer = new CAAT.ActorContainer();
+                this.logActors = [];
+                var fontSize = 16;
+                this.logActors[0] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,0);
+                this._logContainer.addChild(this.logActors[0]);
+                this.logActors[1] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,16).setAlpha(0.75);
+                this._logContainer.addChild(this.logActors[1]);
+                this.logActors[2] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,32).setAlpha(0.5);
+                this._logContainer.addChild(this.logActors[2]);
+                this.logActors[3] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,48).setAlpha(0.25);
+                this._logContainer.addChild(this.logActors[3]);
+                this.scene.addChild(this._logContainer);
             },
 
             progressListener : function(e){
@@ -121,7 +137,7 @@ define([
                 if (name.match(/icons/)){
                     spriteSize = 24;
                 }
-                console.log(name, e.resource.img.height / spriteSize, e.resource.img.width / spriteSize)
+                //console.log(name, e.resource.img.height / spriteSize, e.resource.img.width / spriteSize)
                 sge.Renderer.SPRITESHEETS[name] = new CAAT.SpriteImage().initialize(e.resource.img, e.resource.img.height / spriteSize, e.resource.img.width / spriteSize);
                 if (e.completedCount == e.totalCount){
                     this.initGame();
@@ -154,9 +170,22 @@ define([
                 this.log(msg);
             },
             log : function(msg){
-                this.logActor.setText(msg);
+                this._logs.push(msg);
+
+                //this.logActor.setText(msg);
                 //var elem = $('<p/>').text(msg);
                 //this._elem_log.prepend($('<li/>').append(elem));
+            },
+            _updateLog : function(){
+                if (this._cachedLogLength!=this._logs.length){
+                    this._cachedLogLength = this._logs.length;
+                    msgs = this._logs.slice(-4);
+                    msgs.reverse();
+                    _.each(msgs, function(msg, i){
+                        this.logActors[i].setText(msg);
+                    }.bind(this));
+                    //this._logContainer.cacheAsBitmap();
+                }
             },
             _removeFromHash : function(entity){
                 var hash = this._spatialHashReverse[entity.id];
@@ -262,13 +291,14 @@ define([
                 }.bind(this));
                 if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
                 //Tick Encounter System
-                //this.encounterSystem.tick(delta);
+                this.encounterSystem.tick(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Encounter Time:', t-debugTime); debugTime=t};
                 //this.game.renderer.track(this.pc);
                 var tx = this.pc.get('xform.tx');
                 var ty = this.pc.get('xform.ty');
                 this.scene.setLocation(-tx+320,-ty+240);
-                this.logActor.setLocation(tx,ty+120);
+                this._logContainer.setLocation(tx,ty+120);
+                this._updateLog();
                 //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
                 if (this._debugTick){ var t=Date.now(); console.log('Scene Time:', t-debugTime); debugTime=t};
 

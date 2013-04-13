@@ -157,7 +157,6 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
 
     var Game = Class.extend({
         init: function(options){
-            console.log('GAME')
             this.options = $.extend({
                 elem: null
             }, options || {});

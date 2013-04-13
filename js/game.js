@@ -29,7 +29,6 @@ function   ($, sge, dreddrl) {
         height = Math.round(width / idealWidth) * idealHeight;
     }
     var elem = $('#container');
-    console.log(width, height);
     elem.attr({width: width, height: height});
     elem.css({
         width: width + 'px',
