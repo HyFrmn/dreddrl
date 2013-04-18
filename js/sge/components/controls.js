@@ -16,16 +16,16 @@ define(['sge/component'], function(Component){
             }
             var xaxis = 0;
             var yaxis = 0;
-            if (this.input.isPressed('down') || this.input.isPressed('S')){
+            if (this.input.isPressed('down') || this.input.isPressed('S') || this.input.joystick.down()){
                 yaxis++;
             }
-            if (this.input.isPressed('up') || this.input.isPressed('W')){
+            if (this.input.isPressed('up') || this.input.isPressed('W') || this.input.joystick.up()){
                 yaxis--;
             }
-            if (this.input.isPressed('right') || this.input.isPressed('D')){
+            if (this.input.isPressed('right') || this.input.isPressed('D') || this.input.joystick.right()){
                 xaxis++;
             }
-            if (this.input.isPressed('left') || this.input.isPressed('A')){
+            if (this.input.isPressed('left') || this.input.isPressed('A') || this.input.joystick.left()){
                 xaxis--;
             }
             this.entity.set('xform.vx', xaxis * this.data.speed);

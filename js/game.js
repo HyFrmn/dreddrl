@@ -3,9 +3,15 @@ requirejs.config({
     name: "dreddrl",
     packages: ["dreddrl","sge"],
     shim : {
-    	'sge/vendor/underscore' : {
-    		exports: '_'
-    	},
+        'sge/vendor/underscore' : {
+            exports: '_'
+        },
+        'sge/vendor/virtualjoystick' : {
+            exports: 'VirtualJoystick'
+        },
+        'sge/vendor/hammer' : {
+            exports: 'Hammer'
+        },
         'sge/vendor/caat' : {
             exports: 'CAAT'
         }

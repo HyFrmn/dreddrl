@@ -1,4 +1,8 @@
-define(['sge/lib/class', 'sge/observable'], function(Class, Observable){
+define(
+    ['sge/lib/class',
+    'sge/observable',
+    'sge/vendor/hammer'],
+function(Class, Observable, Hammer){
 	var KEYCODES = {
         "backspace" : 8,
         "tab" : 9,
@@ -114,6 +118,7 @@ define(['sge/lib/class', 'sge/observable'], function(Class, Observable){
             this._super();
             this._input = input
             this.enable = false;
+            this.joystick = input.joystick;
         },
         fireEvent: function(){
             var args = Array.prototype.slice.call(arguments);
@@ -132,8 +137,18 @@ define(['sge/lib/class', 'sge/observable'], function(Class, Observable){
 			this._isNewKeyDown = {}
             this._isKeyDown = {};
             this._proxies = [];
+            this._events = [];
+            this.joystick = new VirtualJoystick({
+                container   : document.getElementById('game'),
+                mouseSupport  : true
+            });
             document.onkeydown = this.keyDownCallback.bind(this);
             document.onkeyup = this.keyUpCallback.bind(this);
+            Hammer(document).on('tap', this.tapCallback.bind(this));
+        },
+        tapCallback : function(e){
+            console.log('tap');
+            this._events.push('tap');
         },
         keyDownCallback : function(e){
             //console.log('keydown:' + REVERSE_KEYCODES[e.keyCode]);
@@ -157,6 +172,10 @@ define(['sge/lib/class', 'sge/observable'], function(Class, Observable){
 
                 this.fireEvent('keydown:' + REVERSE_KEYCODES[keyCode])
            };
+           for (var j = this._events.length - 1; j >= 0; j--) {
+               this.fireEvent(this._events[j]);
+           }
+           this._events = [];
         },
         createProxy: function(){
             var proxy = new InputProxy(this);

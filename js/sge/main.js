@@ -6,6 +6,8 @@ define(['sge/config',
         'sge/game',
         'sge/gamestate',
         'sge/vendor/pxloader',
+        'sge/vendor/virtualjoystick',
+        'sge/vendor/hammer',
         'sge/lib/class',
         'sge/lib/random',
         'sge/lib/collision',
@@ -20,6 +22,8 @@ function(
       Game,
       GameState,
       PxLoader,
+      VirtualJoystick,
+      Hammer,
       Class,
       random,
       collision,
@@ -34,7 +38,9 @@ function(
         Game : Game,
         GameState : GameState,
         vendor : {
-          PxLoader : PxLoader
+          PxLoader : PxLoader,
+          VirtualJoystick : VirtualJoystick,
+          Hammer : Hammer
         },
         Class : Class,
         random : random,

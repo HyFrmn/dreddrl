@@ -1,5 +1,5 @@
-define(['jquery', 'sge/lib/class' ,'sge/vendor/caat', 'sge/vendor/state-machine','sge/engine','sge/gamestate', 'sge/input','sge/renderer', 'sge/vendor/pxloader'],
-function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoader, PxLoaderImage){
+define(['jquery', 'sge/lib/class' ,'sge/vendor/caat', 'sge/vendor/state-machine','sge/engine','sge/gamestate', 'sge/input','sge/renderer', 'sge/vendor/virtualjoystick','sge/vendor/pxloader'],
+function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, VirtualJoystick, PxLoader, PxLoaderImage){
     var LoadState = GameState.extend({
         initState: function(){
             var title = new CAAT.TextActor().setText('Loading').setLocation(320,240);
@@ -36,6 +36,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
             }.bind(this);
             this.startState();
             this.input.addListener('keydown:enter', this.startGame);
+            this.input.addListener('tap', this.startGame);
         },
         startState : function(){
             this._super();
@@ -65,6 +66,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
                 this.game.fsm.loadMainMenu();
             }.bind(this);
             this.input.addListener('keydown:enter', this.startGame);
+            this.input.addListener('tap', this.startGame);
         },
         startState : function(){
             this._super();
@@ -95,6 +97,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
                 this.game.fsm.loadMainMenu();
             }.bind(this);
             this.input.addListener('keydown:enter', this.startGame);
+            this.input.addListener('tap', this.startGame);
         },
         startState : function(){
             this._super();
@@ -123,6 +126,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
                 this.game.fsm.unpause();
             }.bind(this);
             this.input.addListener('keydown:space', this.unpause);
+            this.input.addListener('tap', this.unpause);
         },
         startState : function(){
             this._super();
@@ -168,6 +172,8 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, PxLoa
             this._lastRender = 0;
             this._gameState = DefaultGame;
             this._debugElem = $('.fps');
+
+
             if (this.options.elem!==null){
                 this.elem = $(this.options.elem);
             } else {
