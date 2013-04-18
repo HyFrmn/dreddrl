@@ -140,7 +140,7 @@ function(Class, Observable, Hammer){
             this._events = [];
             this.joystick = new VirtualJoystick({
                 container   : document.getElementById('game'),
-                mouseSupport  : true
+                //mouseSupport  : true
             });
             document.onkeydown = this.keyDownCallback.bind(this);
             document.onkeyup = this.keyUpCallback.bind(this);
