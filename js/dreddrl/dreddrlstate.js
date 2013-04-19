@@ -29,7 +29,11 @@ define([
                 this._debug_count = 0;
                 this._debugTick = false;
 
-
+                this._uiContainer = new CAAT.ActorContainer();
+                this._entityContainer = new CAAT.ActorContainer();
+                this._entityContainer.setBounds(0,0,2048,2048);
+                this.scene.addChild(this._entityContainer);
+                this.scene.addChild(this._uiContainer);
 
                 this.factory = Factory;
                 this.map = new Map(65,66,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
@@ -83,9 +87,9 @@ define([
             initGame : function(){
                 //Load Game Plugins
                 this.physics = new Physics(this);
-                this.map.setup(this.scene);
+                this.map.setup(this._entityContainer);
                 this._interaction_actor = new CAAT.Actor().setFillStyle('green').setStrokeStyle('black').setSize(32,32).setVisible(false);
-                this.scene.addChild(this._interaction_actor);
+                this._entityContainer.addChild(this._interaction_actor);
                 this.level = new BlockLevelGenerator(this, this.options);
                 
 
@@ -296,7 +300,7 @@ define([
                 //this.game.renderer.track(this.pc);
                 var tx = this.pc.get('xform.tx');
                 var ty = this.pc.get('xform.ty');
-                this.scene.setLocation(-tx+320,-ty+240);
+                this._entityContainer.setLocation(-tx+320,-ty+240);
                 this._logContainer.setLocation(tx,ty+120);
                 this._updateLog();
                 //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));

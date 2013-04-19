@@ -48,7 +48,6 @@ define(['sge/component'], function(Component){
         _set_life : function(value, method){
             var life = this.__set_value('life', value, method);
             this.data.life = Math.min(life, this.get('maxLife'));
-            console.log(this.data.life)
             this.lifebar.setSize(30*(this.data.life/this.get('maxLife')),4)
             return this.data.life
         }

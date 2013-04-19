@@ -85,8 +85,7 @@ define(['sge'], function(sge){
 	        return _ctx.get(path);
 	    },
 	    setAttr : function(path, value, method) {
-	    	_ctx = this.entity;
-	    	console.log('PATH', path)
+	    	var _ctx = this.entity;
 	        if (path.match(/^@/)){
 	            var name = path.split('.')[0];
 	            name = name.replace('@(','').replace(')','');

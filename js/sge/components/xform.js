@@ -6,6 +6,7 @@ define(['sge/component'], function(Component){
 			this.data.ty = data.ty || 0;
 			this.data.vx = data.vx || 0;
 			this.data.vy = data.vy || 0;
+            this.data.container = data.container || 'scene'
 			this.data.dir = data.dir || 'down';
 			this.container = new CAAT.ActorContainer();
 		},
@@ -24,7 +25,9 @@ define(['sge/component'], function(Component){
 		},
 		register: function(state){
             this._super(state);
-            this.scene = this.state.scene;
+            var containerName = this.data.container;
+            //console.log('Name', containerName, this.state[containerName])
+            this.scene = this.state[containerName];
             this.scene.addChild(this.container);
         },
         deregister: function(state){

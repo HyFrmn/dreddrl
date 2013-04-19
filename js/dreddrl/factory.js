@@ -41,7 +41,7 @@ define([
 
 		var FACTORYDATA = {
             chara : function(){return{
-                xform : {},
+                xform : { container: '_entityContainer'},
                 sprite : {
                     width: 32,
                     offsetY: -8,
@@ -110,7 +110,7 @@ define([
                 deaddrop: {}
             })},
             freeitem : function(){ return {
-                xform: {},
+                xform: { container: '_entityContainer'},
                 physics: {},
                 sprite : {
                     src : 'assets/sprites/scifi_icons_1.png',
@@ -145,12 +145,12 @@ define([
                 }
             })},
             door : function(){return {
-                xform: {},
+                xform: { container: '_entityContainer'},
                 interact : {},
                 door: {}
             }},
             elevator : function(){return {
-                xform: {},
+                xform: { container: '_entityContainer'},
                 interact : {},
                 elevator: {}
             }},

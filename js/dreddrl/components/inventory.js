@@ -20,7 +20,6 @@ define(['sge','jquery'],function(sge, $){
 				if (key=='inventory.add'){
 					this.data.items.push(freeitem.data[key]);
 				} else {
-					console.log(key, freeitem.data[key])
 					this.entity.set(key, freeitem.data[key], 'add');
 				}
 			}

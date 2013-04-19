@@ -52,7 +52,7 @@ define(['sge'], function(sge){
 			this.active = null;
 			this._index = 0;
 			this.compassActor = new CAAT.Actor().setFillStyle('blue').setSize(8,8);
-			this.state.scene.addChild(this.compassActor);
+			this.state._entityContainer.addChild(this.compassActor);
 		},
 		create : function(klass){
 			var encounter = new klass(this);
@@ -115,7 +115,7 @@ define(['sge'], function(sge){
                     tx =  entity.get('xform.tx');
                     ty =  entity.get('xform.ty');
                 }
-                view = {
+                var view = {
                     top : top,
                     bottom : bottom,
                     left : left,

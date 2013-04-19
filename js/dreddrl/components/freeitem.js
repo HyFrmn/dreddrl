@@ -3,7 +3,6 @@ define(['sge'], function(sge){
         init: function(entity, data){
             this._super(entity, data);
             this.data.name = data.name || "Item";
-            console.log('Created', data.name)
             var keys = Object.keys(data);
             for (var i = keys.length - 1; i >= 0; i--) {
                 this.data[keys[i]] = data[keys[i]];

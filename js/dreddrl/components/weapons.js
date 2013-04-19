@@ -35,7 +35,8 @@ define(['sge', './bullet'],function(sge){
 					tx: this.entity.get('xform.tx') + (vx * 24 * 0),
 					ty: this.entity.get('xform.ty') + (vy * 24 * 0),
 					vx: vx * speed,
-					vy: vy * speed
+					vy: vy * speed,
+                    container: '_entityContainer'
 				},
 				physics: { width: (4 + Math.abs(vx*48)), height: (4+Math.abs(vy*48))},
 				bullet:{},
