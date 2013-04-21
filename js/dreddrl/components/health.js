@@ -48,7 +48,18 @@ define(['sge/component'], function(Component){
         _set_life : function(value, method){
             var life = this.__set_value('life', value, method);
             this.data.life = Math.min(life, this.get('maxLife'));
-            this.lifebar.setSize(30*(this.data.life/this.get('maxLife')),4)
+            var pct = this.data.life/this.get('maxLife');
+            this.set('pct', pct);
+            fillColor = 'green';
+            if (pct<=0.75){
+                fillColor = 'yellow';
+            } else if (pct<=0.5) {
+                fillColor = 'orange';
+            } else if (pct<=0.25) {
+                fillColor = 'red';
+            }
+            this.lifebar.setFillStyle(fillColor);
+            this.lifebar.setSize(30*(pct),4)
             return this.data.life
         }
 	})
