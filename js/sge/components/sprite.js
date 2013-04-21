@@ -11,15 +11,21 @@ define(['sge/component', 'sge/spritesheet', 'sge/config', 'sge/renderer'], funct
 			var name = subpath[subpath.length-1].split('.')[0];
 			this.spriteSheet = Renderer.SPRITESHEETS[name];
             //new SpriteSheet(config.baseUrl + data.src, data.width, data.height);
-            /*
+            //*
 			this.tintCallback = function(color, length){
-				this.spriteSheet.tint(color);
+				console.log('Tint', color, length);
+				this.setBackground(name + '_tint_red');
 				var timer = this.entity.state.createTimeout(length, function(){
-					this.spriteSheet.tint();
+					console.log('Tint Reset');
+					this.setBackground(name);
 				}.bind(this));
 			}.bind(this);
 			this.entity.addListener('tint', this.tintCallback);
-			*/
+			//*/
+		},
+		setBackground: function(name){
+			var spriteSheet =  Renderer.SPRITESHEETS[name];
+			this.actor.setBackgroundImage(spriteSheet);
 		},
 		register: function(state){
 			this._super(state);

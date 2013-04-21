@@ -52,9 +52,11 @@ define([
                 this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future3.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future4.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/judge.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/hunk.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/judge_tint_red.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert_tint_red.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair_tint_red.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_1.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_2.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_6.png');
@@ -255,6 +257,9 @@ define([
                         this._interaction_actor.setVisible(true);
                     }
                     this._closest = closest;
+                }
+                if (closest!=null){
+                    this._interaction_actor.setLocation(ccord[0],ccord[1]);
                 }
             },
 

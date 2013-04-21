@@ -8,4 +8,4 @@ build/
 albert.png
 hunk.png
 women.png
-assets/sprites/createcharamap.sh
+assets/sprites/*.sh
