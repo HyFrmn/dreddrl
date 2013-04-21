@@ -33,6 +33,7 @@ define(['sge'], function(sge){
 		},
 		setDialog: function(dialog){
             this.dialog = dialog;
+            this.dialogContainer.stopCacheAsBitmap();
             this.dialogContainer.emptyChildren();
             var chunks = dialog.split(' ');
             var count = chunks.length;
@@ -59,7 +60,8 @@ define(['sge'], function(sge){
             }
             actor.setLocation(16,y);
             this.dialogContainer.addChild(actor);
-            this.dialogContainer.setLocation(16, this.game.renderer.height - (y+96))
+            this.dialogContainer.setLocation(16, this.game.renderer.height - (y+96));
+            this.dialogContainer.cacheAsBitmap();
 		}
 	});
 	return DialogState;

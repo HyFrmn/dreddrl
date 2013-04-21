@@ -180,13 +180,14 @@ define([
 
             _updateLog : function(){
                 if (this._cachedLogLength!=this._logs.length){
+                    this._logContainer.stopCacheAsBitmap();
                     this._cachedLogLength = this._logs.length;
                     msgs = this._logs.slice(-4);
                     msgs.reverse();
                     _.each(msgs, function(msg, i){
                         this.logActors[i].setText(msg);
                     }.bind(this));
-                    //this._logContainer.cacheAsBitmap();
+                    this._logContainer.cacheAsBitmap();
                 }
             },
 

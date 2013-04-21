@@ -13,10 +13,8 @@ define(['sge/component', 'sge/spritesheet', 'sge/config', 'sge/renderer'], funct
             //new SpriteSheet(config.baseUrl + data.src, data.width, data.height);
             //*
 			this.tintCallback = function(color, length){
-				console.log('Tint', color, length);
 				this.setBackground(name + '_tint_red');
 				var timer = this.entity.state.createTimeout(length, function(){
-					console.log('Tint Reset');
 					this.setBackground(name);
 				}.bind(this));
 			}.bind(this);
