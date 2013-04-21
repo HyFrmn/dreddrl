@@ -23,8 +23,8 @@ requirejs(['jquery','sge','dreddrl'],
 function   ($, sge, dreddrl) {
     //Setup Ratio
     var body = $('body');
-    var idealWidth = 4;
-    var idealHeight = 3;
+    var idealWidth = 16;
+    var idealHeight = 9;
     var idealRatio = idealWidth/idealHeight;
     var screenRatio = body.width() / body.height();
     if (screenRatio > idealRatio){
@@ -43,7 +43,7 @@ function   ($, sge, dreddrl) {
         margin: '0px auto'
     });
     CAAT.DEBUG=1;
-    game = new sge.Game({elem: '#game', pauseState: dreddrl.PauseState, width: 960, height: 720});
+    game = new sge.Game({elem: '#game', pauseState: dreddrl.PauseState, width: 960, height: 540});
     var state = game.setGameState(dreddrl.DreddRLState);
     game._states['dialog'] = new dreddrl.DialogState(game, 'Dialog');
     game.start();
