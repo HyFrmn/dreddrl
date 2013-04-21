@@ -41140,6 +41140,7 @@ define('sge/components/xform',['sge/component'], function(Component){
 			this.data.ty = data.ty || 0;
 			this.data.vx = data.vx || 0;
 			this.data.vy = data.vy || 0;
+            this.data.container = data.container || 'scene'
 			this.data.dir = data.dir || 'down';
 			this.container = new CAAT.ActorContainer();
 		},
@@ -41158,7 +41159,9 @@ define('sge/components/xform',['sge/component'], function(Component){
 		},
 		register: function(state){
             this._super(state);
-            this.scene = this.state.scene;
+            var containerName = this.data.container;
+            //console.log('Name', containerName, this.state[containerName])
+            this.scene = this.state[containerName];
             this.scene.addChild(this.container);
         },
         deregister: function(state){
@@ -42827,11 +42830,12 @@ define('sge/gamestate',['sge/lib/class', 'sge/vendor/underscore'],
 	var GameState = Class.extend({
 		init: function(game, name, options){
 			this.game = game;
+            this._keepScene = false; 
 			this._sceneIndex = game.renderer.scenes.length;
 			var scene = game.renderer.createScene();
 			this.scene = new CAAT.ActorContainer();
 			scene.addChild(this.scene);
-			this.scene.setBounds(0,0,640,480);
+			this.scene.setBounds(0,0,game.renderer.width, game.renderer.height);
 			this.input = game.input.createProxy();
 			this.entities = {};
 
@@ -42853,7 +42857,9 @@ define('sge/gamestate',['sge/lib/class', 'sge/vendor/underscore'],
         startState : function(){
         	//console.log('Start:', this._name);
         	this.input.enable = true;
-        	this.game.renderer.setScene(this._sceneIndex);
+            if (!this._keepScene){
+            	this.game.renderer.setScene(this._sceneIndex);
+            }
         },
         endState : function(){
         	//console.log('End:', this._name);
@@ -44527,6 +44533,7 @@ function(Class, Observable, Hammer){
         },
         keyUpCallback : function(e){
             //console.log('keyup:' + REVERSE_KEYCODES[e.keyCode]);
+            delete this._isNewKeyDown[e.keyCode];
             this._isKeyDown[e.keyCode] = undefined;
         },
         isPressed : function(keyCode){
@@ -45392,7 +45399,9 @@ define('sge/game',['jquery', 'sge/lib/class' ,'sge/vendor/caat', 'sge/vendor/sta
 function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, VirtualJoystick, PxLoader, PxLoaderImage){
     var LoadState = GameState.extend({
         initState: function(){
-            var title = new CAAT.TextActor().setText('Loading').setLocation(320,240);
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            var title = new CAAT.TextActor().setText('Loading').setLocation(width/2,height/2);
             //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
             this.scene.addChild(title);
             //this.scene.addChild(instruct);
@@ -45416,7 +45425,9 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
 
     var MainMenuState = GameState.extend({
         initState: function(){
-            var title = new CAAT.TextActor().setText('DreddRL').setLocation(320,240);
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            var title = new CAAT.TextActor().setText('DreddRL').setLocation(width/2,height/2);
             var instruct = new CAAT.TextActor().setText('Press Enter to Start')
             this.scene.addChild(title);
             this.scene.addChild(instruct);
@@ -45447,7 +45458,9 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
 
     var GameOverState = GameState.extend({
         initState: function(){
-            var title = new CAAT.TextActor().setText('Game Over').setLocation(320,240);
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            var title = new CAAT.TextActor().setText('Game Over').setLocation(width/2,height/2);
             //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
             this.scene.addChild(title);
             //this.scene.addChild(instruct);
@@ -45478,7 +45491,9 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
 
     var GameWinState = GameState.extend({
         initState: function(){
-            var title = new CAAT.TextActor().setText('Win').setLocation(320,240);
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            var title = new CAAT.TextActor().setText('Win').setLocation(width/2,height/2);
             //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
             this.scene.addChild(title);
             //this.scene.addChild(instruct);
@@ -45508,8 +45523,10 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
 
     var PauseState = GameState.extend({
         initState: function(){
-            var title = new CAAT.TextActor().setText('Paused').setLocation(320,240);
-            //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            var title = new CAAT.TextActor().setText('Paused').setLocation(width/2,height/2);
+            var instruct = new CAAT.TextActor().setText('Press Enter to Start').setLocation(width/2,height/2) + 32;
             this.scene.addChild(title);
             //this.scene.addChild(instruct);
             this.unpause = function(){
@@ -45552,7 +45569,10 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
     var Game = Class.extend({
         init: function(options){
             this.options = $.extend({
-                elem: null
+                elem: null,
+                pauseState : PauseState,
+                width: 720,
+                height: 540
             }, options || {});
             this.engine = new Engine();
             this.loader = new PxLoader();
@@ -45570,7 +45590,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
                 console.log('[SGE ERROR] Need an element to render in. Use elem option to constructor.')
                 this.elem = null;
             }
-            this.renderer = new CAAT.Director().initialize(640,480, $('#game')[0]);
+            this.renderer = new CAAT.Director().initialize(this.options.width, this.options.height, $('#game')[0]);
 
             //this.renderer.onRenderStart= function(director_time) {console.log('tick',this.renderer.scenes.indexOf(this.renderer.currentScene))}.bind(this);
             this.engine.tick = function(delta){
@@ -45610,7 +45630,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
                 'game' : null,
                 'mainmenu' : new MainMenuState(this, 'Main Menu'),
                 'loading' : new LoadState(this, 'Loading'),
-                'paused' : new PauseState(this, 'Paused'),
+                'paused' : new this.options.pauseState(this, 'Paused'),
                 'gameover' : new GameOverState(this, 'Game Over'),
                 'gamewin' : new GameWinState(this, 'Game Win')
             }
@@ -45859,7 +45879,8 @@ define('dreddrl/components/weapons',['sge', './bullet'],function(sge){
 					tx: this.entity.get('xform.tx') + (vx * 24 * 0),
 					ty: this.entity.get('xform.ty') + (vy * 24 * 0),
 					vx: vx * speed,
-					vy: vy * speed
+					vy: vy * speed,
+                    container: '_entityContainer'
 				},
 				physics: { width: (4 + Math.abs(vx*48)), height: (4+Math.abs(vy*48))},
 				bullet:{},
@@ -45981,7 +46002,6 @@ define('dreddrl/components/freeitem',['sge'], function(sge){
         init: function(entity, data){
             this._super(entity, data);
             this.data.name = data.name || "Item";
-            console.log('Created', data.name)
             var keys = Object.keys(data);
             for (var i = keys.length - 1; i >= 0; i--) {
                 this.data[keys[i]] = data[keys[i]];
@@ -46027,7 +46047,6 @@ define('dreddrl/components/inventory',['sge','jquery'],function(sge, $){
 				if (key=='inventory.add'){
 					this.data.items.push(freeitem.data[key]);
 				} else {
-					console.log(key, freeitem.data[key])
 					this.entity.set(key, freeitem.data[key], 'add');
 				}
 			}
@@ -46244,8 +46263,7 @@ define('dreddrl/action',['sge'], function(sge){
 	        return _ctx.get(path);
 	    },
 	    setAttr : function(path, value, method) {
-	    	_ctx = this.entity;
-	    	console.log('PATH', path)
+	    	var _ctx = this.entity;
 	        if (path.match(/^@/)){
 	            var name = path.split('.')[0];
 	            name = name.replace('@(','').replace(')','');
@@ -46294,11 +46312,9 @@ define('dreddrl/components/actions',['sge', '../action'], function(sge, Action){
             this._super(entity, data);
             var keys = Object.keys(data);
             for (var i = keys.length - 1; i >= 0; i--) {
-                //console.log(data[keys[i]])
                 var callbackData = data[keys[i]].slice(0);
                 var callback = function(){
                     var actionData = callbackData.slice(0);
-                    console.log('Data:', callbackData)
                     var actionType = actionData.shift();
                     var action = Action.Load(this.entity, {type: actionType, args: actionData});
                     action.run(this.state);
@@ -46470,7 +46486,6 @@ define('dreddrl/components/health',['sge/component'], function(Component){
         _set_life : function(value, method){
             var life = this.__set_value('life', value, method);
             this.data.life = Math.min(life, this.get('maxLife'));
-            console.log(this.data.life)
             this.lifebar.setSize(30*(this.data.life/this.get('maxLife')),4)
             return this.data.life
         }
@@ -46512,6 +46527,7 @@ define('dreddrl/components/simpleai',['sge/component', 'sge/vendor/state-machine
             return [pc, dx, dy, dist];
         },
         tick : function(delta){
+            /*
             if (this.entity.state){
                 var stateName = this.fsm.current;
                 if (this.getPC()===null){
@@ -46523,6 +46539,8 @@ define('dreddrl/components/simpleai',['sge/component', 'sge/vendor/state-machine
                     }
                 }
             }
+            */
+            this.wander();
         },
         tick_tracking: function(delta){
             var pcData = this.getPCPosition();
@@ -46772,7 +46790,7 @@ define('dreddrl/factory',[
 
 		var FACTORYDATA = {
             chara : function(){return{
-                xform : {},
+                xform : { container: '_entityContainer'},
                 sprite : {
                     width: 32,
                     offsetY: -8,
@@ -46808,7 +46826,7 @@ define('dreddrl/factory',[
                         map: this.map,
                         speed: 16
                     },
-                    //simpleai: {territory: 'neutral'},
+                    simpleai: {territory: 'neutral'},
                     health : {alignment:0, life: 1},
                     sprite : {
                         src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
@@ -46826,7 +46844,7 @@ define('dreddrl/factory',[
                         src : 'assets/sprites/albert.png',
                     },
                     health : {alignment:-10, life: 3},
-                    //simpleai : { tracking: 'pc', territory: 'albert'},
+                    simpleai : { tracking: 'pc', territory: 'albert'},
                     deaddrop: {},
                     actions: {
                         kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs)]]]
@@ -46841,7 +46859,7 @@ define('dreddrl/factory',[
                 deaddrop: {}
             })},
             freeitem : function(){ return {
-                xform: {},
+                xform: { container: '_entityContainer'},
                 physics: {},
                 sprite : {
                     src : 'assets/sprites/scifi_icons_1.png',
@@ -46876,12 +46894,12 @@ define('dreddrl/factory',[
                 }
             })},
             door : function(){return {
-                xform: {},
+                xform: { container: '_entityContainer'},
                 interact : {},
                 door: {}
             }},
             elevator : function(){return {
-                xform: {},
+                xform: { container: '_entityContainer'},
                 interact : {},
                 elevator: {}
             }},
@@ -47749,8 +47767,8 @@ define('dreddrl/encounters',['sge'], function(sge){
 			this.encounters = [];
 			this.active = null;
 			this._index = 0;
-			this.compassActor = new CAAT.Actor().setFillStyle('blue').setSize(8,8);
-			this.state.scene.addChild(this.compassActor);
+			this.compassActor = new CAAT.Actor().setFillStyle('blue').setSize(32,32);
+			this.state._entityContainer.addChild(this.compassActor);
 		},
 		create : function(klass){
 			var encounter = new klass(this);
@@ -47780,13 +47798,14 @@ define('dreddrl/encounters',['sge'], function(sge){
                 var y1 = (pc.get('xform.ty')); 
                 var x2 = entity.get('xform.tx')
                 var y2 = entity.get('xform.ty')
-                var top = 64-this.state.scene.y;
-                var bottom = (this.state.game.renderer.height-64) - this.state.scene.y;
-                var left = 64-this.state.scene.x;
-                var right = (this.state.game.renderer.width-64) - this.state.scene.x;
+                var top = 64-this.state._entityContainer.y;
+                var bottom = (this.state.game.renderer.height-64) - this.state._entityContainer.y;
+                var left = 64-this.state._entityContainer.x;
+                var right = (this.state.game.renderer.width-64) - this.state._entityContainer.x;
                 //console.log(top,bottom,left,right);
                 coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
                 var intersection = false;
+                /*
                 for (var i = coords.length - 1; i >= 0; i--) {
                     var coord = coords[i];
                     if (this._debug_tick){
@@ -47804,7 +47823,8 @@ define('dreddrl/encounters',['sge'], function(sge){
                         //console.log(intersection);
                         break;
                     }
-                }; 
+                }
+                //*/ 
                 if (intersection){
                     tx = intersection[0];
                     ty = intersection[1];
@@ -47813,7 +47833,7 @@ define('dreddrl/encounters',['sge'], function(sge){
                     tx =  entity.get('xform.tx');
                     ty =  entity.get('xform.ty');
                 }
-                view = {
+                var view = {
                     top : top,
                     bottom : bottom,
                     left : left,
@@ -47822,7 +47842,7 @@ define('dreddrl/encounters',['sge'], function(sge){
                 if (sge.collision.pointRectIntersect(tx, ty, view)){
                     console.log('WTF!!!');
                 }
-                this.compassActor.setLocation(tx+8, ty+8);
+                this.compassActor.setLocation(tx, ty);
                 //TODO: CAAT 
                 //this.state.game.renderer.drawRect('canopy', tx-4, ty-4, 8, 8, {fillStyle: 'blue'}, 1000000);
             }
@@ -47987,7 +48007,7 @@ define('dreddrl/dreddrlstate',[
     ],
     function(sge, BlockLevelGenerator, Physics, Factory, Map, encounters){
 
-        INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is you responsiblity to bring justice to Mega City One.";
+        INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is your responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
     	var DreddRLState = sge.GameState.extend({
     		initState: function(options){
@@ -47996,7 +48016,7 @@ define('dreddrl/dreddrlstate',[
                 this.options = options || {};
                 this._contactList = [];
 
-                this._intro = true;
+                this._intro = false;
                 this._killList = [];
 
                 this._logMsg = [];
@@ -48008,7 +48028,10 @@ define('dreddrl/dreddrlstate',[
                 this._debug_count = 0;
                 this._debugTick = false;
 
-
+                this._uiContainer = new CAAT.ActorContainer().setBounds(0,0,2048,2048);
+                this._entityContainer = new CAAT.ActorContainer().setBounds(0,0,2048,2048);
+                this.scene.addChild(this._entityContainer);
+                this.scene.addChild(this._uiContainer);
 
                 this.factory = Factory;
                 this.map = new Map(65,66,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
@@ -48062,9 +48085,9 @@ define('dreddrl/dreddrlstate',[
             initGame : function(){
                 //Load Game Plugins
                 this.physics = new Physics(this);
-                this.map.setup(this.scene);
+                this.map.setup(this._entityContainer);
                 this._interaction_actor = new CAAT.Actor().setFillStyle('green').setStrokeStyle('black').setSize(32,32).setVisible(false);
-                this.scene.addChild(this._interaction_actor);
+                this._entityContainer.addChild(this._interaction_actor);
                 this.level = new BlockLevelGenerator(this, this.options);
                 
 
@@ -48096,6 +48119,7 @@ define('dreddrl/dreddrlstate',[
                 this._logs = [];
                 this._cachedLogLength = this._logs.length;
                 this._logContainer = new CAAT.ActorContainer();
+                this._logContainer.setLocation(16,this.game.renderer.height - 80);
                 this.logActors = [];
                 var fontSize = 16;
                 this.logActors[0] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,0);
@@ -48106,7 +48130,13 @@ define('dreddrl/dreddrlstate',[
                 this._logContainer.addChild(this.logActors[2]);
                 this.logActors[3] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,48).setAlpha(0.25);
                 this._logContainer.addChild(this.logActors[3]);
-                this.scene.addChild(this._logContainer);
+                this._uiContainer.addChild(this._logContainer);
+
+                this._dialogContainer = new CAAT.ActorContainer().setLocation(16,16).setVisible(false);
+                this._dialogActor = new CAAT.TextActor().setFont(fontSize + 'px sans-serif').setText('TEST!');
+                this._dialogContainer.addChild(this._dialogActor);
+                this._uiContainer.addChild(this._dialogContainer);
+                this.log('You are the Law.');
             },
 
             progressListener : function(e){
@@ -48122,16 +48152,7 @@ define('dreddrl/dreddrlstate',[
                     this.initGame();
                 }
             },
-            /*
-            startState : function(){
-                
-                //this.input.addListener('keydown:F', this.toggleShadows);
-            },
-            endState : function(){
-                this.input.removeListener('keydown:space', this.pause)
-                //this.input.removeListener('keydown:F', this.toggleShadows)        
-            },
-            */
+
             addEntity: function(entity){
                 this._super(entity);
                 entity.addListener('kill', function(){
@@ -48145,16 +48166,15 @@ define('dreddrl/dreddrlstate',[
                 }.bind(this));
                 this._updateHash(entity);
             },
+
             logCallback : function(msg){
                 this.log(msg);
             },
+
             log : function(msg){
                 this._logs.push(msg);
-
-                //this.logActor.setText(msg);
-                //var elem = $('<p/>').text(msg);
-                //this._elem_log.prepend($('<li/>').append(elem));
             },
+
             _updateLog : function(){
                 if (this._cachedLogLength!=this._logs.length){
                     this._cachedLogLength = this._logs.length;
@@ -48166,11 +48186,13 @@ define('dreddrl/dreddrlstate',[
                     //this._logContainer.cacheAsBitmap();
                 }
             },
+
             _removeFromHash : function(entity){
                 var hash = this._spatialHashReverse[entity.id];
                     this._spatialHashReverse[entity.id]=undefined;
                     this._spatialHash[hash] = _.without(this._spatialHash[hash], entity.id);
             },
+
             _updateHash : function(entity){
                 var cx = Math.floor(entity.get('xform.tx') / this._spatialHashWidth);
                 var cy = Math.floor(entity.get('xform.ty') / this._spatialHashHeight);
@@ -48184,6 +48206,7 @@ define('dreddrl/dreddrlstate',[
                 this._spatialHash[hash].push(entity.id);
                 this._spatialHashReverse[entity.id] = hash;
             },
+
             _interaction_tick : function(delta){
                 var closest = null;
                 var cdist = 64;
@@ -48233,10 +48256,12 @@ define('dreddrl/dreddrlstate',[
                     this._closest = closest;
                 }
             },
+
             startDialog: function(dialog){
                 this.game._states['dialog'].setDialog(dialog);
                 this.game.fsm.startDialog();
             },
+
             tick : function(delta){
                 this._debugTick = this.game.engine._debugTick;
                 var debugTime = Date.now();
@@ -48245,13 +48270,10 @@ define('dreddrl/dreddrlstate',[
                 this.physics.resolveCollisions(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Physics Time:', t-debugTime); debugTime=t};
 
-
-                /*
                 if (this._intro==false){
                     this._intro = true;
                     this.startDialog(INTRO)
                 }
-                */
                 
                 //Update Interaction System
                 this._interaction_tick(delta);
@@ -48263,22 +48285,26 @@ define('dreddrl/dreddrlstate',[
                     //if (this._debugTick){ var t=Date.now(); console.log('Time:', i, t-c);};
                 };
                 if (this._debugTick){ var t=Date.now(); console.log('Component Time:', t-debugTime, this._entity_ids.length); debugTime=t};
+                
                 //Prune entities
                 _.each(this._killList, function(e){
                     this._removeFromHash(e);
                     this.removeEntity(e);
                 }.bind(this));
                 if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
+                
                 //Tick Encounter System
                 this.encounterSystem.tick(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Encounter Time:', t-debugTime); debugTime=t};
-                //this.game.renderer.track(this.pc);
+                
+                //Track Player
                 var tx = this.pc.get('xform.tx');
                 var ty = this.pc.get('xform.ty');
-                this.scene.setLocation(-tx+320,-ty+240);
-                this._logContainer.setLocation(tx,ty+120);
+                this._entityContainer.setLocation(-tx+(this.game.renderer.width/2),-ty+(this.game.renderer.height/2));
+
+                //Update Log
                 this._updateLog();
-                //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
+                
                 if (this._debugTick){ var t=Date.now(); console.log('Scene Time:', t-debugTime); debugTime=t};
 
                 _.each(this._entity_ids, function(id){
@@ -48307,14 +48333,28 @@ define('dreddrl/dreddrlstate',[
 define('dreddrl/dialogstate',['sge'], function(sge){
 	var DialogState = sge.GameState.extend({
 		initState: function(){
-            this.elem = $('.dialogscreen') || null;
+            this._keepScene = true;
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            this.container = new CAAT.ActorContainer().setBounds(0,0,width,height);
+            this.dialogContainer = new CAAT.ActorContainer().setLocation(16, height/2 - 32);
+            this.container.addChild(new CAAT.Actor().setSize(width,height).setFillStyle('black').setAlpha(0.5));
+            this.container.addChild(this.dialogContainer);
             this.interact = this.interact.bind(this);
             this.input.addListener('keydown:enter', this.interact);
         },
         startState : function(){
+            var state = this.game._states['game'];
+            state._uiContainer.setVisible(false);
+            this.scene = state.scene;
+            this.scene.addChild(this.container);
             this._super();
         },
         endState : function(){
+            var state = this.game._states['game'];
+            state._uiContainer.setVisible(true);
+            this.scene.removeChild(this.container);
+            this.scene = null;
             this._super();
         },
         interact: function(){
@@ -48324,17 +48364,85 @@ define('dreddrl/dialogstate',['sge'], function(sge){
 			this.game._states['game']._paused_tick();
 		},
 		setDialog: function(dialog){
-			this.dialog = dialog;
-            this.elem.find('.dialogbox .content').html(this.dialog.replace('\n', '<br/>'));
+            this.dialog = dialog;
+            this.dialogContainer.emptyChildren();
+            var chunks = dialog.split(' ');
+            var count = chunks.length;
+            var start = 0;
+            var end = 0;
+            var actor = new CAAT.TextActor().setFont('24px sans-serif');
+            var y = 0;
+            var testWidth = this.game.renderer.width - 64;
+            while (end<=count){
+                var test = chunks.slice(start, end).join(' ');
+                actor.setText(test);
+                actor.calcTextSize(this.game.renderer);
+                if (actor.textWidth > (testWidth)){
+                    end--;
+                    actor.setLocation(16,y).setText(chunks.slice(start, end).join(' '));
+                    this.dialogContainer.addChild(actor);
+                    y+=24;
+                    start = end;
+                    end = start + 1;
+                    actor = new CAAT.TextActor().setFont('24px sans-serif');
+                } else {
+                    end++;
+                }
+            }
+            actor.setLocation(16,y);
+            this.dialogContainer.addChild(actor);
+            this.dialogContainer.setLocation(16, this.game.renderer.height - (y+96))
 		}
 	});
 	return DialogState;
 });
-define('dreddrl/main',['./dreddrlstate','./dialogstate'], function(DreddRLState, DialogState){
-
+define('dreddrl/pausestate',['sge'], function(sge){
+	var PauseState = sge.GameState.extend({
+        initState: function(){
+            this._keepScene = true;
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            this.container = new CAAT.ActorContainer().setBounds(0,0,width,height);
+            var title = new CAAT.TextActor().setText('Paused').setFont('64px sans-serif').setTextAlign('center').setLocation(width/2,height/2 - 32);
+            this.container.addChild(new CAAT.Actor().setSize(width,height).setFillStyle('black').setAlpha(0.5));
+            this.container.addChild(title);
+            this.unpause = function(){
+                this.game.fsm.unpause();
+            }.bind(this);
+            this.input.addListener('keydown:space', this.unpause);
+            this.input.addListener('tap', this.unpause);
+        },
+        startState : function(){
+            var state = this.game._states['game'];
+            this.scene = state.scene;
+            this.scene.addChild(this.container);
+            this._super();
+        },
+        endState : function(){
+            this.scene.removeChild(this.container);
+            this.scene = null;
+            this._super();
+        },
+        tick : function(delta){
+            func = this.game._states['game']._paused_tick;
+            if (func){
+                func.call(this.game._states['game'], delta);
+            }
+        }
+    });
+    return PauseState
+});
+define('dreddrl/main',
+	[
+		'./dreddrlstate',
+		'./dialogstate',
+		'./pausestate'
+	],
+function(DreddRLState, DialogState, PauseState){
 	return {
 		DreddRLState : DreddRLState,
-		DialogState : DialogState
+		DialogState : DialogState,
+		PauseState : PauseState
 	}
 });
 define('dreddrl', ['dreddrl/main'], function (main) { return main; });

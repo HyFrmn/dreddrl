@@ -25,7 +25,7 @@ define(['sge/lib/class', 'sge/vendor/underscore'],
 			var scene = game.renderer.createScene();
 			this.scene = new CAAT.ActorContainer();
 			scene.addChild(this.scene);
-			this.scene.setBounds(0,0,640,480);
+			this.scene.setBounds(0,0,game.renderer.width, game.renderer.height);
 			this.input = game.input.createProxy();
 			this.entities = {};
 

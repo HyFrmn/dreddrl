@@ -19,7 +19,7 @@ module.exports = function(grunt) {
 		  compile: {
 		    options: {
 		      baseUrl: "js/",
-		      mainConfigFile: "js/game.js",
+		      mainConfigFile: "app.js",
 		      out: "build/required.js",
 		      //dir: "build/",
 		      optimize: "none",

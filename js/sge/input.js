@@ -158,6 +158,7 @@ function(Class, Observable, Hammer){
         },
         keyUpCallback : function(e){
             //console.log('keyup:' + REVERSE_KEYCODES[e.keyCode]);
+            delete this._isNewKeyDown[e.keyCode];
             this._isKeyDown[e.keyCode] = undefined;
         },
         isPressed : function(keyCode){

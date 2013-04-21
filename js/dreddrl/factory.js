@@ -77,7 +77,7 @@ define([
                         map: this.map,
                         speed: 16
                     },
-                    //simpleai: {territory: 'neutral'},
+                    simpleai: {territory: 'neutral'},
                     health : {alignment:0, life: 1},
                     sprite : {
                         src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
@@ -95,7 +95,7 @@ define([
                         src : 'assets/sprites/albert.png',
                     },
                     health : {alignment:-10, life: 3},
-                    //simpleai : { tracking: 'pc', territory: 'albert'},
+                    simpleai : { tracking: 'pc', territory: 'albert'},
                     deaddrop: {},
                     actions: {
                         kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs)]]]

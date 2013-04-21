@@ -42,8 +42,7 @@ function   ($, sge, dreddrl) {
         display: 'block',
         margin: '0px auto'
     });
-    CAAT.DEBUG=1;
-    game = new sge.Game({elem: '#game'});
+    game = new sge.Game({elem: '#game', pauseState: dreddrl.PauseState, width: 960, height: 720});
     var state = game.setGameState(dreddrl.DreddRLState);
     game._states['dialog'] = new dreddrl.DialogState(game, 'Dialog');
     game.start();

@@ -8,7 +8,7 @@ define([
     ],
     function(sge, BlockLevelGenerator, Physics, Factory, Map, encounters){
 
-        INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is you responsiblity to bring justice to Mega City One.";
+        INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is your responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
     	var DreddRLState = sge.GameState.extend({
     		initState: function(options){
@@ -17,7 +17,7 @@ define([
                 this.options = options || {};
                 this._contactList = [];
 
-                this._intro = true;
+                this._intro = false;
                 this._killList = [];
 
                 this._logMsg = [];
@@ -29,9 +29,8 @@ define([
                 this._debug_count = 0;
                 this._debugTick = false;
 
-                this._uiContainer = new CAAT.ActorContainer();
-                this._entityContainer = new CAAT.ActorContainer();
-                this._entityContainer.setBounds(0,0,2048,2048);
+                this._uiContainer = new CAAT.ActorContainer().setBounds(0,0,2048,2048);
+                this._entityContainer = new CAAT.ActorContainer().setBounds(0,0,2048,2048);
                 this.scene.addChild(this._entityContainer);
                 this.scene.addChild(this._uiContainer);
 
@@ -121,6 +120,7 @@ define([
                 this._logs = [];
                 this._cachedLogLength = this._logs.length;
                 this._logContainer = new CAAT.ActorContainer();
+                this._logContainer.setLocation(16,this.game.renderer.height - 80);
                 this.logActors = [];
                 var fontSize = 16;
                 this.logActors[0] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,0);
@@ -131,7 +131,13 @@ define([
                 this._logContainer.addChild(this.logActors[2]);
                 this.logActors[3] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,48).setAlpha(0.25);
                 this._logContainer.addChild(this.logActors[3]);
-                this.scene.addChild(this._logContainer);
+                this._uiContainer.addChild(this._logContainer);
+
+                this._dialogContainer = new CAAT.ActorContainer().setLocation(16,16).setVisible(false);
+                this._dialogActor = new CAAT.TextActor().setFont(fontSize + 'px sans-serif').setText('TEST!');
+                this._dialogContainer.addChild(this._dialogActor);
+                this._uiContainer.addChild(this._dialogContainer);
+                this.log('You are the Law.');
             },
 
             progressListener : function(e){
@@ -147,16 +153,7 @@ define([
                     this.initGame();
                 }
             },
-            /*
-            startState : function(){
-                
-                //this.input.addListener('keydown:F', this.toggleShadows);
-            },
-            endState : function(){
-                this.input.removeListener('keydown:space', this.pause)
-                //this.input.removeListener('keydown:F', this.toggleShadows)        
-            },
-            */
+
             addEntity: function(entity){
                 this._super(entity);
                 entity.addListener('kill', function(){
@@ -170,16 +167,15 @@ define([
                 }.bind(this));
                 this._updateHash(entity);
             },
+
             logCallback : function(msg){
                 this.log(msg);
             },
+
             log : function(msg){
                 this._logs.push(msg);
-
-                //this.logActor.setText(msg);
-                //var elem = $('<p/>').text(msg);
-                //this._elem_log.prepend($('<li/>').append(elem));
             },
+
             _updateLog : function(){
                 if (this._cachedLogLength!=this._logs.length){
                     this._cachedLogLength = this._logs.length;
@@ -191,11 +187,13 @@ define([
                     //this._logContainer.cacheAsBitmap();
                 }
             },
+
             _removeFromHash : function(entity){
                 var hash = this._spatialHashReverse[entity.id];
                     this._spatialHashReverse[entity.id]=undefined;
                     this._spatialHash[hash] = _.without(this._spatialHash[hash], entity.id);
             },
+
             _updateHash : function(entity){
                 var cx = Math.floor(entity.get('xform.tx') / this._spatialHashWidth);
                 var cy = Math.floor(entity.get('xform.ty') / this._spatialHashHeight);
@@ -209,6 +207,7 @@ define([
                 this._spatialHash[hash].push(entity.id);
                 this._spatialHashReverse[entity.id] = hash;
             },
+
             _interaction_tick : function(delta){
                 var closest = null;
                 var cdist = 64;
@@ -258,10 +257,12 @@ define([
                     this._closest = closest;
                 }
             },
+
             startDialog: function(dialog){
                 this.game._states['dialog'].setDialog(dialog);
                 this.game.fsm.startDialog();
             },
+
             tick : function(delta){
                 this._debugTick = this.game.engine._debugTick;
                 var debugTime = Date.now();
@@ -270,13 +271,10 @@ define([
                 this.physics.resolveCollisions(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Physics Time:', t-debugTime); debugTime=t};
 
-
-                /*
                 if (this._intro==false){
                     this._intro = true;
                     this.startDialog(INTRO)
                 }
-                */
                 
                 //Update Interaction System
                 this._interaction_tick(delta);
@@ -288,22 +286,26 @@ define([
                     //if (this._debugTick){ var t=Date.now(); console.log('Time:', i, t-c);};
                 };
                 if (this._debugTick){ var t=Date.now(); console.log('Component Time:', t-debugTime, this._entity_ids.length); debugTime=t};
+                
                 //Prune entities
                 _.each(this._killList, function(e){
                     this._removeFromHash(e);
                     this.removeEntity(e);
                 }.bind(this));
                 if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
+                
                 //Tick Encounter System
                 this.encounterSystem.tick(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Encounter Time:', t-debugTime); debugTime=t};
-                //this.game.renderer.track(this.pc);
+                
+                //Track Player
                 var tx = this.pc.get('xform.tx');
                 var ty = this.pc.get('xform.ty');
-                this._entityContainer.setLocation(-tx+320,-ty+240);
-                this._logContainer.setLocation(tx,ty+120);
+                this._entityContainer.setLocation(-tx+(this.game.renderer.width/2),-ty+(this.game.renderer.height/2));
+
+                //Update Log
                 this._updateLog();
-                //this.shadows.tick(this.pc.get('xform.tx'),this.pc.get('xform.ty'));
+                
                 if (this._debugTick){ var t=Date.now(); console.log('Scene Time:', t-debugTime); debugTime=t};
 
                 _.each(this._entity_ids, function(id){

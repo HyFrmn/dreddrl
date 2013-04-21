@@ -31,6 +31,7 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             return [pc, dx, dy, dist];
         },
         tick : function(delta){
+            /*
             if (this.entity.state){
                 var stateName = this.fsm.current;
                 if (this.getPC()===null){
@@ -42,6 +43,8 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
                     }
                 }
             }
+            */
+            this.wander();
         },
         tick_tracking: function(delta){
             var pcData = this.getPCPosition();

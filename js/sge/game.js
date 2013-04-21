@@ -2,7 +2,9 @@ define(['jquery', 'sge/lib/class' ,'sge/vendor/caat', 'sge/vendor/state-machine'
 function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, VirtualJoystick, PxLoader, PxLoaderImage){
     var LoadState = GameState.extend({
         initState: function(){
-            var title = new CAAT.TextActor().setText('Loading').setLocation(320,240);
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            var title = new CAAT.TextActor().setText('Loading').setLocation(width/2,height/2);
             //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
             this.scene.addChild(title);
             //this.scene.addChild(instruct);
@@ -26,7 +28,9 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
 
     var MainMenuState = GameState.extend({
         initState: function(){
-            var title = new CAAT.TextActor().setText('DreddRL').setLocation(320,240);
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            var title = new CAAT.TextActor().setText('DreddRL').setLocation(width/2,height/2);
             var instruct = new CAAT.TextActor().setText('Press Enter to Start')
             this.scene.addChild(title);
             this.scene.addChild(instruct);
@@ -57,7 +61,9 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
 
     var GameOverState = GameState.extend({
         initState: function(){
-            var title = new CAAT.TextActor().setText('Game Over').setLocation(320,240);
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            var title = new CAAT.TextActor().setText('Game Over').setLocation(width/2,height/2);
             //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
             this.scene.addChild(title);
             //this.scene.addChild(instruct);
@@ -88,7 +94,9 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
 
     var GameWinState = GameState.extend({
         initState: function(){
-            var title = new CAAT.TextActor().setText('Win').setLocation(320,240);
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            var title = new CAAT.TextActor().setText('Win').setLocation(width/2,height/2);
             //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
             this.scene.addChild(title);
             //this.scene.addChild(instruct);
@@ -118,8 +126,10 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
 
     var PauseState = GameState.extend({
         initState: function(){
-            var title = new CAAT.TextActor().setText('Paused').setLocation(320,240);
-            //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            var width = this.game.renderer.width;
+            var height = this.game.renderer.height;
+            var title = new CAAT.TextActor().setText('Paused').setLocation(width/2,height/2);
+            var instruct = new CAAT.TextActor().setText('Press Enter to Start').setLocation(width/2,height/2) + 32;
             this.scene.addChild(title);
             //this.scene.addChild(instruct);
             this.unpause = function(){
@@ -162,7 +172,10 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
     var Game = Class.extend({
         init: function(options){
             this.options = $.extend({
-                elem: null
+                elem: null,
+                pauseState : PauseState,
+                width: 720,
+                height: 540
             }, options || {});
             this.engine = new Engine();
             this.loader = new PxLoader();
@@ -180,7 +193,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
                 console.log('[SGE ERROR] Need an element to render in. Use elem option to constructor.')
                 this.elem = null;
             }
-            this.renderer = new CAAT.Director().initialize(640,480, $('#game')[0]);
+            this.renderer = new CAAT.Director().initialize(this.options.width, this.options.height, $('#game')[0]);
 
             //this.renderer.onRenderStart= function(director_time) {console.log('tick',this.renderer.scenes.indexOf(this.renderer.currentScene))}.bind(this);
             this.engine.tick = function(delta){
@@ -220,7 +233,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
                 'game' : null,
                 'mainmenu' : new MainMenuState(this, 'Main Menu'),
                 'loading' : new LoadState(this, 'Loading'),
-                'paused' : new PauseState(this, 'Paused'),
+                'paused' : new this.options.pauseState(this, 'Paused'),
                 'gameover' : new GameOverState(this, 'Game Over'),
                 'gamewin' : new GameWinState(this, 'Game Win')
             }

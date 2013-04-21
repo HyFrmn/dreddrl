@@ -51,7 +51,7 @@ define(['sge'], function(sge){
 			this.encounters = [];
 			this.active = null;
 			this._index = 0;
-			this.compassActor = new CAAT.Actor().setFillStyle('blue').setSize(8,8);
+			this.compassActor = new CAAT.Actor().setFillStyle('blue').setSize(32,32);
 			this.state._entityContainer.addChild(this.compassActor);
 		},
 		create : function(klass){
@@ -82,13 +82,14 @@ define(['sge'], function(sge){
                 var y1 = (pc.get('xform.ty')); 
                 var x2 = entity.get('xform.tx')
                 var y2 = entity.get('xform.ty')
-                var top = 64-this.state.scene.y;
-                var bottom = (this.state.game.renderer.height-64) - this.state.scene.y;
-                var left = 64-this.state.scene.x;
-                var right = (this.state.game.renderer.width-64) - this.state.scene.x;
+                var top = 64-this.state._entityContainer.y;
+                var bottom = (this.state.game.renderer.height-64) - this.state._entityContainer.y;
+                var left = 64-this.state._entityContainer.x;
+                var right = (this.state.game.renderer.width-64) - this.state._entityContainer.x;
                 //console.log(top,bottom,left,right);
                 coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
                 var intersection = false;
+                /*
                 for (var i = coords.length - 1; i >= 0; i--) {
                     var coord = coords[i];
                     if (this._debug_tick){
@@ -106,7 +107,8 @@ define(['sge'], function(sge){
                         //console.log(intersection);
                         break;
                     }
-                }; 
+                }
+                //*/ 
                 if (intersection){
                     tx = intersection[0];
                     ty = intersection[1];
@@ -124,7 +126,7 @@ define(['sge'], function(sge){
                 if (sge.collision.pointRectIntersect(tx, ty, view)){
                     console.log('WTF!!!');
                 }
-                this.compassActor.setLocation(tx+8, ty+8);
+                this.compassActor.setLocation(tx, ty);
                 //TODO: CAAT 
                 //this.state.game.renderer.drawRect('canopy', tx-4, ty-4, 8, 8, {fillStyle: 'blue'}, 1000000);
             }
