@@ -22,7 +22,7 @@ module.exports = function(grunt) {
 		      mainConfigFile: "app.js",
 		      out: "build/required.js",
 		      //dir: "build/",
-		      optimize: "none",
+		      //optimize: "none",
 		      packages: ['dreddrl','sge'],
 		      paths: {
 		      	'jquery' : '../js/require-jquery',
