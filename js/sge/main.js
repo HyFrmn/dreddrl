@@ -11,6 +11,7 @@ define(['sge/config',
         'sge/lib/class',
         'sge/lib/random',
         'sge/lib/collision',
+        'sge/lib/util',
         'sge/spritesheet'
         ],
 function(
@@ -27,6 +28,7 @@ function(
       Class,
       random,
       collision,
+      util,
       SpriteSheet
         ){
    return {
@@ -44,6 +46,7 @@ function(
         },
         Class : Class,
         random : random,
+        util: util,
         collision : collision,
         SpriteSheet : SpriteSheet
    };

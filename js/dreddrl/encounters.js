@@ -51,7 +51,7 @@ define(['sge'], function(sge){
 			this.encounters = [];
 			this.active = null;
 			this._index = 0;
-			this.compassActor = new CAAT.Actor().setFillStyle('blue').setSize(32,32);
+			this.compassActor = new CAAT.ShapeActor().setShape(CAAT.ShapeActor.SHAPE_CIRCLE).setFillStyle('blue').setSize(32,32);
 			this.state._entityContainer.addChild(this.compassActor);
 		},
 		create : function(klass){
@@ -104,7 +104,6 @@ define(['sge'], function(sge){
                     }
                     intersection = sge.collision.lineIntersect(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
                     if (intersection){
-                        //console.log(intersection);
                         break;
                     }
                 }

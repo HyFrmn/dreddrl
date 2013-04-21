@@ -85,15 +85,62 @@ define([
                 this.loader.start();
             },
 
+            evalValue : function(path, ctx){
+                var _ctx = ctx;
+                if (path.match(/^@/)){
+                    var name = path.split('.')[0];
+                    name = name.replace('@(','').replace(')','');
+                    if (name=='state'){
+                        _ctx = this;
+                    } else {
+                        _ctx = this.getEntitiesWithTag(name)[0];
+                    }
+                    path = path.replace('@(' + name + ').', '');
+                }
+                return _ctx.get(path);
+            },
+
+            _updateUI: function(){
+                _.map(this._uiFunctions, function(func){
+                    func();
+                });
+                this._updateLog();
+            },
+
+            _createUIItem: function(label, path, options){
+                options = sge.util.extend({
+                    tx: 16,
+                    ty: 16
+                },options || {})
+                var container = new CAAT.ActorContainer().setLocation(options.tx, options.ty);
+                var fontStyle = '24px sans-serif';
+                var label = new CAAT.TextActor().setFont(fontStyle).setText(label);
+                var valuebox = new CAAT.TextActor().setFont(fontStyle).setText('null');
+                label.calcTextSize(this.game.renderer);
+                valuebox.setLocation(label.textWidth+4,0);
+                container.addChild(label);
+                container.addChild(valuebox);
+                var callback = function(){
+                    var value = this.evalValue(path);
+                    valuebox.setText(value);
+                };
+                this._uiFunctions.push(callback.bind(this));
+                this._uiContainer.addChild(container);
+            },
+
             initGame : function(){
                 //Load Game Plugins
                 this.physics = new Physics(this);
                 this.map.setup(this._entityContainer);
+
+                //Setup Interaction System
                 this._interaction_actor = new CAAT.Actor().setFillStyle('green').setStrokeStyle('black').setSize(32,32).setVisible(false);
                 this._entityContainer.addChild(this._interaction_actor);
+                
+                //Create Game World
                 this.level = new BlockLevelGenerator(this, this.options);
                 
-
+                //Add PC
                 var pc = Factory('pc', {
                     xform : {
                         tx: 96,
@@ -105,11 +152,20 @@ define([
                 }.bind(pc));
                 this.addEntity(pc);
                 this.pc = pc;
-                
+
+
+                //Create Game Encounters                
                 this.encounterSystem = new encounters.EncounterSystem(this);
                 this.encounterSystem.create(encounters.CheckupEncounter);
                 this.encounterSystem.create(encounters.ExecuteEncounter);
                 
+
+                //Create NPC Population
+                //TODO:
+
+                
+
+
                 this.map.render();
                 this.input.addListener('keydown:Q', function(){
                     this.encounterSystem.switch();
@@ -119,6 +175,12 @@ define([
                 }.bind(this), 1000);
                 this.map.render(this.game.renderer);
                 
+                //Create UI;
+                this._uiFunctions = [];
+                this._createUIItem('XP:', '@(pc).stats.xp');
+                this._createUIItem('AMMO:', '@(pc).inventory.ammo', {ty: 40});
+                this._createUIItem('HEALTH:', '@(pc).health.life', {ty: 64});
+
                 this._logs = [];
                 this._cachedLogLength = this._logs.length;
                 this._logContainer = new CAAT.ActorContainer();
@@ -310,7 +372,8 @@ define([
                 this._entityContainer.setLocation(-tx+(this.game.renderer.width/2),-ty+(this.game.renderer.height/2));
 
                 //Update Log
-                this._updateLog();
+                this._updateUI();
+
                 
                 if (this._debugTick){ var t=Date.now(); console.log('Scene Time:', t-debugTime); debugTime=t};
 
