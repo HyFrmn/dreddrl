@@ -1,14 +1,14 @@
 define(['sge'], function(sge){
 	var Encounter = sge.Class.extend({
-		init: function(system){
+		init: function(system, options){
 			this.system = system;
 			this.block = system.state.level;
 			this.state = system.state;
-			this.factory = this.block.factory;
+			this.factory = this.state.factory;
 			this.status = 0;
 			this.total = 1;
 			this.targetEntity = null;
-			this.start();
+			this.start(options);
 		},
 		isFinished: function(){
 			return (this.status>=this.total);
@@ -20,10 +20,6 @@ define(['sge'], function(sge){
 			this.system.complete(this);
 		},
 		tick: function(){
-			/**
-			*
-			*/
-
 		},
 		getPC : function(){
 			return this.state.getEntityWithTag('pc');
@@ -45,6 +41,32 @@ define(['sge'], function(sge){
 		}
 	});
 
+	var SerialEncounter = Encounter.extend({
+		start: function(options){
+			var entityNames = _.keys(options.entities || {});
+			var active = null;
+			var entities = _.map(entityNames, function(name){
+				var def = options.entities[name];
+				def.meta = def.meta || {};
+				var base = def.meta.inherit || 'npc';
+				var room = this.block.getRandomEncounterRoom({territory: 'neutral'});
+				def.xform = def.xform || {};
+				def.xform.tx = room.cx * 32;
+				def.xform.ty = room.cy * 32;
+				def.encounter = {encounter: this};
+				delete def.meta;
+				var entity = this.factory(base, def);
+				entity.tags.push(name);
+				this.state.addEntity(entity);
+				return entity;
+			}.bind(this));
+			if (active==null){
+				active = entities[0];
+			};
+			this.targetEntity = active;
+		}
+	})
+
 	var EncounterSystem = sge.Class.extend({
 		init: function(state){
 			this.state = state;
@@ -54,8 +76,8 @@ define(['sge'], function(sge){
 			this.compassActor = new CAAT.ShapeActor().setShape(CAAT.ShapeActor.SHAPE_CIRCLE).setFillStyle('blue').setSize(32,32);
 			this.state._entityContainer.addChild(this.compassActor);
 		},
-		create : function(klass){
-			var encounter = new klass(this);
+		create : function(klass, options){
+			var encounter = new klass(this, options);
 			this.encounters.push(encounter);
 			if (!this.active){
 				this.active = encounter;
@@ -163,7 +185,9 @@ define(['sge'], function(sge){
 	                    tx: mothersRoom.cx * 32,
 	                    ty: mothersRoom.cy * 32
 	                },
-	                interact : {},
+	                interact : {
+	                	priority: true
+	                },
 	                encounter: {
 	                    encounter : this,
 	                },
@@ -198,7 +222,9 @@ define(['sge'], function(sge){
 	                    tx: daughtersRoom.cx * 32,
 	                    ty: daughtersRoom.cy * 32
 	                },
-	                interact : {},
+	                interact : {
+	                	priority: true
+	                },
 	                encounter: {
 	                    encounter : this,
 	                },
@@ -260,11 +286,28 @@ define(['sge'], function(sge){
 	        }
 	    });
 
-	var RescueEncounter = Encounter.extend({
-		start: function(){
-
+	var rescueEncounterTemplate = {
+		entities: {
+			client : {
+				meta: {
+					inherit: 'man',
+					spawn: 'room.random'
+				},
+				interact : {priority: true},
+				actions: {
+					interact: ['switch', '${encounter.status}',
+						[
+							['dialog', 'Help me, the Spacers have kidnapped my daughter. Can you get her back for me?' ],
+							['set', 'encounter.status', 1]
+						],
+						[
+							['dialog', 'Please find my daughter'],
+						]
+					]
+				}
+			}
 		}
-	});
+	}
 
 
 
@@ -273,5 +316,7 @@ define(['sge'], function(sge){
 		EncounterSystem : EncounterSystem,
 		ExecuteEncounter : ExecuteEncounter,
 		CheckupEncounter : CheckupEncounter,
+		rescueEncounterTemplate : rescueEncounterTemplate,
+		SerialEncounter : SerialEncounter
 	}
 })

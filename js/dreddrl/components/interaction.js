@@ -8,6 +8,7 @@ define(['sge'], function(sge){
             this.data.width = data.width || 32;
             this.data.height = data.height || 32;
             this.data.dist = data.dist || 96;
+            this.data.priority = data.priority || false;
             this.active = false;
             this.interact = this.interact.bind(this);
             this.entity.addListener('focus.gain', this.activate.bind(this));
@@ -25,8 +26,18 @@ define(['sge'], function(sge){
         interact: function(){
             this.entity.fireEvent('interact');
         },
-        deregister: function(){
-            this._super();
+        register: function(state){
+            this._super(state);
+            if (this.get('priority')){
+                this.signalActor = new CAAT.Actor().setLocation(4,-36).setBackgroundImage(sge.Renderer.SPRITESHEETS['exclimation_icons']).setSpriteIndex(0);
+                this.entity.get('xform').container.addChild(this.signalActor);
+            }
+        },
+        deregister: function(state){
+            if (this.get('priority')){
+                this.entity.get('xform').container.removeChild(this.signalActor);
+            }
+            this._super(state);
             this.state.input.removeListener('keydown:enter', this.interact);
         }
     });

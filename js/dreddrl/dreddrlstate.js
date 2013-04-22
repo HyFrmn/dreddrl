@@ -69,6 +69,7 @@ define([
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_7.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_8.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/scifi_icons_1.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/exclimation_icons.png');
                 
                 
 
@@ -154,11 +155,13 @@ define([
                 this.pc = pc;
 
 
-                //Create Game Encounters                
+                //Create Game Encounters
+                //*                
                 this.encounterSystem = new encounters.EncounterSystem(this);
                 this.encounterSystem.create(encounters.CheckupEncounter);
                 this.encounterSystem.create(encounters.ExecuteEncounter);
-                
+                this.encounterSystem.create(encounters.SerialEncounter, encounters.rescueEncounterTemplate);
+                //*/
 
                 //Create NPC Population
                 //TODO:
@@ -347,6 +350,7 @@ define([
                 //Update Interaction System
                 this._interaction_tick(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Interaction Time:', t-debugTime); debugTime=t};
+                
                 //Update Component System
                 for (var i = this._entity_ids.length - 1; i >= 0; i--) {
                     //var c = Date.now();
@@ -364,7 +368,7 @@ define([
                 
                 //Tick Encounter System
                 this.encounterSystem.tick(delta);
-                if (this._debugTick){ var t=Date.now(); console.log('Encounter Time:', t-debugTime); debugTime=t};
+                //if (this._debugTick){ var t=Date.now(); console.log('Encounter Time:', t-debugTime); debugTime=t};
                 
                 //Track Player
                 var tx = this.pc.get('xform.tx');

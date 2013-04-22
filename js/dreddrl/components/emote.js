@@ -14,7 +14,6 @@ define(['sge'], function(sge){
 			}.bind(this))
 		},
 		register: function(state){
-
             this._super(state);
             this.scene = this.state.scene;
             this.container = new CAAT.ActorContainer().setLocation(32,-24);
