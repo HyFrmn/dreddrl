@@ -21,18 +21,23 @@ requirejs.config({
 var game = null;
 requirejs(['jquery','sge','dreddrl'],
 function   ($, sge, dreddrl) {
+    function getURLParameter(name) {
+        return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
+    }
+
+
     //Setup Ratio
     var body = $('body');
-    var idealWidth = 16;
-    var idealHeight = 9;
+    var idealWidth = parseInt(getURLParameter('width') || 640);
+    var idealHeight = parseInt(getURLParameter('height') || 360);
     var idealRatio = idealWidth/idealHeight;
     var screenRatio = body.width() / body.height();
     if (screenRatio > idealRatio){
         height = body.height();
-        width = Math.round(height / idealHeight) * idealWidth;
+        width = height * idealRatio;
     } else {
         width = body.width();
-        height = Math.round(width / idealWidth) * idealHeight;
+        height = width / idealRatio;
     }
     var elem = $('#container');
     elem.attr({width: width, height: height});
@@ -42,8 +47,8 @@ function   ($, sge, dreddrl) {
         display: 'block',
         margin: '0px auto'
     });
-    CAAT.DEBUG=1;
-    game = new sge.Game({elem: '#game', pauseState: dreddrl.PauseState, width: 640, height: 360});
+    CAAT.DEBUG=Boolean(getURLParameter('caat-debug'));
+    game = new sge.Game({elem: '#game', pauseState: dreddrl.PauseState, width: idealWidth, height: idealHeight});
     var state = game.setGameState(dreddrl.DreddRLState);
     game._states['dialog'] = new dreddrl.DialogState(game, 'Dialog');
     game.start();
