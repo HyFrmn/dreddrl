@@ -1,4 +1,10 @@
 define(['sge'], function(sge){
+	TYPES = {
+		KINETIC : 0,   //Full "Physics" Simulation,
+		STATIC : 1,    //Don't move. Can be collided with, not tested aginst other static objects
+		PASS : 2       //Moves, fires collision events but does not resolve collisions.
+	}
+
 	var RPGPhysics = sge.Class.extend({
 		init : function(state){
 			this.state = state;
@@ -65,14 +71,23 @@ define(['sge'], function(sge){
 		    var entities = [];
 		    var newContacts = [];
 		    _.each(this.state.getEntitiesWithComponent('physics'), function(entity){
+		    	entities.push(entity);
+		    	if (entity.get('physics.type') & TYPES.STATIC){
+		    		return;
+		    	}
+		    	if (entity.get('physics')._wait){
+		    		entity.get('physics')._wait = false;
+		    		return;
+		    	}
 		        var vx = entity.get('xform.vx') * delta;
 		        var vy = entity.get('xform.vy') * delta;
 		        this.moveGameObject(entity, vx, vy);
-		        entities.push(entity);
+		        
 		    }.bind(this));
 		    var count = 0;
 		    while (entities.length>1){
 		        var entityA = entities.shift();
+		        var isStaticA = Boolean(entityA.get('physics.type') & TYPES.STATIC);
 		        var txA = entityA.get('xform.tx');
 		        var tyA = entityA.get('xform.ty');
 		        var widthA = entityA.get('physics.width');
@@ -86,6 +101,10 @@ define(['sge'], function(sge){
 		        for (var i = entities.length - 1; i >= 0; i--) {
 		            count++;
 		            var entityB = entities[i];
+		            var isStaticB= Boolean(entityB.get('physics.type') & TYPES.STATIC);
+		            if (isStaticA & isStaticB){
+		            	continue;
+		            }
 		            var txB = entityB.get('xform.tx');
 		            var tyB = entityB.get('xform.ty');
 		            var widthB = entityB.get('physics.width');;
@@ -109,6 +128,11 @@ define(['sge'], function(sge){
 		                    var entityB = this.state.getEntity(ids[1]);
 		                    entityA.fireEvent('contact.start', entityB);
 		                    entityB.fireEvent('contact.start', entityA);
+		                }
+
+
+		                if (entityA.get('physics.type')==TYPES.PASS || entityB.get('physics.type')==TYPES.PASS){
+		                	continue;
 		                }
 
 		                var xDelta1 = rectB.right - rectA.left;
@@ -142,22 +166,18 @@ define(['sge'], function(sge){
 		                var xBDelta = 0;
 		                var yBDelta = 0;
 		                
-		                /*
-		                if (a.get('physics.type') & sge.Physics.TYPES.STATIC){
+		                if (entityA.get('physics.type') & TYPES.STATIC){
 		                    xBDelta = -xDelta;
 		                    yBDelta = -yDelta;
-		                } else if (b.get('physics.type') & sge.Physics.TYPES.STATIC){
+		                } else if (entityB.get('physics.type') & TYPES.STATIC){
 		                    xADelta = xDelta;
 		                    yADelta = yDelta;
 		                } else {
-		                */
 		                    xADelta = xDelta/2;
 		                    yADelta = yDelta/2;
 		                    xBDelta = xDelta/-2;
 		                    yBDelta = yDelta/-2;
-		                /*
 		                }
-		                */
 		                this.moveGameObject(entityA, xADelta,  yADelta);
 		                this.moveGameObject(entityB, xBDelta,  yBDelta);
 		                

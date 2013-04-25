@@ -1,12 +1,13 @@
 define([
         'sge',
+        './config',
         './blocklevelgenerator',
         './physics',
         './factory',
         './map',
         './encounters',
     ],
-    function(sge, BlockLevelGenerator, Physics, Factory, Map, encounters){
+    function(sge, config, BlockLevelGenerator, Physics, Factory, Map, encounters){
 
         INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is your responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
@@ -77,8 +78,8 @@ define([
                 this.pause = function(){
                     this.game.fsm.pause()
                 }.bind(this);
-                this.input.addListener('keydown:space', this.pause);
-
+                this.input.addListener('keydown:' + config.pauseButton, this.pause);
+ 
                 this.toggleShadows = function(){
                     this.shadows.toggle()
                 }.bind(this);

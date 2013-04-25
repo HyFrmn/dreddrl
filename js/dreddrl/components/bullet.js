@@ -23,7 +23,7 @@ define(['sge'],function(sge){
             	sizeX = 32;
             	sizeY = 6;
             }
-            this.actor = new CAAT.Actor().setSize(sizeX,sizeY).setFillStyle('yellow').setLocation(0,0);
+            this.actor = new CAAT.Actor().setSize(sizeX,sizeY).setFillStyle('blue').setLocation(0,0);
             this.container.addChild(this.actor);
             this.entity.get('xform.container').addChild(this.container);
         },

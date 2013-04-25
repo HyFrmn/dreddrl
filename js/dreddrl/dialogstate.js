@@ -1,4 +1,4 @@
-define(['sge'], function(sge){
+define(['sge', './config'], function(sge, config){
 	var DialogState = sge.GameState.extend({
 		initState: function(){
             this._keepScene = true;
@@ -7,9 +7,11 @@ define(['sge'], function(sge){
             this.container = new CAAT.ActorContainer().setBounds(0,0,width,height);
             this.dialogContainer = new CAAT.ActorContainer().setLocation(16, height/2 - 32);
             this.container.addChild(new CAAT.Actor().setSize(width,height).setFillStyle('black').setAlpha(0.5));
+            var instruct = new CAAT.TextActor().setText('Press Space to Continue').setFont('16px sans-serif').setTextAlign('right').setLocation(width-32,height-32);
+            this.container.addChild(instruct);
             this.container.addChild(this.dialogContainer);
             this.interact = this.interact.bind(this);
-            this.input.addListener('keydown:enter', this.interact);
+            this.input.addListener('keydown:' + config.dialogButton, this.interact);
         },
         startState : function(){
             var state = this.game._states['game'];

@@ -1,4 +1,4 @@
-define(['sge', './bullet'],function(sge){
+define(['sge', '../config', './bullet'],function(sge, config){
 
 	var WeaponsComponent = sge.Component.extend({
 		init: function(entity, data){
@@ -32,13 +32,13 @@ define(['sge', './bullet'],function(sge){
 			}
 			var bullet = new sge.Entity({
 				xform: {
-					tx: this.entity.get('xform.tx') + (vx * 24 * 0),
-					ty: this.entity.get('xform.ty') + (vy * 24 * 0),
+					tx: this.entity.get('xform.tx') + (vx * 24 * 1),
+					ty: this.entity.get('xform.ty') + (vy * 24 * 1),
 					vx: vx * speed,
 					vy: vy * speed,
                     container: '_entityContainer'
 				},
-				physics: { width: (4 + Math.abs(vx*48)), height: (4+Math.abs(vy*48))},
+				physics: { width: (4 + Math.abs(vx*20)), height: (4+Math.abs(vy*20)), type:2},
 				bullet:{},
 				debug: {},
 				health: {life: 1, alignment: this.entity.get('health.alignment'), visible: false}
@@ -47,10 +47,10 @@ define(['sge', './bullet'],function(sge){
 		},
 		register: function(state){
 			this.state = state;
-			this.entity.state.input.addListener('keydown:X', this.fire);
+			this.entity.state.input.addListener('keydown:' + config.fireButton, this.fire);
 		},
 		unregister: function(){
-			this.entity.state.input.removeListener('keydown:X', this.fire);
+			this.entity.state.input.removeListener('keydown:' + config.fireButton, this.fire);
 			this.state = null;
 		}
 	});
