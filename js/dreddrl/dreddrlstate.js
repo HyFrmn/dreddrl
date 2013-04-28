@@ -286,6 +286,18 @@ define([
             },
 
             _updateHash : function(entity){
+                var tx = Math.floor(entity.get('xform.tx') / 32);
+                var ty = Math.floor(entity.get('xform.ty') / 32);
+                var oldTile = entity.get('xform.tile');
+                var tile = this.map.getTile(tx, ty);
+                if (oldTile!=tile){
+                    if (oldTile){
+                        oldTile.entities = _.without(oldTile.entities, entity);
+                    }
+                    tile.entities.push(entity);
+                    tile.update();
+                }
+
                 var cx = Math.floor(entity.get('xform.tx') / this._spatialHashWidth);
                 var cy = Math.floor(entity.get('xform.ty') / this._spatialHashHeight);
                 if (this._spatialHashReverse[entity.id]!==undefined){

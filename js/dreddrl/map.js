@@ -13,7 +13,8 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             };
             this.data = {
                 territory: 'neutral'
-            };
+            }
+            this.entities = [];
         },
         hide: function(){
             //this.fade=1
@@ -43,6 +44,16 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
                     this.fade = 1;
                 }
             }
+        },
+        update: function(){
+            if (this.fade<1){
+                visible = true;
+            } else {
+                visible = false;
+            }
+            _.each(this.entities, function(e){
+                e.get('xform.container').setVisible(visible)
+            })
         }
     })
 

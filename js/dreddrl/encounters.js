@@ -75,6 +75,7 @@ define(['sge'], function(sge){
 			this._index = 0;
 			this.compassActor = new CAAT.ShapeActor().setShape(CAAT.ShapeActor.SHAPE_CIRCLE).setFillStyle('blue').setSize(32,32);
 			this.state._entityContainer.addChild(this.compassActor);
+			this.state._entityContainer.setZOrder(this.compassActor, 0);
 		},
 		create : function(klass, options){
 			var encounter = new klass(this, options);

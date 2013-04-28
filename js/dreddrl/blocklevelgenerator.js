@@ -80,6 +80,9 @@ define([
                     this.createDoor(this.cx, this.cy-halfY-1, this.options.open);
                 }
 
+                this.cover = new CAAT.Actor().setFillStyle('black').setSize(this.width*32,this.height*32).setLocation((this.cx-(this.width-1)/2)*32+16, (this.cy-(this.height-1)/2)*32+16);
+                this.level.map.dynamicContainer.addChild(this.cover);
+
                 this.update();
             },
             createDoor : function(cx, cy, open){
@@ -118,16 +121,22 @@ define([
                     if (this.doors[0].get('door.open')){
                         _.each(this.getTiles(), function(tile){
                             tile.fade = 0;
-                        })
+                            tile.update();
+                        });
+                        this.cover.setVisible(false);
                     } else {
                         _.each(this.getTiles(), function(tile){
                             tile.fade = 1;
+                            tile.update();
                         })
+                        this.cover.setVisible(true);
                     }
                 } else { 
                     _.each(this.getTiles(), function(tile){
                         tile.fade = 1;
+                        tile.update();
                     })
+                    this.cover.setVisible(true);
                 }
             }
         })
