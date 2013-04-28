@@ -28,7 +28,11 @@ define(['sge'], function(sge){
             this.state.input.removeListener('keydown:enter', this.interact);
         },
         interact: function(){
-            this.entity.fireEvent('interact');
+            var evt = 'interact';
+            if (this.state.input.isPressed('alt')){
+                evt = 'interact.secondary';
+            }
+            this.entity.fireEvent(evt, this.state.pc);
         },
         register: function(state){
             this._super(state);

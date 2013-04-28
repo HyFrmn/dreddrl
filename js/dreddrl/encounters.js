@@ -133,6 +133,13 @@ define(['sge'], function(sge){
                 if (intersection){
                     tx = intersection[0];
                     ty = intersection[1];
+                    dx = tx - entity.get('xform.tx');
+                    dy = ty - entity.get('xform.ty');
+                    var maxDist = 1024;
+                    foo = Math.min(maxDist, Math.sqrt((dx*dx)+(dy*dy)));
+                    r = 6 + (24 * ((maxDist-foo)/maxDist));
+                    console.log(dx, dy, foo, r);
+                    this.compassActor.setSize(r,r);
                     
                 } else {
                     tx =  entity.get('xform.tx');

@@ -2,6 +2,9 @@ define(['sge'], function(sge){
     var DeadDrop = sge.Component.extend({
         init: function(entity, data){
             this._super(entity, data);
+            this.data.items = data.items || ['rammen','gun'];
+            this.data.count = data.count || 1;
+            this.data.always = data.always || [];
             this.drop = this.drop.bind(this);
             this.entity.addListener('kill', this.drop);
         },
@@ -20,14 +23,23 @@ define(['sge'], function(sge){
             }
             if (dropDir===null){
                 return;
+                }
+            for (var i=0;i<this.get('count');i++){
+                this.dropItem(sge.random.item(this.get('items')), dropDir[0], dropDir[1])
             }
-            var newItem = this.state.factory((Math.random() > 0.5 ? 'rammen' : 'gun'), {
+            _.each(this.get('always'), function(i){
+                this.dropItem(i, tx, ty);
+            }.bind(this));
+        },
+        dropItem: function(item, tx, ty){
+            var newItem = this.state.factory(item, {
                 xform: {
-    				tx: dropDir[0],
-					ty: dropDir[1],
-				}});
+                    tx: tx,
+                    ty: ty,
+                }});
 
             this.state.addEntity(newItem);
+            return newItem;
         }
     });
     sge.Component.register('deaddrop', DeadDrop);

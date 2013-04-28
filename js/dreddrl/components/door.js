@@ -12,14 +12,29 @@ define(['sge'], function(sge){
             this.data.open = data.open===undefined ?  true : data.open;
             this.interact = this.interact.bind(this);
             this.entity.addListener('interact', this.interact);
+            this.interactSecondary = this.interactSecondary.bind(this);
+            this.entity.addListener('interact.secondary', this.interactSecondary);
         },
-        interact: function(){
+        interact: function(e){
             if (this.get('locked')){
                 this.entity.fireEvent('log','Door is locked');
             } else {
                 this.set('open', !this.get('open'));
                 this.room.update();
                 this.updateTiles();
+            }
+        },
+        interactSecondary: function(e){
+            if (this.get('locked')){
+                if (e.get('inventory.keys')>0){
+                    e.set('inventory.keys', -1, 'add')
+                    this.entity.fireEvent('log','Unlocking the door.');
+                    this.set('locked', false);
+                } else {
+                    this.entity.fireEvent('log', "Need a key to unlock the door.")
+                }
+            } else {
+                this.entity.fireEvent('log', 'Door is already unlocked.');
             }
         },
         createTiles : function(){

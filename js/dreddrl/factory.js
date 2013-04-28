@@ -97,7 +97,7 @@ define([
                     },
                     health : {alignment:-10, life: 3},
                     simpleai : { tracking: 'pc', territory: 'albert'},
-                    deaddrop: {},
+                    deaddrop: {items:['key','gun','rammen']},
                     actions: {
                         kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs)]]]
                     },
@@ -110,7 +110,7 @@ define([
                 },
                 weapons: {rps: 4},
                 health : {alignment:-10, life: 6},
-                deaddrop: {}
+                deaddrop: {count: 2, always: ['key','key','key']}
             })},
             freeitem : function(){ return {
                 xform: { container: '_entityContainer'},
@@ -137,6 +137,15 @@ define([
                 freeitem: {
                     'health.life' : 5,
                     'name' : 'Ramen'
+                }
+            })},
+            key : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
+                sprite : {
+                        frame: 57
+                },
+                freeitem: {
+                    'inventory.keys' : 1,
+                    'name' : 'Key'
                 }
             })},
             keycard : function(){return  deepExtend(FACTORYDATA['freeitem'](), {

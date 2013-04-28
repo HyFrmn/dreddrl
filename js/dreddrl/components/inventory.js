@@ -4,6 +4,7 @@ define(['sge','jquery'],function(sge, $){
 		init: function(entity, data){
 			this._super(entity, data);
 			this.data.ammo = data.ammo || 100;
+			this.data.keys = data.keys || 3;
 			this.data.items = []
 			this.data.objects = {};
 			this._elem_ammo = $('span.ammo');
