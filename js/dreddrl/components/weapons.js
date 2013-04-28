@@ -3,16 +3,30 @@ define(['sge', '../config', './bullet'],function(sge, config){
 	var WeaponsComponent = sge.Component.extend({
 		init: function(entity, data){
 			this._super(entity, data);
+			this.data.cooldown = 0;
+			this.data.rps = parseInt(data.rps || 3); //Round per second
 			this.fire = this.fire.bind(this);
+			this.entity.addListener('fire', this.fire.bind(this));
+		},
+		tick: function(delta){
+			if (this.get('cooldown')>0){
+				this.set('cooldown', -delta, 'add');
+			}
 		},
 		fire: function(){
-			var ammo = this.entity.get('inventory.ammo');
-			if (ammo<=0){
-				/*blink ammo red*/
+			if (this.get('cooldown')>0){
 				return;
+			} else {
+				this.set('cooldown', 1 / (this.get('rps')));
 			}
-			this.entity.set('inventory.ammo', ammo-1);
-
+			if (this.entity.get('inventory')){
+				var ammo = this.entity.get('inventory.ammo');
+				if (ammo<=0){
+					/*blink ammo red*/
+					return;
+				}
+				this.entity.set('inventory.ammo', ammo-1);
+			}
 			var speed = 1024;
 			var vx = 0;
 			var vy = 0;
@@ -47,10 +61,9 @@ define(['sge', '../config', './bullet'],function(sge, config){
 		},
 		register: function(state){
 			this.state = state;
-			this.entity.state.input.addListener('keydown:' + config.fireButton, this.fire);
+			
 		},
 		unregister: function(){
-			this.entity.state.input.removeListener('keydown:' + config.fireButton, this.fire);
 			this.state = null;
 		}
 	});

@@ -29,6 +29,7 @@ define(['sge'], function(sge){
             this._super(state);
         },
         _set_text: function(text){
+            this.data.text = text;
         	this.text.setText(text);
         	this.text.calcTextSize(this.state.game.renderer);
         	this.bg.setSize(this.text.textWidth+4, this.fontSize + 8);

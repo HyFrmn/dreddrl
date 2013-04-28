@@ -16,6 +16,7 @@ define([
     './components/health',
     './components/simpleai',
     './components/emote',
+    './components/judgecontrols',
 
     './actions/dialog',
     './actions/if',
@@ -59,7 +60,7 @@ define([
                 inventory : {},
             }},
 			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
-                    controls : {},
+                    'judge.controls' : {},
                     sprite : {
                         src : 'assets/sprites/judge.png',
                     },
@@ -68,7 +69,7 @@ define([
                         speed: 64
                     },
                     health : {alignment:5, life: 10},
-                    weapons: {},
+                    weapons: {rps: 10},
                     stats: {},
                     emote: {},
                 })},
@@ -99,13 +100,15 @@ define([
                     deaddrop: {},
                     actions: {
                         kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs)]]]
-                    }
+                    },
+                    weapons: {rps: 2}
                 }
             )},
             gangboss : function(){return deepExtend(FACTORYDATA['enemy'](), {
                 sprite : {
                     src : 'assets/sprites/albertbrownhair.png',
                 },
+                weapons: {rps: 4},
                 health : {alignment:-10, life: 6},
                 deaddrop: {}
             })},

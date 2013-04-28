@@ -48,7 +48,7 @@ function   ($, sge, dreddrl) {
         margin: '0px auto'
     });
     CAAT.DEBUG=Boolean(getURLParameter('caat-debug'));
-    game = new sge.Game({elem: '#game', pauseState: dreddrl.PauseState, width: idealWidth, height: idealHeight});
+    game = new sge.Game({elem: '#game', pauseState: dreddrl.PauseState, mainMenuState: dreddrl.MainMenuState, width: idealWidth, height: idealHeight});
     var state = game.setGameState(dreddrl.DreddRLState);
     game._states['dialog'] = new dreddrl.DialogState(game, 'Dialog');
     game.start();

@@ -7,7 +7,7 @@ define(['sge'], function(sge){
             this.entity.addListener('interact', this.interact);
         },
         interact: function(){
-
+            this.state.newLevel();
         },
         updateTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32)-1;

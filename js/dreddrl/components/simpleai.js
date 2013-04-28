@@ -16,6 +16,14 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             this._idleCounter = 0;
 
         },
+        seePlayer: function(){
+            this.data.radius = 256;
+            this.fsm.seePlayer();
+        },
+        losePlayer: function(){
+            this.data.radius = 128;
+            this.fsm.losePlayer();
+        },
         register: function(state){
             this._super(state);
             this.map = this.state.map;
@@ -31,7 +39,7 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             return [pc, dx, dy, dist];
         },
         tick : function(delta){
-            /*
+            
             if (this.entity.state){
                 var stateName = this.fsm.current;
                 if (this.getPC()===null){
@@ -43,8 +51,6 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
                     }
                 }
             }
-            */
-            this.wander();
         },
         tick_tracking: function(delta){
             var pcData = this.getPCPosition();
@@ -52,14 +58,17 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             var dy = pcData[2]
             var dist = pcData[3]
             if (dist >= this.data.radius){
-                this.fsm.losePlayer();
+                this.losePlayer();
             } else {
                 var vx = 0;
                 var vy = 0;
-                vx = -64 * (pcData[1] / dist);
+                vx = -64 * (dx / dist);
                 vy = -64 * (dy / dist);
                 this.entity.set('xform.vx', vx);
                 this.entity.set('xform.vy', vy);
+                if (Math.abs(dx) < 5 || Math.abs(dy)<5){
+                    this.entity.fireEvent('fire');
+                }
             }
         },
         tick_idle: function(delta){
@@ -69,7 +78,7 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
                 var dy = pcData[2]
                 var dist = pcData[3]
                 if (pcData[3] <= this.data.radius){
-                    this.fsm.seePlayer();
+                    this.seePlayer();
                 } else {
                     this.wander();
                 }
@@ -106,6 +115,20 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
                 this.entity.set('xform.vx', vx);
                 this.entity.set('xform.vy', vy);
             } else {
+                var tx = this.entity.get('xform.tx');
+                var ty = this.entity.get('xform.ty');
+                var vx = this.entity.get('xform.vx');
+                var vy = this.entity.get('xform.vy');
+                if (this.data.territory!==undefined){
+                    var tile = this.map.getTile(Math.floor((tx+vx)/32),Math.floor((ty+vy)/32))
+                    if (tile){
+                        if (tile.data.territory!=this.data.territory){
+                            this._idleCounter=-1;
+                            this.entity.set('xform.vx', 0);
+                            this.entity.set('xform.vy', 0);
+                        }
+                    }
+                }
                 this._idleCounter--;
             }
         }

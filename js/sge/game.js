@@ -11,9 +11,6 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
         },
         startState : function(){
             this._super();
-            if (this.game._states['game'].loader){
-                this.game._states['game'].loader.start();
-            }
             if (this.elem){
                 this.elem.fadeIn();
             }
@@ -36,7 +33,8 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
             this.scene.addChild(instruct);
             this.startGame = function(){
                 this.game._states['game'] = new this.game._gameState(this.game, 'Game');
-                this.game.fsm.startGame();    
+                this.game.fsm.startLoad();
+                this.game._states['game'].loader.start();    
             }.bind(this);
             this.startState();
             this.input.addListener('keydown:enter', this.startGame);
@@ -174,12 +172,14 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
             this.options = $.extend({
                 elem: null,
                 pauseState : PauseState,
+                mainMenuState : MainMenuState,
                 width: 720,
                 height: 540
             }, options || {});
             this.engine = new Engine();
             this.loader = new PxLoader();
             this.input = new Input();
+            this.data = {};
             this._tick = 0;
             this._last = 0;
             this._lastRender = 0;
@@ -207,7 +207,6 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
                     {name: 'finishLoad', from: 'loading', to: 'game'},
                     {name: 'pause', from: 'game', to:'paused'},
                     {name: 'unpause', from: ['paused','menu'], to:'game'},
-                    {name: 'startGame', from: 'mainmenu', to:'loading'},
                     {name: 'loadMainMenu', from: ['game','gameover','gamewin','menu','pause'], to: 'mainmenu'},
                     {name: 'gameOver', from: 'game', to: 'gameover'},
                     {name: 'gameWin', from: 'game', to:'gamewin'},
@@ -231,7 +230,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
 
             this._states = {
                 'game' : null,
-                'mainmenu' : new MainMenuState(this, 'Main Menu'),
+                'mainmenu' : new this.options.mainMenuState(this, 'Main Menu'),
                 'loading' : new LoadState(this, 'Loading'),
                 'paused' : new this.options.pauseState(this, 'Paused'),
                 'gameover' : new GameOverState(this, 'Game Over'),

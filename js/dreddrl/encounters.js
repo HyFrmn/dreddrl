@@ -197,12 +197,15 @@ define(['sge'], function(sge){
 	                            [
 	                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
 	                                ['set', 'encounter.status', 1],
-                                    ['event', 'daughter', 'target.set']
+                                    ['event', 'daughter', 'target.set'],
+                                    ['set', 'interact.priority', false],
+                                    ['set', '@(daughter).interact.priority', true]
 	                            ],[
 	                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
 	                            ],[
 	                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
 	                                ['set','@(pc).stats.xp', 50, 'add'],
+	                                ['set', 'interact.priority', false],
 	                                ['set', 'encounter.status', 3]
 	                            ],[
 	                                ['dialog', "Welcome to Peach Trees. "]
@@ -223,7 +226,6 @@ define(['sge'], function(sge){
 	                    ty: daughtersRoom.cy * 32
 	                },
 	                interact : {
-	                	priority: true
 	                },
 	                encounter: {
 	                    encounter : this,
@@ -234,6 +236,8 @@ define(['sge'], function(sge){
 	                            [
 	                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
 	                                ['set', 'encounter.status', 2],
+	                                ['set', 'interact.priority', false],
+	                                ['set', '@(mother).interact.priority', true],
                                     ['event', 'mother', 'target.set']
 	                            ],[
 	                                ['dialog', "Hey there. Haven't seen you around the block before."]
@@ -298,7 +302,8 @@ define(['sge'], function(sge){
 					interact: ['switch', '${encounter.status}',
 						[
 							['dialog', 'Help me, the Spacers have kidnapped my daughter. Can you get her back for me?' ],
-							['set', 'encounter.status', 1]
+							['set', 'encounter.status', 1],
+							['set', 'interact.priority', false]
 						],
 						[
 							['dialog', 'Please find my daughter'],

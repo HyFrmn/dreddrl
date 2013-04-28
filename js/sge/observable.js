@@ -11,6 +11,7 @@ define([
                 this._listeners[type] = [];
             }
             this._listeners[type].push(listener);
+            return listener;
         },
 
         fireEvent: function () {

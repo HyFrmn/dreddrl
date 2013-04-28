@@ -17,6 +17,7 @@ define([
                 // Tile Map
                 this.options = options || {};
                 this._contactList = [];
+                this._listenersEntity = {};
 
                 this._intro = false;
                 this._killList = [];
@@ -143,15 +144,17 @@ define([
                 this.level = new BlockLevelGenerator(this, this.options);
                 
                 //Add PC
-                var pc = Factory('pc', {
-                    xform : {
-                        tx: 96,
-                        ty: 384,
-                    }});
-                pc.tags.push('pc');
-                pc.addListener('kill', function(){
-                    this.state._killList.push(pc);
-                }.bind(pc));
+                var pc = null;
+                if (this.game.data.pc!==undefined){
+                    pc = this.game.data.pc;
+                } else {
+                    var pc = Factory('pc', {
+                        xform : {
+                            tx: 96,
+                            ty: 384,
+                        }});
+                    pc.tags.push('pc');
+                }
                 this.addEntity(pc);
                 this.pc = pc;
 
@@ -184,6 +187,7 @@ define([
                 this._createUIItem('XP:', '@(pc).stats.xp');
                 this._createUIItem('AMMO:', '@(pc).inventory.ammo', {ty: 40});
                 this._createUIItem('HEALTH:', '@(pc).health.life', {ty: 64});
+                this._createUIItem('LEVEL:', '@(pc).stats.level', {ty: 80});
 
                 this._logs = [];
                 this._cachedLogLength = this._logs.length;
@@ -208,6 +212,15 @@ define([
                 this.log('You are the Law.');
             },
 
+            newLevel : function(options){
+                this.game.fsm.startLoad();
+                options = options || {};
+                this.game.data.pc = this.pc;
+                this.removeEntity(this.pc);
+                this.game._states['game'] = new this.game._gameState(this.game, 'Game');
+                this.game._states['game'].loader.start();
+            },
+
             progressListener : function(e){
                 var subpath = e.resource.getName().split('/');
                 var name = subpath[subpath.length-1].split('.')[0];
@@ -224,16 +237,25 @@ define([
 
             addEntity: function(entity){
                 this._super(entity);
-                entity.addListener('kill', function(){
+                funcs = [];
+                funcs.push(entity.addListener('kill', function(){
                         this._killList.push(entity);
-                }.bind(this));
-                entity.addListener('log', function(msg){
+                }.bind(this)));
+                funcs.push(entity.addListener('log', function(msg){
                     this.logCallback(msg);
-                }.bind(this));
-                entity.addListener('xform.move', function(){
+                }.bind(this)));
+                funcs.push(entity.addListener('xform.move', function(){
                     this._updateHash(entity);
-                }.bind(this));
+                }.bind(this)));
                 this._updateHash(entity);
+                this._listenersEntity[entity] = funcs;
+            },
+
+            removeEntity: function(entity){
+                _.each(this._listenersEntity[entity], function(f){
+                    entity.removeListener(f);
+                });
+                return this._super(entity);
             },
 
             logCallback : function(msg){
@@ -343,8 +365,8 @@ define([
                 this.physics.resolveCollisions(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Physics Time:', t-debugTime); debugTime=t};
 
-                if (this._intro==false){
-                    this._intro = true;
+                if (!this.game.data._intro){
+                    this.game.data._intro = true;
                     this.startDialog(INTRO)
                 }
                 

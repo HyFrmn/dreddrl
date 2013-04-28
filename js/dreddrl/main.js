@@ -2,12 +2,14 @@ define(
 	[
 		'./dreddrlstate',
 		'./dialogstate',
-		'./pausestate'
+		'./pausestate',
+		'./mainmenustate'
 	],
-function(DreddRLState, DialogState, PauseState){
+function(DreddRLState, DialogState, PauseState, MainMenuState){
 	return {
 		DreddRLState : DreddRLState,
 		DialogState : DialogState,
-		PauseState : PauseState
+		PauseState : PauseState,
+		MainMenuState : MainMenuState
 	}
 })

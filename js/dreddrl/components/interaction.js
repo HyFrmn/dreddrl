@@ -14,6 +14,10 @@ define(['sge'], function(sge){
             this.entity.addListener('focus.gain', this.activate.bind(this));
             this.entity.addListener('focus.lose', this.deactivate.bind(this));
         },
+        _set_priority : function(priority){
+            this.data.priority = this.__set_value('priority', Boolean(priority));
+            this.signalActor.setVisible(this.data.priority);
+        },
         activate: function(coord){
             this.activeCoord = coord;
             this.active = true;
@@ -28,10 +32,9 @@ define(['sge'], function(sge){
         },
         register: function(state){
             this._super(state);
-            if (this.get('priority')){
-                this.signalActor = new CAAT.Actor().setLocation(4,-36).setBackgroundImage(sge.Renderer.SPRITESHEETS['exclimation_icons']).setSpriteIndex(0);
-                this.entity.get('xform').container.addChild(this.signalActor);
-            }
+            this.signalActor = new CAAT.Actor().setLocation(4,-36).setBackgroundImage(sge.Renderer.SPRITESHEETS['exclimation_icons']).setSpriteIndex(0);
+            this.entity.get('xform').container.addChild(this.signalActor);
+            this.signalActor.setVisible(this.data.priority);
         },
         deregister: function(state){
             if (this.get('priority')){
