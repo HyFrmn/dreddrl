@@ -42,9 +42,11 @@ define([],function(){
             var coord = coords[i];
             var intersection = lineIntersect(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
             if (intersection){
-                if (length>intersection[3])
-                    length=intersection[3]
-                result = intersection
+                console.log(intersection, length)
+                if (length>intersection[2]){
+                    length=intersection[2];
+                    result = intersection;
+                }
             }
         }
         return result;

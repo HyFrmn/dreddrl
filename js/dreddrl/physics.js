@@ -57,11 +57,11 @@ define(['sge'], function(sge){
                         var result = this.traceStaticTiles(x0, y0, x1, y1);
                         if (result[2]){
                             entity.fireEvent('contact.tile');
-                            
                             intersection = sge.collision.lineRectIntersect(tx, ty, nx, ny, this.map.getTile(result[0], result[1]).getRect())
+                            console.log(tx, ty, nx, ny, this.map.getTile(result[0], result[1]).getRect(), intersection);
                             nx = intersection[0];
                             ny = intersection[1];
-                            console.log(tx, ty, nx, ny, this.map.getTile(result[0], result[1]).getRect(), intersection);
+                            
                         }
                     }
                 } else {
@@ -104,17 +104,21 @@ define(['sge'], function(sge){
 
 
             }
-            if (nx!=tx || ny!=ty){
-                entity.set('xform.t', nx, ny);
+            if (entity.active){
+                if (nx!=tx || ny!=ty){
+                    entity.set('xform.t', nx, ny);
+                }
+            } else {
+                nx = tx;
+                ny = ty;
             }
-            
             return [nx,ny];
         },
         resolveCollisions : function(delta){
             var entities = [];
             var newContacts = [];
             _.each(this.state.getEntitiesWithComponent('physics'), function(entity){
-                entities.push(entity);
+                
                 if (entity.get('physics.type') & TYPES.STATIC){
                     return;
                 }
@@ -125,7 +129,9 @@ define(['sge'], function(sge){
                 var vx = entity.get('xform.vx') * delta;
                 var vy = entity.get('xform.vy') * delta;
                 this.moveGameObject(entity, vx, vy);
-                
+                if (entity.active){
+                    entities.push(entity);
+                }
             }.bind(this));
             var count = 0;
             while (entities.length>1){

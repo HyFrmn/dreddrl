@@ -16,12 +16,12 @@ define(['sge'],function(sge){
             this._super(state);
             this.entity.addListener('contact.tile', this.kill);
             this.scene = this.state.scene;
-            this.container = new CAAT.ActorContainer().setLocation(12,12);
-            var sizeX = 6;
-            var sizeY = 32;
+            this.container = new CAAT.ActorContainer().setLocation(0,12);
+            var sizeX = 4;
+            var sizeY = 24;
             if (Math.abs(this.entity.get('xform.vx')) > Math.abs(this.entity.get('xform.vy'))){
-            	sizeX = 32;
-            	sizeY = 6;
+            	sizeX = 24;
+            	sizeY = 4;
             }
             this.actor = new CAAT.Actor().setSize(sizeX,sizeY).setFillStyle('blue').setLocation(0,0);
             this.container.addChild(this.actor);
