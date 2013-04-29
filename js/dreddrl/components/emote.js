@@ -5,10 +5,12 @@ define(['sge'], function(sge){
 			this._visible = false;
             this.fontSize = 16;
 			this.data.text = data.text || "";
-			this.entity.addListener('emote.msg', function(msg){
+            this.data.length = data.length || 1;
+			this.entity.addListener('emote.msg', function(msg, length){
+                lenght= length || this.get('length')
 				this.container.setVisible(true);
 				this.set('text', msg);
-				this.entity.state.createTimeout(1, function(){
+				this.entity.state.createTimeout(length, function(){
 					this.container.setVisible(false);
 				}.bind(this));
 			}.bind(this))

@@ -57,8 +57,7 @@ define(['sge'], function(sge){
                         var result = this.traceStaticTiles(x0, y0, x1, y1);
                         if (result[2]){
                             entity.fireEvent('contact.tile');
-                            intersection = sge.collision.lineRectIntersect(tx, ty, nx, ny, this.map.getTile(result[0], result[1]).getRect())
-                            console.log(tx, ty, nx, ny, this.map.getTile(result[0], result[1]).getRect(), intersection);
+                            intersection = sge.collision.lineRectIntersect(tx, ty, nx, ny, this.map.getTile(result[0], result[1]).getRect());
                             nx = intersection[0];
                             ny = intersection[1];
                             

@@ -90,6 +90,7 @@ define([
                     'Objection noted.',
                     'Sentence. Execution!',
                     "You've been found guilt.",
+                    'One less Lawbreaker.'
                 ]
                 return deepExtend(FACTORYDATA['npc'](), {
                     sprite : {
@@ -99,7 +100,7 @@ define([
                     simpleai : { tracking: 'pc', territory: 'albert'},
                     deaddrop: {items:['key','gun','rammen']},
                     actions: {
-                        kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs)]]]
+                        kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]
                     },
                     weapons: {rps: 2}
                 }
@@ -110,7 +111,10 @@ define([
                 },
                 weapons: {rps: 4},
                 health : {alignment:-10, life: 6},
-                deaddrop: {count: 2, always: ['key','key','key']}
+                deaddrop: {count: 2, always: ['key','key','key']},
+                actions: {
+                    kill : ['switch', 0, [['set','@(pc).stats.xp', 25, 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]
+                },
             })},
             freeitem : function(){ return {
                 xform: { container: '_entityContainer'},

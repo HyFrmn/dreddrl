@@ -125,7 +125,7 @@ define([
                 container.addChild(valuebox);
                 var callback = function(){
                     var value = this.evalValue(path);
-                    valuebox.setText(value);
+                    valuebox.setText('' + value);
                 };
                 this._uiFunctions.push(callback.bind(this));
                 this._uiContainer.addChild(container);
@@ -187,7 +187,7 @@ define([
                 this._createUIItem('XP:', '@(pc).stats.xp');
                 this._createUIItem('AMMO:', '@(pc).inventory.ammo', {ty: 40});
                 this._createUIItem('HEALTH:', '@(pc).health.life', {ty: 64});
-                this._createUIItem('LEVEL:', '@(pc).stats.level', {ty: 80});
+                this._createUIItem('LEVEL:', '@(pc).stats.level', {tx: 96});
 
                 this._logs = [];
                 this._cachedLogLength = this._logs.length;
