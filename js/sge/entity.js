@@ -19,6 +19,7 @@ define([
 			this.id = null;
 			this.components = {}
 			this.tags = [];
+			this.active = true;
 			var keys = Object.keys(componentData);
 			keys.reverse();
 			for (var j = keys.length - 1; j >= 0; j--) {

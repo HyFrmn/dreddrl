@@ -26,7 +26,8 @@ define([],function(){
                 if (!(y3<=y&&y<=y4)) {return false;}
             }
         }
-        return [x,y];
+        var s = Math.sqrt((x-x1)*(x-x1)+(y-y1)*(y-y1))
+        return [x,y,s];
     }
 
 	var rectIntersect = function(r1, r2) {
@@ -35,15 +36,18 @@ define([],function(){
 
 	var lineRectIntersect = function(x1, y1, x2, y2, rect){
 		coords = [[rect.left,rect.top,rect.right,rect.top],[rect.left,rect.bottom,rect.right,rect.bottom],[rect.left,rect.top,rect.left,rect.bottom],[rect.right,rect.top,rect.right,rect.bottom]];
-        var intersection = false;
+        var result = false;
+        var length = 1000000;
         for (var i = coords.length - 1; i >= 0; i--) {
             var coord = coords[i];
-            intersection = lineIntersect(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
+            var intersection = lineIntersect(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
             if (intersection){
-                break;
+                if (length>intersection[3])
+                    length=intersection[3]
+                result = intersection
             }
         }
-        return intersection;
+        return result;
 	}
 
     pointRectIntersect = function(x, y, rect){

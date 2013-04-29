@@ -239,7 +239,8 @@ define([
                 this._super(entity);
                 funcs = [];
                 funcs.push(entity.addListener('kill', function(){
-                        this._killList.push(entity);
+                    entity.active = false;
+                    this._killList.push(entity);
                 }.bind(this)));
                 funcs.push(entity.addListener('log', function(msg){
                     this.logCallback(msg);
@@ -421,8 +422,10 @@ define([
                     var tx = entity.get('xform.tx');
                     var ty = entity.get('xform.ty');
                     var tile = this.map.getTile(Math.floor(tx / 32), Math.floor(ty / 32));
-                    if (tile.fade<1||true){
-                        entity.componentCall('render', this.game.renderer, 'main');
+                    if (tile){
+                        if (tile.fade<1){
+                            entity.componentCall('render', this.game.renderer, 'main');
+                        }
                     }
                 }.bind(this));
                 if (this._debugTick){ var t=Date.now(); console.log('Render Time:', t-debugTime); debugTime=t};

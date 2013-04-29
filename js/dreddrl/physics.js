@@ -15,57 +15,100 @@ define(['sge'], function(sge){
         intersectRect : function(r1, r2) {
             return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);
         },
+        testTilePassable: function(tx, ty){
+            var tile = this.map.getTile(tx, ty);
+            var result = true;
+            if (tile){
+                result = tile.passable!=true;
+            }
+            return result;
+        },
+        traceStaticTiles : function(x0, y0, x1, y1){
+           var dx = Math.abs(x1-x0);
+           var dy = Math.abs(y1-y0);
+           var sx = (x0 < x1) ? 1 : -1;
+           var sy = (y0 < y1) ? 1 : -1;
+           var err = dx-dy;
+
+           while(true){
+             var result = this.testTilePassable(x0,y0);  // Do what you need to for this
+             if (result){
+                return [x0, y0, true];
+             }
+             if ((x0==x1) && (y0==y1)) break;
+             var e2 = 2*err;
+             if (e2 >-dy){ err -= dy; x0  += sx; }
+             if (e2 < dx){ err += dx; y0  += sy; }
+           }
+           return [x1, y1, false];
+        },
         moveGameObject: function(entity, vx, vy){
-            var tx = entity.get('xform.tx');
-            var ty = entity.get('xform.ty');
-            var nx = tx + vx;
-            var ny = ty + vy;
+            var tx = Math.round(entity.get('xform.tx'));
+            var ty = Math.round(entity.get('xform.ty'));
+            var nx = Math.round(tx + vx);
+            var ny = Math.round(ty + vy);
             if (this.map){
-                var dx = Math.floor(nx / 32);
-                var dy = Math.floor(ny / 32);
-                var xTile = this.map.getTile(dx, dy);
-                if (xTile==null){
-                    nx = tx;
-                    ny = ty;
-                    entity.fireEvent('contact.tile');
-                } else {
-                    if (xTile.passable!=true){
-                        var qx = tx + vx;
-                        var qy = ty + vy;
-                        var tilex = Math.floor(qx / 32);
-                        var tiley = Math.floor(qy / 32);
-                        var tile = this.map.getTile(tilex,tiley);
-                        if (tile.passable == false){
-                            var horzPos = [qx, ty];
-                            var vertPos = [tx, qy];
-                            var horzTile = this.map.getTile(Math.floor(qx / 32),Math.floor(ty / 32));
-                            var vertTile = this.map.getTile(Math.floor(tx / 32), Math.floor(qy / 32));
-                            if (horzTile.passable){
-                                qy = ty;
-                            } else if (vertTile.passable) {
-                                qx = tx;
-                            } else {
-                                qx = tx;
-                                qy = ty;   
-                            }
+                if (entity.get('physics.fast')){
+                    x0 = Math.floor(tx/32);
+                    y0 = Math.floor(ty/32);
+                    x1 = Math.floor(nx/32);
+                    y1 = Math.floor(ny/32);
+                    if (x0!=x1||y0!=y1){
+                        var result = this.traceStaticTiles(x0, y0, x1, y1);
+                        if (result[2]){
                             entity.fireEvent('contact.tile');
+                            
+                            intersection = sge.collision.lineRectIntersect(tx, ty, nx, ny, this.map.getTile(result[0], result[1]).getRect())
+                            nx = intersection[0];
+                            ny = intersection[1];
+                            console.log(tx, ty, nx, ny, this.map.getTile(result[0], result[1]).getRect(), intersection);
                         }
-                        vx = qx - tx;
-                        vy = qy - ty;
-                        nx = qx
-                        ny = qy;
+                    }
+                } else {
+                    var dx = Math.floor(nx / 32);
+                    var dy = Math.floor(ny / 32);
+                    var xTile = this.map.getTile(dx, dy);
+                    if (xTile==null){
+                        nx = tx;
+                        ny = ty;
+                        entity.fireEvent('contact.tile');
+                    } else {
+                        if (xTile.passable!=true){
+                            var qx = tx + vx;
+                            var qy = ty + vy;
+                            var tilex = Math.floor(qx / 32);
+                            var tiley = Math.floor(qy / 32);
+                            var tile = this.map.getTile(tilex,tiley);
+                            if (tile.passable == false){
+                                var horzPos = [qx, ty];
+                                var vertPos = [tx, qy];
+                                var horzTile = this.map.getTile(Math.floor(qx / 32),Math.floor(ty / 32));
+                                var vertTile = this.map.getTile(Math.floor(tx / 32), Math.floor(qy / 32));
+                                if (horzTile.passable){
+                                    qy = ty;
+                                } else if (vertTile.passable) {
+                                    qx = tx;
+                                } else {
+                                    qx = tx;
+                                    qy = ty;   
+                                }
+                                entity.fireEvent('contact.tile');
+                            }
+                            vx = qx - tx;
+                            vy = qy - ty;
+                            nx = qx
+                            ny = qy;
+                        }
                     }
                 }
 
+
             }
-            if (nx!=tx){
-                entity.set('xform.tx', nx);
-            }
-            if (ny!=ty){
-                entity.set('xform.ty', ny);
+            if (nx!=tx || ny!=ty){
+                entity.set('xform.t', nx, ny);
             }
             
-            return [dx,dy];
+            return [nx,ny];
         },
         resolveCollisions : function(delta){
             var entities = [];

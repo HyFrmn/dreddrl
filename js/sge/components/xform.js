@@ -13,6 +13,12 @@ define(['sge/component'], function(Component){
 		_get_container: function(){
 			return this.container;
 		},
+		_set_t : function(tx, ty){
+			this.data.tx = tx;
+			this.data.ty = ty;
+			this.entity.fireEvent('xform.move');
+			return [tx, ty];
+		},
 		_set_tx : function(tx, method){
 			this.data.tx = this.__set_value('tx', tx, method);
 			this.entity.fireEvent('xform.move');

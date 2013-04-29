@@ -261,7 +261,7 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
             window.onblur = function(){
                 this.fsm.pause();
             }.bind(this);
-            this.engine.run(15);
+            this.engine.run(30);
             CAAT.loop(30);
         }
     });

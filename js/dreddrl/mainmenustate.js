@@ -7,7 +7,7 @@ define(['sge', './config'], function(sge, config){
             var start = new CAAT.TextActor().setText('Start Game').setFont('32px sans-serif').setAlign('center').setLocation(width/2,height/2 + 36);
             var settings = new CAAT.TextActor().setText('Settings').setFont('32px sans-serif').setAlign('center').setLocation(width/2,height/2 + 72);
             var credits = new CAAT.TextActor().setText('Credits').setFont('32px sans-serif').setAlign('center').setLocation(width/2,height/2 + 108);
-            var instruct = new CAAT.TextActor().setText('Press Enter to Select. Use arrows to change selection.').setFont('32px sans-serif')
+            var instruct = new CAAT.TextActor().setText('Press Enter to Select. Use arrows to change selection.').setFont('16px sans-serif')
             this.scene.addChild(title);
             this.scene.addChild(start);
             this.scene.addChild(settings);

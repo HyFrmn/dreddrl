@@ -28,8 +28,8 @@ function   ($, sge, dreddrl) {
 
     //Setup Ratio
     var body = $('body');
-    var idealWidth = parseInt(getURLParameter('width') || 640);
-    var idealHeight = parseInt(getURLParameter('height') || 360);
+    var idealWidth = parseInt(getURLParameter('width') || 960);
+    var idealHeight = parseInt(getURLParameter('height') || 540);
     var idealRatio = idealWidth/idealHeight;
     var screenRatio = body.width() / body.height();
     if (screenRatio > idealRatio){

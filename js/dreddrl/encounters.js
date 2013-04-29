@@ -109,7 +109,6 @@ define(['sge'], function(sge){
                 var bottom = Math.round((this.state.game.renderer.height-64) - this.state._entityContainer.y);
                 var left = Math.round(64-this.state._entityContainer.x);
                 var right = Math.round((this.state.game.renderer.width-64) - this.state._entityContainer.x);
-                //console.log(top,bottom,left,right);
                 coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
                 var intersection = false;
                 //*
@@ -139,7 +138,6 @@ define(['sge'], function(sge){
                     var maxDist = 1024;
                     foo = Math.min(maxDist, Math.sqrt((dx*dx)+(dy*dy)));
                     r = 6 + (24 * ((maxDist-foo)/maxDist));
-                    console.log(dx, dy, foo, r);
                     this.compassActor.setSize(r,r);
                     
                 } else {
