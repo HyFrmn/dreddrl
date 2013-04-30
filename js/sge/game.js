@@ -174,7 +174,8 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
                 pauseState : PauseState,
                 mainMenuState : MainMenuState,
                 width: 720,
-                height: 540
+                height: 540,
+                fps: 60
             }, options || {});
             this.engine = new Engine();
             this.loader = new PxLoader();
@@ -261,8 +262,8 @@ function($, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer, Virtu
             window.onblur = function(){
                 this.fsm.pause();
             }.bind(this);
-            this.engine.run(30);
-            CAAT.loop(30);
+            this.engine.run(this.options.fps);
+            CAAT.loop(this.options.fps);
         }
     });
 

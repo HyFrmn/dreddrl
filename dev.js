@@ -30,6 +30,7 @@ function   ($, sge, dreddrl) {
     var body = $('body');
     var idealWidth = parseInt(getURLParameter('width') || 960);
     var idealHeight = parseInt(getURLParameter('height') || 540);
+    var idealFPS = parseInt(getURLParameter('fps') || 60);
     var idealRatio = idealWidth/idealHeight;
     var screenRatio = body.width() / body.height();
     if (screenRatio > idealRatio){
@@ -48,7 +49,7 @@ function   ($, sge, dreddrl) {
         margin: '0px auto'
     });
     CAAT.DEBUG=Boolean(getURLParameter('caat-debug'));
-    game = new sge.Game({elem: '#game', pauseState: dreddrl.PauseState, mainMenuState: dreddrl.MainMenuState, width: idealWidth, height: idealHeight});
+    game = new sge.Game({elem: '#game', pauseState: dreddrl.PauseState, mainMenuState: dreddrl.MainMenuState, width: idealWidth, height: idealHeight, fps:idealFPS});
     var state = game.setGameState(dreddrl.DreddRLState);
     game._states['dialog'] = new dreddrl.DialogState(game, 'Dialog');
     game.start();
