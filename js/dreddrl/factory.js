@@ -46,7 +46,7 @@ define([
                 sprite : {
                     width: 32,
                     offsetY: -8,
-                    scale: 2
+                    scale: 1
                 },
                 anim : {
                     frames: {

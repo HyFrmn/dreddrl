@@ -6,14 +6,15 @@ define([
         './factory',
         './map',
         './encounters',
+        './megablock'
     ],
-    function(sge, config, BlockLevelGenerator, Physics, Factory, Map, encounters){
+    function(sge, config, BlockLevelGenerator, Physics, Factory, Map, encounters, megablock){
 
         INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is your responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
     	var DreddRLState = sge.GameState.extend({
     		initState: function(options){
-                this.scene.setBounds(0,0,2048,2048);
+                
                 // Tile Map
                 this.options = options || {};
                 this._contactList = [];
@@ -31,13 +32,18 @@ define([
                 this._debug_count = 0;
                 this._debugTick = false;
 
-                this._uiContainer = new CAAT.ActorContainer().setBounds(0,0,2048,2048);
-                this._entityContainer = new CAAT.ActorContainer().setBounds(0,0,2048,2048);
+                var width = 65;
+                var height = 66;
+
+                this.scene.setBounds(0,0,width*32,height*32);
+                this._uiContainer = new CAAT.ActorContainer().setBounds(0,0,width*32,height*32);
+                this._entityContainer = new CAAT.ActorContainer().setBounds(0,0,width*32,height*32);
                 this.scene.addChild(this._entityContainer);
                 this.scene.addChild(this._uiContainer);
 
                 this.factory = Factory;
-                this.map = new Map(65,66,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
+
+                this.map = new Map(width,height,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
                 this.map.defaultSheet = 'future2';
                 // Load Game "Plugins"
 
@@ -141,8 +147,10 @@ define([
                 this._entityContainer.addChild(this._interaction_actor);
                 
                 //Create Game World
-                this.level = new BlockLevelGenerator(this, this.options);
-                
+                //this.level = new BlockLevelGenerator(this, this.options);
+                this.level = new megablock.MegaBlockLevel(null, this);
+
+
                 //Add PC
                 var pc = null;
                 if (this.game.data.pc!==undefined){
@@ -160,7 +168,7 @@ define([
 
 
                 //Create Game Encounters
-                //*                
+                /*                
                 this.encounterSystem = new encounters.EncounterSystem(this);
                 this.encounterSystem.create(encounters.CheckupEncounter);
                 this.encounterSystem.create(encounters.ExecuteEncounter);
@@ -403,7 +411,7 @@ define([
                 if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
                 
                 //Tick Encounter System
-                this.encounterSystem.tick(delta);
+                //this.encounterSystem.tick(delta);
                 //if (this._debugTick){ var t=Date.now(); console.log('Encounter Time:', t-debugTime); debugTime=t};
                 
                 //Track Player

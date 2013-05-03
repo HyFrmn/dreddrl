@@ -25,7 +25,6 @@ function   ($, sge, dreddrl) {
         return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
     }
 
-
     //Setup Ratio
     var body = $('body');
     var idealWidth = parseInt(getURLParameter('width') || 960);
@@ -43,11 +42,17 @@ function   ($, sge, dreddrl) {
     var elem = $('#container');
     elem.attr({width: width, height: height});
     elem.css({
-        width: width + 'px',
-        height: height + 'px',
-        display: 'block',
-        margin: '0px auto'
-    });
+            width: width + 'px',
+            height: height + 'px',
+            display: 'block',
+            margin: '0px auto'
+        });
+    var fullscreen = Boolean(getURLParameter('fullscreen'));
+    if (fullscreen){
+        $('#game').addClassName('fullscreen');
+    } else {
+        $('#game').width(idealWidth).height(idealHeight);
+    }
     CAAT.DEBUG=Boolean(getURLParameter('caat-debug'));
     game = new sge.Game({elem: '#game', pauseState: dreddrl.PauseState, mainMenuState: dreddrl.MainMenuState, width: idealWidth, height: idealHeight, fps:idealFPS});
     var state = game.setGameState(dreddrl.DreddRLState);
