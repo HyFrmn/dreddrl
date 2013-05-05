@@ -1,26 +1,14 @@
 requirejs.config({
     baseUrl: 'js/',
     name: "dreddrl",
-    packages: ["dreddrl","sge"],
-    shim : {
-        'sge/vendor/underscore' : {
-            exports: '_'
-        },
-        'sge/vendor/virtualjoystick' : {
-            exports: 'VirtualJoystick'
-        },
-        'sge/vendor/hammer' : {
-            exports: 'Hammer'
-        },
-        'sge/vendor/caat' : {
-            exports: 'CAAT'
-        }
-    }
+    packages: ["dreddrl"],
+    exclude: ['sge']
+    
 });
 // Start the main app logic.
 var game = null;
-requirejs(['jquery','sge','dreddrl'],
-function   ($, sge, dreddrl) {
+requirejs(['sge','dreddrl'],
+function   (sge, dreddrl) {
     function getURLParameter(name) {
         return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
     }

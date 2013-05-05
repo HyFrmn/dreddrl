@@ -1,36 +1,23 @@
 requirejs.config({
     baseUrl: 'js/',
     name: "dreddrl",
-    packages: ["dreddrl","sge"],
-    shim : {
-        'sge/vendor/underscore' : {
-            exports: '_'
-        },
-        'sge/vendor/virtualjoystick' : {
-            exports: 'VirtualJoystick'
-        },
-        'sge/vendor/hammer' : {
-            exports: 'Hammer'
-        },
-        'sge/vendor/caat' : {
-            exports: 'CAAT'
-        }
-    }
+    packages: ["dreddrl"],
 });
 // Start the main app logic.
 var game = null;
-requirejs(['jquery','sge','dreddrl'],
-function   ($, sge, dreddrl) {
+requirejs(['sge','dreddrl'],
+function   (sge, dreddrl) {
     function getURLParameter(name) {
         return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
     }
 
     //Setup Ratio
-    var body = $('body');
-    var idealWidth = parseInt(getURLParameter('width') || 960);
-    var idealHeight = parseInt(getURLParameter('height') || 540);
+    //var body = $('body');
+    var idealWidth = parseInt(getURLParameter('width') || 640);
+    var idealHeight = parseInt(getURLParameter('height') || 480);
     var idealFPS = parseInt(getURLParameter('fps') || 60);
     var idealRatio = idealWidth/idealHeight;
+    /*
     var screenRatio = body.width() / body.height();
     if (screenRatio > idealRatio){
         height = body.height();
@@ -53,6 +40,7 @@ function   ($, sge, dreddrl) {
     } else {
         $('#game').width(idealWidth).height(idealHeight);
     }
+    */
     CAAT.DEBUG=Boolean(getURLParameter('caat-debug'));
     game = new sge.Game({elem: '#game', pauseState: dreddrl.PauseState, mainMenuState: dreddrl.MainMenuState, width: idealWidth, height: idealHeight, fps:idealFPS});
     var state = game.setGameState(dreddrl.DreddRLState);

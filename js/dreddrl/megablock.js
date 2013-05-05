@@ -1,10 +1,9 @@
 define([
     'sge',
-    'jquery',
     './factory',
     './map'
     ],
-    function(sge, $, Factory, Encounters, Map){
+    function(sge, Factory, Encounters, Map){
     	var FLOORTILE =  { srcX : 0, srcY: 0, spriteSheet: 'future2'};
         var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spriteSheet: 'future2'}
         var DOOROPENTILE1 = { srcX : 1, srcY: 36, spriteSheet: 'future2'}
@@ -29,7 +28,7 @@ define([
         var MegaBlockRoom = sge.Class.extend({
             init: function(gen, cx, cy, width, height, options){
                 this.level = gen;
-                this.options = $.extend({doors:'bottom', open: true}, options ||{})
+                this.options = _.extend({doors:'bottom', open: true}, options ||{})
                 this.cx = cx
                 this.cy = cy
                 this.width = width;
@@ -214,7 +213,6 @@ define([
                 }
             },
             addEntity: function(type, options){
-                console.log(this.factory);
                 var entity = this.factory(type, options);
                 this._entities.push(entity);
                 return entity;

@@ -19,15 +19,12 @@ module.exports = function(grunt) {
 		  compile: {
 		    options: {
 		      baseUrl: "js/",
-		      mainConfigFile: "app.js",
+		      name: 'dreddrl',
 		      out: "build/required.js",
 		      //dir: "build/",
 		      //optimize: "none",
-		      packages: ['dreddrl','sge'],
-		      paths: {
-		      	'jquery' : '../js/require-jquery',
-		      	//'sge' : '../js/sge',
-		      }
+		      include: ['sge'],
+		      packages: ['dreddrl']
 		    }
 		  }
 }

@@ -1,10 +1,9 @@
 define([
     'sge',
-    'jquery',
     './factory',
     './map'
     ],
-    function(sge, $, Factory, Encounters, Map){
+    function(sge, Factory, Encounters, Map){
         var FLOORTILE =  { srcX : 0, srcY: 0, spriteSheet: 'future2'};
         var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spriteSheet: 'future2'}
         var DOOROPENTILE1 = { srcX : 1, srcY: 36, spriteSheet: 'future2'}
