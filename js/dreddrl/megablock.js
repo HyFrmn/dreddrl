@@ -174,9 +174,11 @@ define([
                 }
                 this.buildWall(0,this.map.height-2,this.map.width, true);
 
+                //*
                 var room = new MegaBlockRoom(this, 3, 5, 5, 5);
                 var room = new MegaBlockRoom(this, 9, 5, 5, 5);
                 var room = new MegaBlockRoom(this, 3, 13, 5, 5);
+                //*/
 
                 for (var y=0;y<this.map.height;y++){
                     var tile = this.map.getTile(0, y);
@@ -190,6 +192,17 @@ define([
                     }
                     tile.passable = false;
                 }
+
+                var npcs=0;//512
+                while (npcs--){
+                    this.addEntity('npc',{
+                        xform: {
+                            tx: sge.random.range(32, (this.map.width*32) - 64),
+                            ty: sge.random.range(32, (this.map.height*32) - 64)
+                        }
+                    })
+                }
+
 
                 this.updateState();
     		},

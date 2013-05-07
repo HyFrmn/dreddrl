@@ -31,6 +31,7 @@ define([
                 this._track_y = null;
                 this._debug_count = 0;
                 this._debugTick = false;
+                this._debugCounter = 0.3;
 
                 var width = 65;
                 var height = 66;
@@ -245,7 +246,7 @@ define([
 
             addEntity: function(entity){
                 this._super(entity);
-                funcs = [];
+                var funcs = [];
                 funcs.push(entity.addListener('kill', function(){
                     entity.active = false;
                     this._killList.push(entity);
@@ -279,7 +280,7 @@ define([
                 if (this._cachedLogLength!=this._logs.length){
                     this._logContainer.stopCacheAsBitmap();
                     this._cachedLogLength = this._logs.length;
-                    msgs = this._logs.slice(-4);
+                    var msgs = this._logs.slice(-4);
                     msgs.reverse();
                     _.each(msgs, function(msg, i){
                         this.logActors[i].setText(msg);
@@ -318,6 +319,17 @@ define([
                 }
                 this._spatialHash[hash].push(entity.id);
                 this._spatialHashReverse[entity.id] = hash;
+            },
+            
+            findEntities : function(tx, ty, radius){
+                var cx = Math.floor(tx / this._spatialHashWidth);
+                var cy = Math.floor(ty / this._spatialHashHeight);
+                var hash = cx + '.' + cy;
+                var ids = this._spatialHash[hash];
+                var entities = _.map(ids, function(id){
+                    return this.getEntity(id);
+                }.bind(this));
+                return entities;
             },
 
             _interaction_tick : function(delta){
@@ -379,7 +391,13 @@ define([
             },
 
             tick : function(delta){
-                this._debugTick = this.game.engine._debugTick;
+                this._debugCounter -= delta;
+                if (this._debugCounter <= 0){
+                    this._debugTick = true;
+                    this._debugCounter = 0.3;
+                } else {
+                    this._debugTick = false;
+                }
                 var debugTime = Date.now();
                 this.tickTimeouts(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Timeout Time:', t-debugTime); debugTime=t};
@@ -388,7 +406,7 @@ define([
 
                 if (!this.game.data._intro){
                     this.game.data._intro = true;
-                    this.startDialog(INTRO)
+                    this.startDialog(INTRO);
                 }
                 
                 //Update Interaction System

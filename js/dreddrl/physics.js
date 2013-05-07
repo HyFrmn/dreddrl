@@ -113,9 +113,107 @@ define(['sge'], function(sge){
             }
             return [nx,ny];
         },
+        
+        collideEntities : function(entityA, entityB){
+            var isStaticA = Boolean(entityA.get('physics.type') & TYPES.STATIC);
+            var txA = entityA.get('xform.tx');
+            var tyA = entityA.get('xform.ty');
+            var widthA = entityA.get('physics.width');
+            var heightA = entityA.get('physics.height');;
+            var rectA = {
+                top: tyA - (heightA / 2),
+                bottom: tyA + (heightA / 2),
+                left: txA - (widthA / 2),
+                right: txA + (widthA / 2)
+            }
+            
+            var isStaticB= Boolean(entityB.get('physics.type') & TYPES.STATIC);
+            if (isStaticA & isStaticB){
+                return null;
+            }
+            var txB = entityB.get('xform.tx');
+            var tyB = entityB.get('xform.ty');
+            var widthB = entityB.get('physics.width');;
+            var heightB = entityB.get('physics.height');;
+            var rectB = {
+                top: tyB - (heightB / 2),
+                bottom: tyB + (heightB / 2),
+                left: txB - (widthB / 2),
+                right: txB + (widthB / 2)
+            }
+            if (this.intersectRect(rectA, rectB)){
+                var contactKey = entityA.id + '.' + entityB.id;
+                if (entityA.id > entityB.id){
+                    contactKey = entityB.id + '.' + entityA.id;
+                }
+                this._newContacts.push(contactKey);
+                if (!_.contains(this._contactList, contactKey)){
+                    //Fire New Contact Event
+                    var ids = contactKey.split('.');
+                    var entityA = this.state.getEntity(ids[0]);
+                    var entityB = this.state.getEntity(ids[1]);
+                    entityA.fireEvent('contact.start', entityB);
+                    entityB.fireEvent('contact.start', entityA);
+                }
+
+
+                if (entityA.get('physics.type')==TYPES.PASS || entityB.get('physics.type')==TYPES.PASS){
+                    return null;
+                }
+
+                var xDelta1 = rectB.right - rectA.left;
+                var xDelta2 = rectB.left - rectA.right;
+                
+                var yDelta1 = rectB.top - rectA.bottom;
+                var yDelta2 = rectB.bottom - rectA.top;
+                
+                var xDelta = 0;
+                var yDelta = 0;
+                
+                if (Math.abs(xDelta1) > Math.abs(xDelta2)){
+                    xDelta = xDelta2;
+                } else {
+                    xDelta = xDelta1;
+                }
+                if (Math.abs(yDelta1) > Math.abs(yDelta2)){
+                    yDelta = yDelta2;
+                } else {
+                    yDelta = yDelta1;
+                }
+                if (Math.abs(xDelta) > Math.abs(yDelta)){
+                    xDelta = 0;
+                } else {
+                    yDelta = 0;
+                }
+                
+                var xADelta = 0;
+                var yADelta = 0;
+                
+                var xBDelta = 0;
+                var yBDelta = 0;
+                
+                if (entityA.get('physics.type') & TYPES.STATIC){
+                    xBDelta = -xDelta;
+                    yBDelta = -yDelta;
+                } else if (entityB.get('physics.type') & TYPES.STATIC){
+                    xADelta = xDelta;
+                    yADelta = yDelta;
+                } else {
+                    xADelta = xDelta/2;
+                    yADelta = yDelta/2;
+                    xBDelta = xDelta/-2;
+                    yBDelta = yDelta/-2;
+                }
+                this.moveGameObject(entityA, xADelta,  yADelta);
+                this.moveGameObject(entityB, xBDelta,  yBDelta);
+                
+            }
+            
+        },
+        
         resolveCollisions : function(delta){
             var entities = [];
-            var newContacts = [];
+            this._newContacts = [];
             _.each(this.state.getEntitiesWithComponent('physics'), function(entity){
                 
                 if (entity.get('physics.type') & TYPES.STATIC){
@@ -132,108 +230,29 @@ define(['sge'], function(sge){
                     entities.push(entity);
                 }
             }.bind(this));
-            var count = 0;
-            while (entities.length>1){
-                var entityA = entities.shift();
-                var isStaticA = Boolean(entityA.get('physics.type') & TYPES.STATIC);
-                var txA = entityA.get('xform.tx');
-                var tyA = entityA.get('xform.ty');
-                var widthA = entityA.get('physics.width');
-                var heightA = entityA.get('physics.height');;
-                var rectA = {
-                    top: tyA - (heightA / 2),
-                    bottom: tyA + (heightA / 2),
-                    left: txA - (widthA / 2),
-                    right: txA + (widthA / 2)
-                }
-                for (var i = entities.length - 1; i >= 0; i--) {
-                    count++;
-                    var entityB = entities[i];
-                    var isStaticB= Boolean(entityB.get('physics.type') & TYPES.STATIC);
-                    if (isStaticA & isStaticB){
-                        continue;
+            var tested = [];
+            for (var i = entities.length - 1; i >= 0; i--) {
+                var e = entities[i];
+                var tx = e.get('xform.tx');
+                var ty = e.get('xform.ty');
+                var hashA = e.id;
+                var nearby = _.filter(this.state.findEntities(tx, ty, 64), function(ent){return ent.get('physics')});
+                for (var i = nearby.length - 1; i >= 0; i--) {
+                    var hashB = nearby[i].id;
+                    if (hashB<hashA){
+                        hash = hashB + '.' + hashA;
+                    } else {
+                        hash = hashA + '.' + hashB;
                     }
-                    var txB = entityB.get('xform.tx');
-                    var tyB = entityB.get('xform.ty');
-                    var widthB = entityB.get('physics.width');;
-                    var heightB = entityB.get('physics.height');;
-                    var rectB = {
-                        top: tyB - (heightB / 2),
-                        bottom: tyB + (heightB / 2),
-                        left: txB - (widthB / 2),
-                        right: txB + (widthB / 2)
+                    if (!_.contains(tested, hash)){
+                        tested.push(hash);
+                        this.collideEntities(e, nearby[i]);
                     }
-                    if (this.intersectRect(rectA, rectB)){
-                        var contactKey = entityA.id + '.' + entityB.id;
-                        if (entityA.id > entityB.id){
-                            contactKey = entityB.id + '.' + entityA.id;
-                        }
-                        newContacts.push(contactKey);
-                        if (!_.contains(this._contactList, contactKey)){
-                            //Fire New Contact Event
-                            var ids = contactKey.split('.');
-                            var entityA = this.state.getEntity(ids[0]);
-                            var entityB = this.state.getEntity(ids[1]);
-                            entityA.fireEvent('contact.start', entityB);
-                            entityB.fireEvent('contact.start', entityA);
-                        }
+                };
+            };
 
-
-                        if (entityA.get('physics.type')==TYPES.PASS || entityB.get('physics.type')==TYPES.PASS){
-                            continue;
-                        }
-
-                        var xDelta1 = rectB.right - rectA.left;
-                        var xDelta2 = rectB.left - rectA.right;
-                        
-                        var yDelta1 = rectB.top - rectA.bottom;
-                        var yDelta2 = rectB.bottom - rectA.top;
-                        
-                        var xDelta = 0;
-                        var yDelta = 0;
-                        
-                        if (Math.abs(xDelta1) > Math.abs(xDelta2)){
-                            xDelta = xDelta2;
-                        } else {
-                            xDelta = xDelta1;
-                        }
-                        if (Math.abs(yDelta1) > Math.abs(yDelta2)){
-                            yDelta = yDelta2;
-                        } else {
-                            yDelta = yDelta1;
-                        }
-                        if (Math.abs(xDelta) > Math.abs(yDelta)){
-                            xDelta = 0;
-                        } else {
-                            yDelta = 0;
-                        }
-                        
-                        var xADelta = 0;
-                        var yADelta = 0;
-                        
-                        var xBDelta = 0;
-                        var yBDelta = 0;
-                        
-                        if (entityA.get('physics.type') & TYPES.STATIC){
-                            xBDelta = -xDelta;
-                            yBDelta = -yDelta;
-                        } else if (entityB.get('physics.type') & TYPES.STATIC){
-                            xADelta = xDelta;
-                            yADelta = yDelta;
-                        } else {
-                            xADelta = xDelta/2;
-                            yADelta = yDelta/2;
-                            xBDelta = xDelta/-2;
-                            yBDelta = yDelta/-2;
-                        }
-                        this.moveGameObject(entityA, xADelta,  yADelta);
-                        this.moveGameObject(entityB, xBDelta,  yBDelta);
-                        
-                    }
-                }
-            }
             for (var i = this._contactList.length - 1; i >= 0; i--) {
-                if (!_.contains(newContacts, this._contactList[i])){
+                if (!_.contains(this._newContacts, this._contactList[i])){
                     //Fire End Contact Event
                     var ids = this._contactList[i].split('.');
                     var entityA = this.state.getEntity(ids[0]);
@@ -246,7 +265,7 @@ define(['sge'], function(sge){
                     }
                 }
             };
-            this._contactList = newContacts;
+            this._contactList = this._newContacts;
         }
     });
     return RPGPhysics;
