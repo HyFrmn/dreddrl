@@ -113,6 +113,104 @@ define(['sge'], function(sge){
             }
             return [nx,ny];
         },
+        
+        collideEntities : function(entityA, entityB){
+            var isStaticA = Boolean(entityA.get('physics.type') & TYPES.STATIC);
+            var txA = entityA.get('xform.tx');
+            var tyA = entityA.get('xform.ty');
+            var widthA = entityA.get('physics.width');
+            var heightA = entityA.get('physics.height');;
+            var rectA = {
+                top: tyA - (heightA / 2),
+                bottom: tyA + (heightA / 2),
+                left: txA - (widthA / 2),
+                right: txA + (widthA / 2)
+            }
+            
+            var isStaticB= Boolean(entityB.get('physics.type') & TYPES.STATIC);
+            if (isStaticA & isStaticB){
+                return null;
+            }
+            var txB = entityB.get('xform.tx');
+            var tyB = entityB.get('xform.ty');
+            var widthB = entityB.get('physics.width');;
+            var heightB = entityB.get('physics.height');;
+            var rectB = {
+                top: tyB - (heightB / 2),
+                bottom: tyB + (heightB / 2),
+                left: txB - (widthB / 2),
+                right: txB + (widthB / 2)
+            }
+            if (this.intersectRect(rectA, rectB)){
+                var contactKey = entityA.id + '.' + entityB.id;
+                if (entityA.id > entityB.id){
+                    contactKey = entityB.id + '.' + entityA.id;
+                }
+                newContacts.push(contactKey);
+                if (!_.contains(this._contactList, contactKey)){
+                    //Fire New Contact Event
+                    var ids = contactKey.split('.');
+                    var entityA = this.state.getEntity(ids[0]);
+                    var entityB = this.state.getEntity(ids[1]);
+                    entityA.fireEvent('contact.start', entityB);
+                    entityB.fireEvent('contact.start', entityA);
+                }
+
+
+                if (entityA.get('physics.type')==TYPES.PASS || entityB.get('physics.type')==TYPES.PASS){
+                    continue;
+                }
+
+                var xDelta1 = rectB.right - rectA.left;
+                var xDelta2 = rectB.left - rectA.right;
+                
+                var yDelta1 = rectB.top - rectA.bottom;
+                var yDelta2 = rectB.bottom - rectA.top;
+                
+                var xDelta = 0;
+                var yDelta = 0;
+                
+                if (Math.abs(xDelta1) > Math.abs(xDelta2)){
+                    xDelta = xDelta2;
+                } else {
+                    xDelta = xDelta1;
+                }
+                if (Math.abs(yDelta1) > Math.abs(yDelta2)){
+                    yDelta = yDelta2;
+                } else {
+                    yDelta = yDelta1;
+                }
+                if (Math.abs(xDelta) > Math.abs(yDelta)){
+                    xDelta = 0;
+                } else {
+                    yDelta = 0;
+                }
+                
+                var xADelta = 0;
+                var yADelta = 0;
+                
+                var xBDelta = 0;
+                var yBDelta = 0;
+                
+                if (entityA.get('physics.type') & TYPES.STATIC){
+                    xBDelta = -xDelta;
+                    yBDelta = -yDelta;
+                } else if (entityB.get('physics.type') & TYPES.STATIC){
+                    xADelta = xDelta;
+                    yADelta = yDelta;
+                } else {
+                    xADelta = xDelta/2;
+                    yADelta = yDelta/2;
+                    xBDelta = xDelta/-2;
+                    yBDelta = yDelta/-2;
+                }
+                this.moveGameObject(entityA, xADelta,  yADelta);
+                this.moveGameObject(entityB, xBDelta,  yBDelta);
+                
+            }
+            
+        },
+        
         resolveCollisions : function(delta){
             var entities = [];
             var newContacts = [];
