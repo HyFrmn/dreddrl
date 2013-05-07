@@ -319,6 +319,7 @@ define([
                 }
                 this._spatialHash[hash].push(entity.id);
                 this._spatialHashReverse[entity.id] = hash;
+                entity.set('xform.tile', tile);
             },
             
             findEntities : function(tx, ty, radius){
@@ -337,9 +338,9 @@ define([
                 var cdist = 64;
                 var ccord = null;
                 var pcHash = this._spatialHashReverse[this.pc.id];
-                var entities = _.map(this._spatialHash[pcHash], function(id){
-                    return this.getEntity(id);
-                }.bind(this))
+                var pcTx = this.pc.get('xform.tx');
+                var pcTy = this.pc.get('xform.ty')
+                var entities = this.findEntities(pcTx, pcTy, 64)
                 if (this._debugTick) console.log('Interact', entities);
                 for (var i = entities.length - 1; i >= 0; i--) {
                     entity = entities[i];
@@ -355,8 +356,8 @@ define([
                         coords = [[entity.get('xform.tx'), entity.get('xform.ty')]];
                     }
                     for (var j = coords.length - 1; j >= 0; j--) {
-                        var dx = coords[j][0] - this.pc.get('xform.tx');
-                        var dy = coords[j][1] - this.pc.get('xform.ty');
+                        var dx = coords[j][0] - pcTx;
+                        var dy = coords[j][1] - pcTy;
                         var dist = Math.sqrt((dx*dx)+(dy*dy));
                         if (dist <= entity.get('interact.dist')){
                             if (dist < cdist){
