@@ -32,9 +32,10 @@ define([
                 this._debug_count = 0;
                 this._debugTick = false;
                 this._debugCounter = 0.3;
+                this._debugEnable = false;
 
-                var width = 65;
-                var height = 66;
+                var width = 16;
+                var height = 16;
 
                 this.scene.setBounds(0,0,width*32,height*32);
                 this._uiContainer = new CAAT.ActorContainer().setBounds(0,0,width*32,height*32);
@@ -51,8 +52,8 @@ define([
                 //Hash ID to Entity ID
                 this._spatialHash = {};
                 this._spatialHashReverse = {};
-                this._spatialHashWidth = 128; //((this.map.width * 32) / 4);
-                this._spatialHashHeight = 128; //((this.map.height * 32) / 4);
+                this._spatialHashWidth = 256; //((this.map.width * 32) / 4);
+                this._spatialHashHeight = 256; //((this.map.height * 32) / 4);
 
                 this.loader = new sge.vendor.PxLoader();
                 this.loader.addProgressListener(this.progressListener.bind(this));
@@ -331,13 +332,17 @@ define([
             },
             
             findEntities : function(tx, ty, radius){
+                var entities = [];
                 var cx = Math.floor(tx / this._spatialHashWidth);
                 var cy = Math.floor(ty / this._spatialHashHeight);
-                var hash = cx + '.' + cy;
-                var ids = this._spatialHash[hash];
-                var entities = _.map(ids, function(id){
-                    return this.getEntity(id);
-                }.bind(this));
+                delta = [[-1, -1], [0, -1], [1, -1],[-1, 0], [0, 0], [1, 0],[-1, 1], [0, 1], [1, 1]];
+                for (var i = delta.length - 1; i >= 0; i--) {
+                    var hash = (cx + delta[i][0]) + '.' + (cy + delta[i][1]);
+                    var ids = this._spatialHash[hash];
+                     _.each(ids, function(id){
+                        entities.push(this.getEntity(id));
+                    }.bind(this));
+                };
                 return entities;
             },
 
@@ -401,7 +406,7 @@ define([
 
             tick : function(delta){
                 this._debugCounter -= delta;
-                if (this._debugCounter <= 0){
+                if (this._debugCounter <= 0 && this._debugEnable==true){
                     this._debugTick = true;
                     this._debugCounter = 0.3;
                 } else {

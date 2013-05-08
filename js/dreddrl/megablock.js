@@ -174,7 +174,7 @@ define([
                 }
                 this.buildWall(0,this.map.height-2,this.map.width, true);
 
-                //*
+                /*
                 var room = new MegaBlockRoom(this, 3, 5, 5, 5);
                 var room = new MegaBlockRoom(this, 9, 5, 5, 5);
                 var room = new MegaBlockRoom(this, 3, 13, 5, 5);
@@ -193,9 +193,9 @@ define([
                     tile.passable = false;
                 }
 
-                var npcs=256;
+                var npcs=16;
                 while (npcs--){
-                    this.addEntity('npc',{
+                    this.addEntity('enemy',{
                         xform: {
                             tx: sge.random.range(32, (this.map.width*32) - 64),
                             ty: sge.random.range(32, (this.map.height*32) - 64)
