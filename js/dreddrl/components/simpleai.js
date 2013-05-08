@@ -14,7 +14,7 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             })
             this.data.radius = 96;
             this._idleCounter = 0;
-
+            this.entity.addListener('contact.tile', this.onContact.bind(this))
         },
         seePlayer: function(){
             this.data.radius = 256;
@@ -38,9 +38,15 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             var dist = Math.sqrt((dx*dx)+(dy*dy));
             return [pc, dx, dy, dist];
         },
+        onContact : function(){
+            if (this.fsm.current=='idle'){
+                this.entity.set('xform.v', 0, 0);
+                this._idleCounter += 30;
+            }
+        },
         tick : function(delta){
             
-            //this.wander(delta);
+            this.wander(delta);
             /*
             if (this.entity.state){
                 var stateName = this.fsm.current;
@@ -92,11 +98,12 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
         wander: function(){
             if (this._idleCounter<0){
                 this._idleCounter=30 + (Math.random() * 30);
+                var vx = 64 * ((Math.random() * 2) - 1);
+                var vy = 64 * ((Math.random() * 2) - 1);
+                /*
                 var hasDir = false;
                 var tx = this.entity.get('xform.tx');
                 var ty = this.entity.get('xform.ty');
-                var vx = 0;
-                var vy = 0;
                 for (var i=0;i<5;i++){
                     if (Math.random() > 0.5){
                         var vx = 64 * ((Math.random() * 2) - 1);
@@ -114,9 +121,10 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
                     } else {
                         break;
                     }
+                    
                 }
-                this.entity.set('xform.vx', vx);
-                this.entity.set('xform.vy', vy);
+                */
+                this.entity.set('xform.v', vx, vy);
             } else {
                 /*
                 var tx = this.entity.get('xform.tx');

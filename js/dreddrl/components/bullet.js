@@ -32,10 +32,11 @@ define(['sge'],function(sge){
             this.entity.get('xform.container').removeChild(this.container);
             this._super(state);
         },
+        /*
 		tick: function(delta){
 			this.entity.set('physics.width', Math.max(Math.abs(this.entity.get('xform.vx')) * delta, 2)*2);
 			this.entity.set('physics.height', Math.max(Math.abs(this.entity.get('xform.vy')) * delta, 2)*2);
-		}
+		}*/
 	});
 	sge.Component.register('bullet', BulletComponent);
     return BulletComponent;

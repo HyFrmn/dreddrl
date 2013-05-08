@@ -51,8 +51,8 @@ define([
                 //Hash ID to Entity ID
                 this._spatialHash = {};
                 this._spatialHashReverse = {};
-                this._spatialHashWidth = ((this.map.width * 32) / 4);
-                this._spatialHashHeight = ((this.map.height * 32) / 4);
+                this._spatialHashWidth = 128; //((this.map.width * 32) / 4);
+                this._spatialHashHeight = 128; //((this.map.height * 32) / 4);
 
                 this.loader = new sge.vendor.PxLoader();
                 this.loader.addProgressListener(this.progressListener.bind(this));
@@ -257,8 +257,16 @@ define([
                 funcs.push(entity.addListener('xform.move', function(){
                     this._updateHash(entity);
                 }.bind(this)));
+                funcs.push(entity.addListener('xform.update', function(){
+                    if (!_.contains(this.physics.dirty, entity)){
+                        this.physics.dirty.push(entity);
+                    }
+                }.bind(this)));
                 this._updateHash(entity);
                 this._listenersEntity[entity] = funcs;
+                if (entity.get('physics')!==undefined){
+                    this.physics.dirty.push(entity);
+                }
             },
 
             removeEntity: function(entity){
@@ -401,7 +409,7 @@ define([
                 }
                 var debugTime = Date.now();
                 this.tickTimeouts(delta);
-                if (this._debugTick){ var t=Date.now(); console.log('Timeout Time:', t-debugTime); debugTime=t};
+                //if (this._debugTick){ var t=Date.now(); console.log('Timeout Time:', t-debugTime); debugTime=t};
                 this.physics.resolveCollisions(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Physics Time:', t-debugTime); debugTime=t};
 
@@ -417,7 +425,7 @@ define([
                 //Update Component System
                 for (var i = this._entity_ids.length - 1; i >= 0; i--) {
                     //var c = Date.now();
-                    this.entities[this._entity_ids[i]].componentCall('tick', delta);
+                    this.entities[this._entity_ids[i]].tick(delta);
                     //if (this._debugTick){ var t=Date.now(); console.log('Time:', i, t-c);};
                 };
                 if (this._debugTick){ var t=Date.now(); console.log('Component Time:', t-debugTime, this._entity_ids.length); debugTime=t};
@@ -427,7 +435,7 @@ define([
                     this._removeFromHash(e);
                     this.removeEntity(e);
                 }.bind(this));
-                if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
+                //if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
                 
                 //Tick Encounter System
                 //this.encounterSystem.tick(delta);
@@ -442,7 +450,7 @@ define([
                 this._updateUI();
 
                 
-                if (this._debugTick){ var t=Date.now(); console.log('Scene Time:', t-debugTime); debugTime=t};
+                if (this._debugTick){ var t=Date.now(); console.log('Update Scene Time:', t-debugTime); debugTime=t};
 
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];

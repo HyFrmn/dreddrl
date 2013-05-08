@@ -54,10 +54,10 @@ define(['sge', '../config', './bullet'],function(sge, config){
 				},
 				physics: { width: (4 + Math.abs(vx*20)), height: (4+Math.abs(vy*20)), type:2, fast:true},
 				bullet:{},
-				debug: {},
 				health: {life: 1, alignment: this.entity.get('health.alignment'), visible: false}
 			});
 			this.state.addEntity(bullet);
+			bullet.set('xform.v', vx * speed, vy * speed);
 		},
 		register: function(state){
 			this.state = state;

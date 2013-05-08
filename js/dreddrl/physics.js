@@ -11,6 +11,7 @@ define(['sge'], function(sge){
             this.map = state.map;
             this._contactList = []
             this._newContactList = [];
+            this.dirty = [];
         },
         intersectRect : function(r1, r2) {
             return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);
@@ -47,6 +48,7 @@ define(['sge'], function(sge){
             var ty = Math.round(entity.get('xform.ty'));
             var nx = Math.round(tx + vx);
             var ny = Math.round(ty + vy);
+            //*
             if (this.map){
                 if (entity.get('physics.fast')){
                     x0 = Math.floor(tx/32);
@@ -103,6 +105,7 @@ define(['sge'], function(sge){
 
 
             }
+            //*/
             if (entity.active){
                 if (nx!=tx || ny!=ty){
                     entity.set('xform.t', nx, ny);
@@ -212,25 +215,34 @@ define(['sge'], function(sge){
         },
         
         resolveCollisions : function(delta){
+            var debugTime = Date.now();
             var entities = [];
             this._newContacts = [];
-            _.each(this.state.getEntitiesWithComponent('physics'), function(entity){
-                
+            this.dirty = _.filter(this.dirty, function(entity){
+                /*
                 if (entity.get('physics.type') & TYPES.STATIC){
                     return;
                 }
+                */
                 if (entity.get('physics')._wait){
                     entity.get('physics')._wait = false;
-                    return;
+                    return true;
                 }
                 var vx = entity.get('xform.vx') * delta;
                 var vy = entity.get('xform.vy') * delta;
+                if (vx==0 && vy==0){
+                    return false; //Don't update or test objects that are not moving.
+                }
                 this.moveGameObject(entity, vx, vy);
                 if (entity.active){
                     entities.push(entity);
                 }
+                return true;
             }.bind(this));
+            if (this.state._debugTick) console.log('Moved:', entities.length);
             var tested = [];
+            var count=0;
+            if (this.state._debugTick){ var t=Date.now(); console.log('Move Time:', t-debugTime); debugTime=t};
             for (var i = entities.length - 1; i >= 0; i--) {
                 var e = entities[i];
                 var tx = e.get('xform.tx');
@@ -245,12 +257,13 @@ define(['sge'], function(sge){
                         hash = hashA + '.' + hashB;
                     }
                     if (!_.contains(tested, hash)){
+                        count++;
                         tested.push(hash);
                         this.collideEntities(e, nearby[i]);
                     }
                 };
             };
-
+            if (this.state._debugTick){ var t=Date.now(); console.log('Collide Time:', t-debugTime); debugTime=t};
             for (var i = this._contactList.length - 1; i >= 0; i--) {
                 if (!_.contains(this._newContacts, this._contactList[i])){
                     //Fire End Contact Event
@@ -266,6 +279,8 @@ define(['sge'], function(sge){
                 }
             };
             this._contactList = this._newContacts;
+            if (this.state._debugTick){ var t=Date.now(); console.log('Contact Time:', t-debugTime); debugTime=t};
+            //this.dirty = [];
         }
     });
     return RPGPhysics;
