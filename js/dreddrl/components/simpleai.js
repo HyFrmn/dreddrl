@@ -39,9 +39,9 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             return [pc, dx, dy, dist];
         },
         tick : function(delta){
-            /*
-            this.wander(delta);
             
+            //this.wander(delta);
+            /*
             if (this.entity.state){
                 var stateName = this.fsm.current;
                 if (this.getPC()===null){
@@ -118,6 +118,7 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
                 this.entity.set('xform.vx', vx);
                 this.entity.set('xform.vy', vy);
             } else {
+                /*
                 var tx = this.entity.get('xform.tx');
                 var ty = this.entity.get('xform.ty');
                 var vx = this.entity.get('xform.vx');
@@ -132,6 +133,7 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
                         }
                     }
                 }
+                //*/
                 this._idleCounter--;
             }
         }

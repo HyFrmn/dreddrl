@@ -193,7 +193,7 @@ define([
                     tile.passable = false;
                 }
 
-                var npcs=128;
+                var npcs=512;
                 while (npcs--){
                     this.addEntity('npc',{
                         xform: {
