@@ -32,10 +32,10 @@ define([
                 this._debug_count = 0;
                 this._debugTick = false;
                 this._debugCounter = 0.3;
-                this._debugEnable = false;
+                this._debugEnable = true;
 
-                var width = 16;
-                var height = 16;
+                var width = 66;
+                var height = 66;
 
                 this.scene.setBounds(0,0,width*32,height*32);
                 this._uiContainer = new CAAT.ActorContainer().setBounds(0,0,width*32,height*32);

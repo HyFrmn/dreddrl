@@ -3,6 +3,7 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
 	var SimpleAIComponent = Component.extend({
 		init: function(entity, data){
             this._super(entity, data);
+            this._tracking = null;
             this.data.tracking = data.tracking || null;
             this.data.territory = data.territory;
             this.fsm = StateMachine.create({
@@ -29,7 +30,10 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             this.map = this.state.map;
         },
         getPC: function(){
-            return this.entity.state.getEntitiesWithTag(this.get('tracking'))[0] || null;
+            if (this._tracking===null){
+                this._tracking = this.entity.state.getEntitiesWithTag(this.get('tracking'))[0];
+            }
+            return this._tracking;
         },
         getPCPosition: function(){
             var pc = this.getPC();
@@ -38,6 +42,14 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             var dist = Math.sqrt((dx*dx)+(dy*dy));
             return [pc, dx, dy, dist];
         },
+        canSeePlayer: function(){
+            var pc = this.getPC();
+            var nearby = this.state.findEntities(this.entity.get('xform.tx'), this.entity.get('xform.ty'), this.get('radius'));
+            if (_.contains(nearby, pc)){
+                return this.getPCPosition()
+            }
+            return false;
+        },
         onContact : function(){
             if (this.fsm.current=='idle'){
                 this.entity.set('xform.v', 0, 0);
@@ -45,21 +57,16 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             }
         },
         tick : function(delta){
-            
-            this.wander(delta);
-            /*
-            if (this.entity.state){
-                var stateName = this.fsm.current;
-                if (this.getPC()===null){
-                    this.wander(delta);
-                } else {
-                    method = this['tick_' + stateName];
-                    if (method){
-                        method.call(this, delta);
-                    }
+            var stateName = this.fsm.current;
+            if (this.getPC()===null){
+                this.wander(delta);
+            } else {
+                method = this['tick_' + stateName];
+                if (method){
+                    method.call(this, delta);
                 }
             }
-            */
+            
         },
         tick_tracking: function(delta){
             var pcData = this.getPCPosition();
@@ -82,14 +89,16 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
         },
         tick_idle: function(delta){
             if (this.get('tracking')!==null){
-                var pcData = this.getPCPosition();
-                var dx = pcData[1]
-                var dy = pcData[2]
-                var dist = pcData[3]
-                if (pcData[3] <= this.data.radius){
-                    this.seePlayer();
-                } else {
-                    this.wander();
+                if (this.canSeePlayer()){
+                    var pcData = this.getPCPosition();
+                    var dx = pcData[1]
+                    var dy = pcData[2]
+                    var dist = pcData[3]
+                    if (pcData[3] <= this.data.radius){
+                        this.seePlayer();
+                    } else {
+                        this.wander();
+                    }
                 }
             } else {
                 this.wander();

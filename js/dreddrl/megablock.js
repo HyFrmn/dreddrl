@@ -193,9 +193,9 @@ define([
                     tile.passable = false;
                 }
 
-                var npcs=16;
+                var npcs=128;
                 while (npcs--){
-                    this.addEntity('enemy',{
+                    this.addEntity(Math.random() > 0.5 ? 'enemy' : 'npc',{
                         xform: {
                             tx: sge.random.range(32, (this.map.width*32) - 64),
                             ty: sge.random.range(32, (this.map.height*32) - 64)

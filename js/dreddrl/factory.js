@@ -68,7 +68,7 @@ define([
                         map: this.map,
                         speed: 64
                     },
-                    health : {alignment:5, life: 10},
+                    health : {alignment:5, life: 100},
                     weapons: {rps: 10},
                     stats: {},
                     emote: {},
