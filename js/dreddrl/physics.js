@@ -44,10 +44,10 @@ define(['sge'], function(sge){
            return [x1, y1, false];
         },
         moveGameObject: function(entity, vx, vy){
-            var tx = Math.round(entity.get('xform.tx'));
-            var ty = Math.round(entity.get('xform.ty'));
-            var nx = Math.round(tx + vx);
-            var ny = Math.round(ty + vy);
+            var tx = (entity.get('xform.tx'));
+            var ty = (entity.get('xform.ty'));
+            var nx = (tx + vx);
+            var ny = (ty + vy);
             //*
             if (this.map){
                 if (entity.get('physics.fast')){
@@ -97,7 +97,7 @@ define(['sge'], function(sge){
                             }
                             vx = qx - tx;
                             vy = qy - ty;
-                            nx = qx
+                            nx = qx;
                             ny = qy;
                         }
                     }

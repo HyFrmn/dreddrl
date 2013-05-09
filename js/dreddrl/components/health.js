@@ -58,8 +58,10 @@ define(['sge/component'], function(Component){
             } else if (pct<=0.25) {
                 fillColor = 'red';
             }
+            this.container.stopCacheAsBitmap()
             this.lifebar.setFillStyle(fillColor);
-            this.lifebar.setSize(30*(pct),4)
+            this.lifebar.setSize(30*(pct),4);
+            this.container.stopCacheAsBitmap();
             return this.data.life
         }
 	})

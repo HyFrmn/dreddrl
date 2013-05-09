@@ -32,10 +32,10 @@ define([
                 this._debug_count = 0;
                 this._debugTick = false;
                 this._debugCounter = 0.3;
-                this._debugEnable = true;
+                this._debugEnable = false;
 
-                var width = 66;
-                var height = 66;
+                var width = 24;
+                var height = 24;
 
                 this.scene.setBounds(0,0,width*32,height*32);
                 this._uiContainer = new CAAT.ActorContainer().setBounds(0,0,width*32,height*32);
@@ -52,8 +52,8 @@ define([
                 //Hash ID to Entity ID
                 this._spatialHash = {};
                 this._spatialHashReverse = {};
-                this._spatialHashWidth = 256; //((this.map.width * 32) / 4);
-                this._spatialHashHeight = 256; //((this.map.height * 32) / 4);
+                this._spatialHashWidth = 128; //((this.map.width * 32) / 4);
+                this._spatialHashHeight = 128; //((this.map.height * 32) / 4);
 
                 this.loader = new sge.vendor.PxLoader();
                 this.loader.addProgressListener(this.progressListener.bind(this));
@@ -127,13 +127,21 @@ define([
                 var fontStyle = '24px sans-serif';
                 var label = new CAAT.TextActor().setFont(fontStyle).setText(label);
                 var valuebox = new CAAT.TextActor().setFont(fontStyle).setText('null');
+                var currentVal = null;
                 label.calcTextSize(this.game.renderer);
+                label.cacheAsBitmap();
                 valuebox.setLocation(label.textWidth+4,0);
+                valuebox.cacheAsBitmap();
                 container.addChild(label);
                 container.addChild(valuebox);
                 var callback = function(){
-                    var value = this.evalValue(path);
-                    valuebox.setText('' + value);
+                var value = this.evalValue(path);
+                    if (currentVal!=value){
+                        currentVal = value;
+                        valuebox.stopCacheAsBitmap();
+                        valuebox.setText('' + value);
+                        valuebox.cacheAsBitmap();
+                    }
                 };
                 this._uiFunctions.push(callback.bind(this));
                 this._uiContainer.addChild(container);
@@ -307,6 +315,7 @@ define([
             _updateHash : function(entity){
                 var tx = Math.floor(entity.get('xform.tx') / 32);
                 var ty = Math.floor(entity.get('xform.ty') / 32);
+                /*
                 var oldTile = entity.get('xform.tile');
                 var tile = this.map.getTile(tx, ty);
                 if (oldTile!=tile){
@@ -316,19 +325,21 @@ define([
                     tile.entities.push(entity);
                     tile.update();
                 }
-
+                entity.set('xform.tile', tile);
+                */
                 var cx = Math.floor(entity.get('xform.tx') / this._spatialHashWidth);
                 var cy = Math.floor(entity.get('xform.ty') / this._spatialHashHeight);
-                if (this._spatialHashReverse[entity.id]!==undefined){
-                    this._removeFromHash(entity);
-                }
                 var hash = cx + '.' + cy;
-                if (this._spatialHash[hash]==undefined){
-                    this._spatialHash[hash]=[];
-                }
-                this._spatialHash[hash].push(entity.id);
-                this._spatialHashReverse[entity.id] = hash;
-                entity.set('xform.tile', tile);
+                if (this._spatialHashReverse[entity.id]!=hash){
+                    if (this._spatialHashReverse[entity.id]!==undefined){
+                        this._removeFromHash(entity);
+                    }
+                    if (this._spatialHash[hash]==undefined){
+                        this._spatialHash[hash]=[];
+                    }
+                    this._spatialHash[hash].push(entity.id);
+                    this._spatialHashReverse[entity.id] = hash;
+                }     
             },
             
             findEntities : function(tx, ty, radius){
@@ -354,7 +365,6 @@ define([
                 var pcTx = this.pc.get('xform.tx');
                 var pcTy = this.pc.get('xform.ty')
                 var entities = this.findEntities(pcTx, pcTy, 64)
-                if (this._debugTick) console.log('Interact', entities);
                 for (var i = entities.length - 1; i >= 0; i--) {
                     entity = entities[i];
                     if (entity.get('interact')==undefined){
@@ -414,7 +424,7 @@ define([
                 }
                 var debugTime = Date.now();
                 this.tickTimeouts(delta);
-                //if (this._debugTick){ var t=Date.now(); console.log('Timeout Time:', t-debugTime); debugTime=t};
+                if (this._debugTick){ var t=Date.now(); console.log('Timeout Time:', t-debugTime); debugTime=t};
                 this.physics.resolveCollisions(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Physics Time:', t-debugTime); debugTime=t};
 
@@ -443,7 +453,7 @@ define([
                 //if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
                 
                 //Tick Encounter System
-                //this.encounterSystem.tick(delta);
+                this.level.tick(delta);
                 //if (this._debugTick){ var t=Date.now(); console.log('Encounter Time:', t-debugTime); debugTime=t};
                 
                 //Track Player
@@ -453,8 +463,6 @@ define([
 
                 //Update Log
                 this._updateUI();
-
-                
                 if (this._debugTick){ var t=Date.now(); console.log('Update Scene Time:', t-debugTime); debugTime=t};
 
                 _.each(this._entity_ids, function(id){
@@ -469,6 +477,7 @@ define([
                     }
                 }.bind(this));
                 if (this._debugTick){ var t=Date.now(); console.log('Render Time:', t-debugTime); debugTime=t};
+                //if (this._debugTick){ var t=Date.now(); console.log('Tick Time:', t-debugTime); debugTime=t};
             },
             _paused_tick : function(delta){
                 //this.game.renderer.track(this.pc);

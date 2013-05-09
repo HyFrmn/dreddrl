@@ -193,9 +193,9 @@ define([
                     tile.passable = false;
                 }
 
-                var npcs=128;
+                var npcs=1;
                 while (npcs--){
-                    this.addEntity(Math.random() > 0.5 ? 'enemy' : 'npc',{
+                    this.addEntity('npc',{
                         xform: {
                             tx: sge.random.range(32, (this.map.width*32) - 64),
                             ty: sge.random.range(32, (this.map.height*32) - 64)
@@ -234,6 +234,9 @@ define([
                 _.each(this._entities, function(entity){
                     this.state.addEntity(entity);
                 }.bind(this));
+            },
+            tick : function(delta){
+                
             }
     	});
 

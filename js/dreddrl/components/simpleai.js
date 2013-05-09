@@ -39,16 +39,19 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             var pc = this.getPC();
             var dx = this.entity.get('xform.tx') - pc.get('xform.tx');
             var dy = this.entity.get('xform.ty') - pc.get('xform.ty');
-            var dist = Math.sqrt((dx*dx)+(dy*dy));
+            var dist = (dx*dx)+(dy*dy);
             return [pc, dx, dy, dist];
         },
-        canSeePlayer: function(){
+        canSeePlayer: function(dist){
             var pc = this.getPC();
             var nearby = this.state.findEntities(this.entity.get('xform.tx'), this.entity.get('xform.ty'), this.get('radius'));
             if (_.contains(nearby, pc)){
-                return this.getPCPosition()
+                data = this.getPCPosition();
+                if (data[3]<=(this.data.radius*this.data.radius)) {
+                    return data;
+                }
             }
-            return false;
+            return null;
         },
         onContact : function(){
             if (this.fsm.current=='idle'){
@@ -89,16 +92,11 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
         },
         tick_idle: function(delta){
             if (this.get('tracking')!==null){
-                if (this.canSeePlayer()){
-                    var pcData = this.getPCPosition();
-                    var dx = pcData[1]
-                    var dy = pcData[2]
-                    var dist = pcData[3]
-                    if (pcData[3] <= this.data.radius){
-                        this.seePlayer();
-                    } else {
-                        this.wander();
-                    }
+                var data = this.canSeePlayer()
+                if (data!==null){
+                    this.seePlayer();
+                } else {
+                    this.wander();
                 }
             } else {
                 this.wander();
