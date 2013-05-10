@@ -15,6 +15,8 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
                 territory: 'neutral'
             }
             this.entities = [];
+
+
         },
         getRect : function(){
             var rect = {
@@ -78,9 +80,9 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             this.height = height;
             this.tileSize = 32;
             this.container = new CAAT.ActorContainer();
-            this.container.setBounds(0,0,width*32,height*32);
+            this.container.setBounds(0,0,width*32+16,height*32+16);
             this.dynamicContainer = new CAAT.ActorContainer();
-            this.dynamicContainer.setBounds(0,0,width*32,height*32);
+            this.dynamicContainer.setBounds(0,0,width*32+16,height*32+16);
             this._tiles = [];
             this.layers = ['layer0','layer1'];
             this.layerContainers = {};
@@ -91,9 +93,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             this.tileset = new Image();
             this.tileSheet = null;
             this.defaultSheet = 'default';
-        },
 
-        setup: function(scene){
             var total = this.width * this.height;
             var x = 0;
             var y = 0;
@@ -112,9 +112,13 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
                     y++;
                 }
             }
+        },
+
+        setup: function(scene){
             scene.addChild(this.container);
             scene.addChild(this.dynamicContainer);
             this.scene = scene;
+            this.render();
         },
         getIndex : function(x, y){
             var index = (y * this.width) + x;
@@ -150,7 +154,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             _.each(coords, function(tile){
                 if (tile.layers===undefined){
                     tile = this.getTile(tile[0],tile[1]);
-                }
+                }e
                 this.renderTile(tile);
             }.bind(this));
         },

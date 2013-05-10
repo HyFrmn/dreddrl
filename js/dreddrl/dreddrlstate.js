@@ -34,19 +34,14 @@ define([
                 this._debugCounter = 0.3;
                 this._debugEnable = false;
 
-                var width = 24;
-                var height = 24;
-
-                this.scene.setBounds(0,0,width*32,height*32);
-                this._uiContainer = new CAAT.ActorContainer().setBounds(0,0,width*32,height*32);
-                this._entityContainer = new CAAT.ActorContainer().setBounds(0,0,width*32,height*32);
+                this._uiContainer = new CAAT.ActorContainer();
+                this._entityContainer = new CAAT.ActorContainer();
+                
                 this.scene.addChild(this._entityContainer);
                 this.scene.addChild(this._uiContainer);
 
                 this.factory = Factory;
 
-                this.map = new Map(width,height,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
-                this.map.defaultSheet = 'future2';
                 // Load Game "Plugins"
 
                 //Hash ID to Entity ID
@@ -148,8 +143,16 @@ define([
             },
 
             initGame : function(){
-                //Load Game Plugins
+                var width = 24;
+                var height = 24;
                 this.physics = new Physics(this);
+                this.level = new megablock.MegaBlockLevel(null, this);
+                this.physics.setMap(this.map);
+                this.scene.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
+                this._uiContainer.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
+                this._entityContainer.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
+                //Load Game Plugins
+                
                 this.map.setup(this._entityContainer);
 
                 //Setup Interaction System
@@ -158,7 +161,7 @@ define([
                 
                 //Create Game World
                 //this.level = new BlockLevelGenerator(this, this.options);
-                this.level = new megablock.MegaBlockLevel(null, this);
+                
 
 
                 //Add PC
@@ -187,18 +190,12 @@ define([
 
                 //Create NPC Population
                 //TODO:
-
-                
-
-
-                this.map.render();
                 this.input.addListener('keydown:Q', function(){
                     this.encounterSystem.switch();
                 }.bind(this));
                 setTimeout(function() {
                         this.game.fsm.finishLoad();
                 }.bind(this), 1000);
-                this.map.render(this.game.renderer);
                 
                 //Create UI;
                 this._uiFunctions = [];

@@ -8,10 +8,12 @@ define(['sge'], function(sge){
     var RPGPhysics = sge.Class.extend({
         init : function(state){
             this.state = state;
-            this.map = state.map;
             this._contactList = []
             this._newContactList = [];
             this.dirty = [];
+        },
+        setMap : function(map){
+            this.map = map
         },
         intersectRect : function(r1, r2) {
             return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);

@@ -1,9 +1,10 @@
 define([
     'sge',
     './factory',
+    './encounters',
     './map'
     ],
-    function(sge, Factory, Encounters, Map){
+    function(sge, Factory, encounters, Map){
     	var FLOORTILE =  { srcX : 0, srcY: 0, spriteSheet: 'future2'};
         var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spriteSheet: 'future2'}
         var DOOROPENTILE1 = { srcX : 1, srcY: 36, spriteSheet: 'future2'}
@@ -146,9 +147,13 @@ define([
     	var MegaBlockLevel = sge.Class.extend({
     		init: function(block, state){
                 this._entities = [];
-
+                this.width = 13;
+                this.height = 27;
                 this.state = state;
-    			this.block = block;
+                this.map = new Map(this.width,this.height,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
+    			this.map.defaultSheet = 'future2';
+                state.map  = this.map
+                this.block = block;
                 this.map = state.map;
                 this.factory = state.factory;
                 _.each(this.map._tiles, function(t){
@@ -174,13 +179,14 @@ define([
                 }
                 this.buildWall(0,this.map.height-2,this.map.width, true);
 
-                /*
+                //*
                 var room = new MegaBlockRoom(this, 3, 5, 5, 5);
                 var room = new MegaBlockRoom(this, 9, 5, 5, 5);
                 var room = new MegaBlockRoom(this, 3, 13, 5, 5);
+                var room = new MegaBlockRoom(this, 9, 13, 5, 5);
                 //*/
 
-                for (var y=0;y<this.map.height;y++){
+                for (var y=0;y<this.map.height-2;y++){
                     var tile = this.map.getTile(0, y);
                     tile.layers = {
                         'layer0' : CEILTILE
