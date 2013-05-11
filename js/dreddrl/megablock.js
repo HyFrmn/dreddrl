@@ -38,6 +38,7 @@ define([
                 this.data = {};
                 this.doors = [];
                 this.plot();
+                this.level.rooms.push(this);
             },
             isLocked : function(){
                 var locked = false;
@@ -147,6 +148,7 @@ define([
     	var MegaBlockLevel = sge.Class.extend({
     		init: function(block, state){
                 this._entities = [];
+                this.rooms = [];
                 this.width = 13;
                 this.height = 27;
                 this.state = state;
@@ -209,8 +211,14 @@ define([
                     })
                 }
 
-
                 this.updateState();
+                
+                
+                //Setup Encounter System
+                this.encounterSystem = new encounters.EncounterSystem(this.state, this);
+                this.encounterSystem.create(encounters.CheckupEncounter);
+                this.encounterSystem.create(encounters.ExecuteEncounter);
+                this.encounterSystem.create(encounters.SerialEncounter, encounters.rescueEncounterTemplate);
     		},
             buildWall: function(sx, sy, length, ceil){
                 for (var x=0;x<length;x++){
@@ -242,8 +250,34 @@ define([
                 }.bind(this));
             },
             tick : function(delta){
-                
-            }
+                this.encounterSystem.tick();
+            },
+            getRandomEncounterRoom : function(options){
+                options = options || {};
+                var excludeList = options.exclude || [];
+                var i = 0;
+                goodRoom = null;
+                for (var i=0;i<this.rooms.length;i++){
+                    var room = sge.random.item(this.rooms);
+                    if (_.include(excludeList, room)){
+                        continue;
+                    }
+                    if (room.options.doors==null){
+                        continue;
+                    }
+                    if (room.isLocked()){
+                        continue;
+                    }
+                    if (options.territory!==undefined){
+                        if (room.data.territory!=options.territory){
+                            continue;
+                        }
+                    }
+                    var goodRoom = room;
+                    break;
+                }
+                return goodRoom;
+            },
     	});
 
     	var MegaBlock = sge.Class.extend({

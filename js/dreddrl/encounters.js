@@ -2,7 +2,7 @@ define(['sge'], function(sge){
 	var Encounter = sge.Class.extend({
 		init: function(system, options){
 			this.system = system;
-			this.block = system.state.level;
+			this.block = system.level;
 			this.state = system.state;
 			this.factory = this.state.factory;
 			this.status = 0;
@@ -49,7 +49,7 @@ define(['sge'], function(sge){
 				var def = options.entities[name];
 				def.meta = def.meta || {};
 				var base = def.meta.inherit || 'npc';
-				var room = this.block.getRandomEncounterRoom({territory: 'neutral'});
+				var room = this.block.getRandomEncounterRoom();
 				def.xform = def.xform || {};
 				def.xform.tx = room.cx * 32;
 				def.xform.ty = room.cy * 32;
@@ -68,8 +68,9 @@ define(['sge'], function(sge){
 	})
 
 	var EncounterSystem = sge.Class.extend({
-		init: function(state){
+		init: function(state, level){
 			this.state = state;
+            this.level = level;
 			this.encounters = [];
 			this.active = null;
 			this._index = 0;
@@ -109,7 +110,7 @@ define(['sge'], function(sge){
                 var bottom = Math.round((this.state.game.renderer.height-64) - this.state._entityContainer.y);
                 var left = Math.round(64-this.state._entityContainer.x);
                 var right = Math.round((this.state.game.renderer.width-64) - this.state._entityContainer.x);
-                coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
+                var coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
                 var intersection = false;
                 //*
                 for (var i = coords.length - 1; i >= 0; i--) {
@@ -131,13 +132,13 @@ define(['sge'], function(sge){
                 }
                 //*/ 
                 if (intersection){
-                    tx = intersection[0];
-                    ty = intersection[1];
+                    var tx = intersection[0];
+                    var ty = intersection[1];
                     dx = tx - entity.get('xform.tx');
                     dy = ty - entity.get('xform.ty');
                     var maxDist = 1024;
-                    foo = Math.min(maxDist, Math.sqrt((dx*dx)+(dy*dy)));
-                    r = 6 + (24 * ((maxDist-foo)/maxDist));
+                    var foo = Math.min(maxDist, Math.sqrt((dx*dx)+(dy*dy)));
+                    var r = 6 + (24 * ((maxDist-foo)/maxDist));
                     this.compassActor.setSize(r,r);
                     
                 } else {
@@ -185,7 +186,7 @@ define(['sge'], function(sge){
 	        start: function(){
 	        	this.total = 3;
 	            //Create Mother
-	            var mothersRoom = this.block.getRandomEncounterRoom({territory: 'neutral'});
+	            var mothersRoom = this.block.getRandomEncounterRoom();
 	            var mother = this.state.factory('woman', {
 	                xform: {
 	                    tx: mothersRoom.cx * 32,
@@ -225,7 +226,7 @@ define(['sge'], function(sge){
 	            
 
 	            //Create Daughter
-	            var daughtersRoom = this.block.getRandomEncounterRoom({exclude: [mothersRoom], territory: 'neutral'});
+	            var daughtersRoom = this.block.getRandomEncounterRoom({exclude: [mothersRoom]});
 	            var daughter = this.state.factory('woman.young', {
 	                xform: {
 	                    tx: daughtersRoom.cx * 32,
@@ -253,6 +254,7 @@ define(['sge'], function(sge){
 	            });
 	            daughter.tags.push('daughter');
 	            this.block.state.addEntity(daughter);
+                console.log('Daughter:', daughter)
 	        },
 	        finish: function(){
 	        	this._super();
@@ -265,7 +267,7 @@ define(['sge'], function(sge){
 	    var ExecuteEncounter = Encounter.extend({
 	        start: function(){
 	            //Create Mother
-	            var gangBossRoom = this.block.getRandomEncounterRoom({territory: 'albert'});
+	            var gangBossRoom = this.block.getRandomEncounterRoom();
 	            var gangBoss = this.state.factory('gangboss', {
 	                xform: {
 	                    tx: gangBossRoom.cx * 32,

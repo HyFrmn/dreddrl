@@ -476,6 +476,7 @@ define([
                 if (this._debugTick){ var t=Date.now(); console.log('Render Time:', t-debugTime); debugTime=t};
                 //if (this._debugTick){ var t=Date.now(); console.log('Tick Time:', t-debugTime); debugTime=t};
             },
+            
             _paused_tick : function(delta){
                 //this.game.renderer.track(this.pc);
                 _.each(this._entity_ids, function(id){
