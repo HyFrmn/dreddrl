@@ -18,15 +18,16 @@ define(['sge'], function(sge){
         intersectRect : function(r1, r2) {
             return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);
         },
-        testTilePassable: function(tx, ty){
+        testTilePassable: function(tx, ty, attr){
+            attr = attr  || 'passable'
             var tile = this.map.getTile(tx, ty);
             var result = true;
             if (tile){
-                result = tile.passable!=true;
+                result = tile[attr] != true;
             }
             return result;
         },
-        traceStaticTiles : function(x0, y0, x1, y1){
+        traceStaticTiles : function(x0, y0, x1, y1, attr){
            var dx = Math.abs(x1-x0);
            var dy = Math.abs(y1-y0);
            var sx = (x0 < x1) ? 1 : -1;
@@ -34,7 +35,7 @@ define(['sge'], function(sge){
            var err = dx-dy;
 
            while(true){
-             var result = this.testTilePassable(x0,y0);  // Do what you need to for this
+             var result = this.testTilePassable(x0,y0, attr);  // Do what you need to for this
              if (result){
                 return [x0, y0, true];
              }

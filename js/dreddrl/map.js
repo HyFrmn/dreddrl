@@ -5,6 +5,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             this.y = y;
             this.passable = true;
             this.hidden = false;
+            this.transparent = true;
             this.layers = {
                 'layer0' : { srcX : 14, srcY: 8},
             };
@@ -83,6 +84,8 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             this.container.setBounds(0,0,width*32+16,height*32+16);
             this.dynamicContainer = new CAAT.ActorContainer();
             this.dynamicContainer.setBounds(0,0,width*32+16,height*32+16);
+            this.canopy = new CAAT.ActorContainer();
+            this.canopy.setBounds(0,0,width*32+16,height*32+16);
             this._tiles = [];
             this.layers = ['layer0','layer1'];
             this.layerContainers = {};
@@ -115,8 +118,6 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
         },
 
         setup: function(scene){
-            scene.addChild(this.container);
-            scene.addChild(this.dynamicContainer);
             this.scene = scene;
             //this.render();
         },

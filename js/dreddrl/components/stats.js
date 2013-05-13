@@ -17,7 +17,6 @@ define(['sge'],function(sge){
 			this.set(stat, this.get(stat) - value);
 		},
 		levelUp: function(){
-			console.log('LevelUP')
 			this.set('level', 1, 'add');
 			level = this.data.level;
 			

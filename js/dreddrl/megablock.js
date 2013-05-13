@@ -65,17 +65,21 @@ define([
                     tile = this.level.map.getTile(x,(this.cy+halfY)+1);
                     tile.layers['layer0'] = CEILTILE;
                     tile.passable = false;
+                    tile.transparent = false;
                     tile = this.level.map.getTile(x,(this.cy-halfY)-3);
                     tile.layers['layer0'] = CEILTILE;
                     tile.passable = false;
+                    tile.transparent = false;
                 }
                 for (y=(this.cy-halfY-2);y<=(this.cy+halfY+1);y++){
                     tile = this.level.map.getTile((this.cx+halfX)+1,y);
                     tile.layers['layer0'] = CEILTILE;
                     tile.passable = false;
+                    tile.transparent = false;
                     tile = this.level.map.getTile((this.cx-halfX)-1,y);
                     tile.layers['layer0'] = CEILTILE;
                     tile.passable = false;
+                    tile.transparent = false;
                 }
                 
                 if ((this.options.doors=='bottom')||(this.options.doors=='both')){
@@ -86,7 +90,7 @@ define([
                 }
 
                 this.cover = new CAAT.Actor().setFillStyle('black').setSize(this.width*32,this.height*32).setLocation((this.cx-(this.width-1)/2)*32+16, (this.cy-(this.height-1)/2)*32+16);
-                this.level.map.dynamicContainer.addChild(this.cover);
+                this.level.map.canopy.addChild(this.cover);
 
                 this.update();
             },
@@ -115,7 +119,7 @@ define([
                     };
                     data['xform'] = {tx: tile.x * 32 + 16, ty: tile.y * 32 + 16};
                     tile.spawn = true;
-                    var entity = Factory(name, data);
+                    var entity = this.level.addEntity(name, data);
                     return entity;
                 }
             },
@@ -145,12 +149,28 @@ define([
             }
         })
 
+        /*
+            Std Sizes:
+                Room: 5 x 5
+                Room Wall Size: +1/+6
+                Cooridor Size: 2
+                Full Cooridor Height: 24
+                Full Cooridor Width: 6
+        */
+
     	var MegaBlockLevel = sge.Class.extend({
     		init: function(block, state){
                 this._entities = [];
                 this.rooms = [];
-                this.width = 13;
-                this.height = 27;
+
+                this.options = {
+                    padding: 3,
+                    width: 7,
+                    height: 3,
+                }
+
+                this.width = this.options.width*6 + this.options.padding*2 + 1;
+                this.height = (this.options.height * 21) + this.options.padding+2 + 8;
                 this.state = state;
                 this.map = new Map(this.width,this.height,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
     			this.map.defaultSheet = 'future2';
@@ -174,21 +194,31 @@ define([
                         'layer0' : CEILTILE
                     }
                     tile.passable = false;
+                    tile.transparent = false;
                     tile = this.map.getTile(this.map.width-1, y);
                     tile.layers = {
                         'layer0' : CEILTILE
                     }
                     tile.passable = false;
+                    tile.transparent = false;
                 }
                 this.buildWall(0,this.map.height-2,this.map.width, true);
 
-                //*
-                var room = new MegaBlockRoom(this, 3, 5, 5, 5);
-                var room = new MegaBlockRoom(this, 9, 5, 5, 5);
-                var room = new MegaBlockRoom(this, 3, 18, 5, 5, {doors: 'top'});
-                var room = new MegaBlockRoom(this, 9, 18, 5, 5, {doors: 'top'});
-                //*/
-
+                //Build Rooms
+                for (var i=0;i<this.options.width;i++){
+                    for (var j=0;j<this.options.height;j++){
+                        var room = new MegaBlockRoom(this, 3+this.options.padding+(6*i), 7+this.options.padding+(21*j), 5, 5)
+                        var e = room.spawn('enemy');
+                        e = room.spawn('npc');
+                        e = room.spawn('npc');
+                        e = room.spawn('npc');
+                        room = new MegaBlockRoom(this, 3+this.options.padding+(6*i), 7+this.options.padding+13+(21*j), 5, 5, {doors:'top'})
+                        e = room.spawn('enemy');
+                        e = room.spawn('npc');
+                        e = room.spawn('npc');
+                        e = room.spawn('npc');
+                    }
+                }
 
 
                 for (var y=0;y<this.map.height-2;y++){
@@ -214,42 +244,18 @@ define([
                     })
                 }
 
-                this.addEntity('enemy',{
-                    xform: {
-                        tx: 3*32,
-                        ty: 5*32
-                    }
-                });
-                this.addEntity('enemy',{
-                    xform: {
-                        tx: 9*32,
-                        ty: 5*32
-                    }
-                });
-                this.addEntity('enemy',{
-                    xform: {
-                        tx: 3*32,
-                        ty: 18*32
-                    }
-                });
-                this.addEntity('enemy',{
-                    xform: {
-                        tx: 9*32,
-                        ty: 18*32
-                    }
-                });
                 this.map.setup(this.state._entityContainer);
                 this.updateState();
                 
                  
                 
                 //Setup Encounter System
-                /*
+                //*
                 this.encounterSystem = new encounters.EncounterSystem(this.state, this);
                 this.encounterSystem.create(encounters.CheckupEncounter);
                 this.encounterSystem.create(encounters.ExecuteEncounter);
                 this.encounterSystem.create(encounters.SerialEncounter, encounters.rescueEncounterTemplate);
-    		    */
+    		    //*/
             },
             buildWall: function(sx, sy, length, ceil){
                 for (var x=0;x<length;x++){
@@ -262,6 +268,7 @@ define([
                     tile.layers = {
                         'layer0' : { srcX : 6, srcY: 2, spritesheet: 'future2'}
                     }
+                    tile.transparent = false;
                     tile.passable = false;
                     if (ceil){
                        tile = this.map.getTile(x+sx, sy-1);
@@ -282,7 +289,7 @@ define([
 
             },
             tick : function(delta){
-                //this.encounterSystem.tick();
+                this.encounterSystem.tick();
             },
             getRandomEncounterRoom : function(options){
                 options = options || {};

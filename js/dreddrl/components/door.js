@@ -65,10 +65,12 @@ define(['sge'], function(sge){
             var ty = Math.floor(this.entity.get('xform.ty') / 32);
             tile = this.map.getTile(tx,ty-2);
             tile.passable=open;
+            tile.transparent = open;
             tile = this.map.getTile(tx,ty-1);
             tile.passable=open;
             tile = this.map.getTile(tx,ty);
             tile.passable=open;
+            tile.transparent = open;
             if (open){
                 this.tileA.setVisible(false);
                 this.tileB.setVisible(false);

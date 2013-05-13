@@ -6,7 +6,8 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             this.data.tracking = data.tracking || null;
             this.data.territory = data.territory;
             this.data.speed = 96;
-            this.data.radius = 96;
+            this.data.radius = 192;
+            this.data.radiusScale = 1;
             this.fsm = StateMachine.create({
                 initial: 'idle',
                 events: [
@@ -30,19 +31,19 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
 
         // FSM Callbacks
         onFlee: function(){
-            this.set('radius', 192);
+            this.set('radiusScale', 1.5);
             this.entity.set('xform.v', -this._tracking_vx, -this._tracking_vy);
         },
         onTracking: function(){
-            this.set('radius', 192);
+            this.set('radiusScale', 1.5);
             this.entity.set('xform.v', this._tracking_vx, this._tracking_vy);
         },
         onIdle : function(event, from, to){
             this.entity.set('xform.v', 0, 0);
-            this.set('radius', 96)
+            this.set('radiusScale', 1)
         },
         onInvestigate : function(event, from, to, e){
-            this.set('radius', 128);
+            this.set('radiusScale', 1.5);
             var dx = e.get('xform.vx');
             var dy = e.get('xform.vy');
             var length = Math.sqrt((dx*dx)+(dy*dy));
@@ -120,12 +121,13 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             var dx = this.entity.get('xform.tx') - pc.get('xform.tx');
             var dy = this.entity.get('xform.ty') - pc.get('xform.ty');
             var sqrdist = (dx*dx) + (dy*dy);
-            var radius = this.get('radius')
+            var radius = this.get('radius') * this.get('radiusScale');
             if (((dx*dx) + (dy*dy)) < (radius*radius)){
                 var trace = this.state.physics.traceStaticTiles(Math.floor(pc.get('xform.tx') / 32),
                                                                 Math.floor(pc.get('xform.ty') / 32),
                                                                 Math.floor(this.entity.get('xform.tx') / 32),
-                                                                Math.floor(this.entity.get('xform.ty') / 32))
+                                                                Math.floor(this.entity.get('xform.ty') / 32),
+                                                                'transparent')
                 if (!trace[2]){
                     result = true;
                     var dist = Math.sqrt(sqrdist);

@@ -35,9 +35,10 @@ define([
                 this._debugEnable = false;
 
                 this._uiContainer = new CAAT.ActorContainer();
+                this._gamePlayContainer = new CAAT.ActorContainer();
                 this._entityContainer = new CAAT.ActorContainer();
                 
-                this.scene.addChild(this._entityContainer);
+                this.scene.addChild(this._gamePlayContainer);
                 this.scene.addChild(this._uiContainer);
 
                 this.factory = Factory;
@@ -150,12 +151,13 @@ define([
                 this.physics.setMap(this.map);
                 this.scene.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
                 this._uiContainer.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
+                this._gamePlayContainer.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
                 this._entityContainer.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
                 //Load Game Plugins
 
                 //Setup Interaction System
                 this._interaction_actor = new CAAT.Actor().setFillStyle('green').setStrokeStyle('black').setSize(32,32).setVisible(false);
-                this._entityContainer.addChild(this._interaction_actor);
+                this._gamePlayContainer.addChild(this._interaction_actor);
                 
 
                 //Add PC
@@ -174,12 +176,20 @@ define([
                 this.pc = pc;
 
                 this.input.addListener('keydown:Q', function(){
-                    this.encounterSystem.switch();
+                    this.level.encounterSystem.switch();
                 }.bind(this));
                 setTimeout(function() {
                         this.game.fsm.finishLoad();
                 }.bind(this), 1000);
                 
+                //Add Render Layers
+                this._gamePlayContainer.addChild(this.map.container);
+                this._gamePlayContainer.addChild(this.map.dynamicContainer);
+                this._gamePlayContainer.addChild(this._entityContainer);
+                this._gamePlayContainer.addChild(this.map.canopy);
+
+
+
                 this.map.render();
 
                 //Create UI;
@@ -441,7 +451,7 @@ define([
                 //Track Player
                 var tx = this.pc.get('xform.tx');
                 var ty = this.pc.get('xform.ty');
-                this._entityContainer.setLocation(-tx+(this.game.renderer.width/2),-ty+(this.game.renderer.height/2));
+                this._gamePlayContainer.setLocation(-tx+(this.game.renderer.width/2),-ty+(this.game.renderer.height/2));
 
                 //Update Log
                 this._updateUI();

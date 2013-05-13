@@ -96,7 +96,7 @@ define(['sge'], function(sge){
 		_compass_tick : function(delta){
             var entity = this.getTargetEntity();
             if (entity){
-            	var pc = this.state.getEntityWithTag('pc');
+            	var pc = this.state.pc;
                 coord = [entity.get('xform.tx'), entity.get('xform.ty')];
                 var dx = coord[0] - pc.get('xform.tx');
                 var dy = coord[1] - pc.get('xform.ty');
@@ -106,10 +106,10 @@ define(['sge'], function(sge){
                 var y1 = Math.round(pc.get('xform.ty')); 
                 var x2 = Math.round(entity.get('xform.tx'));
                 var y2 = Math.round(entity.get('xform.ty'));
-                var top = Math.round(64-this.state._entityContainer.y);
-                var bottom = Math.round((this.state.game.renderer.height-64) - this.state._entityContainer.y);
-                var left = Math.round(64-this.state._entityContainer.x);
-                var right = Math.round((this.state.game.renderer.width-64) - this.state._entityContainer.x);
+                var top = Math.round(64-this.state._gamePlayContainer.y);
+                var bottom = Math.round((this.state.game.renderer.height-64) - this.state._gamePlayContainer.y);
+                var left = Math.round(64-this.state._gamePlayContainer.x);
+                var right = Math.round((this.state.game.renderer.width-64) - this.state._gamePlayContainer.x);
                 var coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
                 var intersection = false;
                 //*
@@ -122,8 +122,6 @@ define(['sge'], function(sge){
                         var y4 = coord[3];
                         var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
                         var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
-                        console.log(x,y);
-                        console.log(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
                     }
                     intersection = sge.collision.lineIntersect(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
                     if (intersection){
@@ -254,7 +252,6 @@ define(['sge'], function(sge){
 	            });
 	            daughter.tags.push('daughter');
 	            this.block.state.addEntity(daughter);
-                console.log('Daughter:', daughter)
 	        },
 	        finish: function(){
 	        	this._super();
