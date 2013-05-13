@@ -26,7 +26,7 @@ define(['sge/component'], function(Component){
                     this.data.life = 0;
                     this.entity.fireEvent('kill', 'Ran out of health.');
                 } else {
-                    //this.entity.fireEvent('tint', 'red', 0.25);
+                    this.entity.fireEvent('tint', 'red', 0.25);
                 }
             }.bind(this));
         },
@@ -63,6 +63,9 @@ define(['sge/component'], function(Component){
             this.lifebar.setSize(30*(pct),4);
             this.container.stopCacheAsBitmap();
             return this.data.life
+        },
+        _get_pct : function(value, method){
+            return (this.get('life') / this.get('maxLife'));
         }
 	})
 	Component.register('health', HealthComponent);
