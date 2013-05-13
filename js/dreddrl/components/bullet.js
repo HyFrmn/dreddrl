@@ -5,6 +5,7 @@ define(['sge'],function(sge){
 			this._super(entity, data);
 			this.kill = this.kill.bind(this);
 			this.hit = this.hit.bind(this);
+            this.entity.tags.push('bullet');
 		},
 		hit: function(){
 			console.log('Hit');

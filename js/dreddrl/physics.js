@@ -221,11 +221,10 @@ define(['sge'], function(sge){
             var entities = [];
             this._newContacts = [];
             this.dirty = _.filter(this.dirty, function(entity){
-                /*
-                if (entity.get('physics.type') & TYPES.STATIC){
+                
+                if (!entity.active){
                     return;
                 }
-                */
                 if (entity.get('physics')._wait){
                     entity.get('physics')._wait = false;
                     return true;
@@ -252,6 +251,9 @@ define(['sge'], function(sge){
                 var hashA = e.id;
                 var nearby = _.filter(this.state.findEntities(tx, ty, 64), function(ent){return ent.get('physics')});
                 for (var i = nearby.length - 1; i >= 0; i--) {
+                    if (e==nearby[i]){
+                        continue;
+                    }
                     var hashB = nearby[i].id;
                     if (hashB<hashA){
                         hash = hashB + '.' + hashA;

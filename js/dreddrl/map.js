@@ -118,8 +118,9 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             scene.addChild(this.container);
             scene.addChild(this.dynamicContainer);
             this.scene = scene;
-            this.render();
+            //this.render();
         },
+
         getIndex : function(x, y){
             var index = (y * this.width) + x;
             if (x > this.width-1 || x < 0){
@@ -159,6 +160,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             }.bind(this));
         },
         render : function(renderer){
+            this.container.stopCacheAsBitmap();
             _.each(this._tiles, function(t){
                 this.renderTile(t);
             }.bind(this));

@@ -154,6 +154,7 @@ define([
                 this.state = state;
                 this.map = new Map(this.width,this.height,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
     			this.map.defaultSheet = 'future2';
+                
                 state.map  = this.map
                 this.block = block;
                 this.map = state.map;
@@ -184,9 +185,11 @@ define([
                 //*
                 var room = new MegaBlockRoom(this, 3, 5, 5, 5);
                 var room = new MegaBlockRoom(this, 9, 5, 5, 5);
-                var room = new MegaBlockRoom(this, 3, 13, 5, 5);
-                var room = new MegaBlockRoom(this, 9, 13, 5, 5);
+                var room = new MegaBlockRoom(this, 3, 18, 5, 5, {doors: 'top'});
+                var room = new MegaBlockRoom(this, 9, 18, 5, 5, {doors: 'top'});
                 //*/
+
+
 
                 for (var y=0;y<this.map.height-2;y++){
                     var tile = this.map.getTile(0, y);
@@ -201,25 +204,53 @@ define([
                     tile.passable = false;
                 }
 
-                var npcs=1;
+                var npcs=0;
                 while (npcs--){
                     this.addEntity('npc',{
                         xform: {
                             tx: sge.random.range(32, (this.map.width*32) - 64),
-                            ty: sge.random.range(32, (this.map.height*32) - 64)
+                            ty: sge.random.range(96, (this.map.height*32) - 192)
                         }
                     })
                 }
 
+                this.addEntity('enemy',{
+                    xform: {
+                        tx: 3*32,
+                        ty: 5*32
+                    }
+                });
+                this.addEntity('enemy',{
+                    xform: {
+                        tx: 9*32,
+                        ty: 5*32
+                    }
+                });
+                this.addEntity('enemy',{
+                    xform: {
+                        tx: 3*32,
+                        ty: 18*32
+                    }
+                });
+                this.addEntity('enemy',{
+                    xform: {
+                        tx: 9*32,
+                        ty: 18*32
+                    }
+                });
+                this.map.setup(this.state._entityContainer);
                 this.updateState();
                 
+                 
                 
                 //Setup Encounter System
+                /*
                 this.encounterSystem = new encounters.EncounterSystem(this.state, this);
                 this.encounterSystem.create(encounters.CheckupEncounter);
                 this.encounterSystem.create(encounters.ExecuteEncounter);
                 this.encounterSystem.create(encounters.SerialEncounter, encounters.rescueEncounterTemplate);
-    		},
+    		    */
+            },
             buildWall: function(sx, sy, length, ceil){
                 for (var x=0;x<length;x++){
                     var tile = this.map.getTile(x+sx, sy);
@@ -248,9 +279,10 @@ define([
                 _.each(this._entities, function(entity){
                     this.state.addEntity(entity);
                 }.bind(this));
+
             },
             tick : function(delta){
-                this.encounterSystem.tick();
+                //this.encounterSystem.tick();
             },
             getRandomEncounterRoom : function(options){
                 options = options || {};

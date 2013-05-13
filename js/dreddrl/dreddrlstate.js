@@ -152,17 +152,11 @@ define([
                 this._uiContainer.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
                 this._entityContainer.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
                 //Load Game Plugins
-                
-                this.map.setup(this._entityContainer);
 
                 //Setup Interaction System
                 this._interaction_actor = new CAAT.Actor().setFillStyle('green').setStrokeStyle('black').setSize(32,32).setVisible(false);
                 this._entityContainer.addChild(this._interaction_actor);
                 
-                //Create Game World
-                //this.level = new BlockLevelGenerator(this, this.options);
-                
-
 
                 //Add PC
                 var pc = null;
@@ -179,17 +173,6 @@ define([
                 this.addEntity(pc);
                 this.pc = pc;
 
-
-                //Create Game Encounters
-                /*                
-                this.encounterSystem = new encounters.EncounterSystem(this);
-                this.encounterSystem.create(encounters.CheckupEncounter);
-                this.encounterSystem.create(encounters.ExecuteEncounter);
-                this.encounterSystem.create(encounters.SerialEncounter, encounters.rescueEncounterTemplate);
-                //*/
-
-                //Create NPC Population
-                //TODO:
                 this.input.addListener('keydown:Q', function(){
                     this.encounterSystem.switch();
                 }.bind(this));
@@ -197,6 +180,8 @@ define([
                         this.game.fsm.finishLoad();
                 }.bind(this), 1000);
                 
+                this.map.render();
+
                 //Create UI;
                 this._uiFunctions = [];
                 this._createUIItem('XP:', '@(pc).stats.xp');
