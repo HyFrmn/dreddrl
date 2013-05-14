@@ -16,31 +16,15 @@ function   (sge, dreddrl) {
     var idealWidth = parseInt(getURLParameter('width') || 640);
     var idealHeight = parseInt(getURLParameter('height') || 480);
     var idealFPS = parseInt(getURLParameter('fps') || 60);
+    canvasElem = document.getElementById('game');
+    if (getURLParameter('fullscreen')){
+        idealWidth = window.innerWidth;
+        idealHeight = window.innerHeight;
+        canvasElem.className = "fullscreen";
+    }
     var idealRatio = idealWidth/idealHeight;
-    /*
-    var screenRatio = body.width() / body.height();
-    if (screenRatio > idealRatio){
-        height = body.height();
-        width = height * idealRatio;
-    } else {
-        width = body.width();
-        height = width / idealRatio;
-    }
-    var elem = $('#container');
-    elem.attr({width: width, height: height});
-    elem.css({
-            width: width + 'px',
-            height: height + 'px',
-            display: 'block',
-            margin: '0px auto'
-        });
-    var fullscreen = Boolean(getURLParameter('fullscreen'));
-    if (fullscreen){
-        $('#game').addClassName('fullscreen');
-    } else {
-        $('#game').width(idealWidth).height(idealHeight);
-    }
-    */
+    canvasElem.style.width = idealWidth + 'px';
+    canvasElem.style.height = idealHeight + 'px';
     CAAT.DEBUG=Boolean(getURLParameter('caat-debug'));
     game = new sge.Game({elem: document.getElementById('game'), pauseState: dreddrl.PauseState, mainMenuState: dreddrl.MainMenuState, width: idealWidth, height: idealHeight, fps:idealFPS});
     var state = game.setGameState(dreddrl.DreddRLState);

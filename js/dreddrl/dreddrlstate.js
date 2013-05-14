@@ -157,7 +157,8 @@ define([
 
                 //Setup Interaction System
                 this._interaction_actor = new CAAT.Actor().setFillStyle('green').setStrokeStyle('black').setSize(32,32).setVisible(false);
-                this._gamePlayContainer.addChild(this._interaction_actor);
+                this.map.dynamicContainer.addChild(this._interaction_actor);
+                this.map.dynamicContainer.setZOrder(this._interaction_actor, 0);
                 
 
                 //Add PC

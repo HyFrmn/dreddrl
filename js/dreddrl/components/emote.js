@@ -7,6 +7,7 @@ define(['sge'], function(sge){
 			this.data.text = data.text || "";
             this.data.length = data.length || 1;
 			this.entity.addListener('emote.msg', function(msg, length){
+                //console.log(msg);
                 length = length || this.get('length')
 				this.container.setVisible(true);
 				this.set('text', msg);

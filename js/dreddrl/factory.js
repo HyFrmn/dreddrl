@@ -83,6 +83,14 @@ define([
                     sprite : {
                         src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
                     },
+                    emote : {}
+                })},
+            citizen : function(){return deepExtend(FACTORYDATA['npc'](), {
+                    interact : {},
+                    actions: {
+                        interact : ['event', 'this', 'emote.msg', "I'm a citizen.", 1],
+                    },
+                    simpleai : {}
                 })},
             enemy : function(){
                 var msgs = [
@@ -97,7 +105,7 @@ define([
                         src : 'assets/sprites/albert.png',
                     },
                     emote: {},
-                    health : {alignment:-10, life: 8},
+                    health : {alignment:-10, life: 3},
                     enemyai : { tracking: 'pc', territory: 'albert'},
                     deaddrop: {items:['key','gun','rammen']},
                     actions: {
@@ -111,7 +119,7 @@ define([
                     src : 'assets/sprites/albertbrownhair.png',
                 },
                 weapons: {rps: 4},
-                health : {alignment:-10, life: 16},
+                health : {alignment:-10, life: 12},
                 deaddrop: {count: 2, always: ['key','key','key']},
                 actions: {
                     kill : ['switch', 0, [['set','@(pc).stats.xp', 25, 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]

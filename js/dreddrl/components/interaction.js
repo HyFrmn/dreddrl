@@ -44,8 +44,8 @@ define(['sge'], function(sge){
             if (this.get('priority')){
                 this.entity.get('xform').container.removeChild(this.signalActor);
             }
+            state.input.removeListener('keydown:enter', this.interact);
             this._super(state);
-            this.state.input.removeListener('keydown:enter', this.interact);
         }
     });
     sge.Component.register('interact', Interact);

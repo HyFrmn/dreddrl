@@ -209,14 +209,14 @@ define([
                     for (var j=0;j<this.options.height;j++){
                         var room = new MegaBlockRoom(this, 3+this.options.padding+(6*i), 7+this.options.padding+(21*j), 5, 5)
                         var e = room.spawn('enemy');
-                        e = room.spawn('npc');
-                        e = room.spawn('npc');
-                        e = room.spawn('npc');
+                        e = room.spawn('citizen');
+                        e = room.spawn('citizen');
+                        e = room.spawn('citizen');
                         room = new MegaBlockRoom(this, 3+this.options.padding+(6*i), 7+this.options.padding+13+(21*j), 5, 5, {doors:'top'})
                         e = room.spawn('enemy');
-                        e = room.spawn('npc');
-                        e = room.spawn('npc');
-                        e = room.spawn('npc');
+                        e = room.spawn('citizen');
+                        e = room.spawn('citizen');
+                        e = room.spawn('citizen');
                     }
                 }
 
@@ -236,7 +236,7 @@ define([
 
                 var npcs=0;
                 while (npcs--){
-                    this.addEntity('npc',{
+                    this.addEntity('citizen',{
                         xform: {
                             tx: sge.random.range(32, (this.map.width*32) - 64),
                             ty: sge.random.range(96, (this.map.height*32) - 192)

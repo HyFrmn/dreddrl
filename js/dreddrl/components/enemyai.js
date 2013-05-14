@@ -23,7 +23,7 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
                     onreturnToIdle: this.onIdle.bind(this),
                     ontracking: this.onTracking.bind(this),
                     onflee: this.onFlee.bind(this),
-                    onstoptracking: this.onLoseSight.bind(this)
+                    onstopTracking: this.onLoseSight.bind(this)
                 }
             })
             this.entity.addListener('contact.start', this.onContact.bind(this))
@@ -42,13 +42,14 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             this.entity.fireEvent('emote.msg', 'Get back here!');
         },
         onLoseSight: function(){
+            console.log('loseSight');
             this.set('radiusScale', 1.25);
             this.entity.set('xform.v', this._tracking_vx, this._tracking_vy);
             this.createTimeout(this._tracking_dist / this.get('speed'), function(){
                 this.entity.set('xform.v', 0, 0);
-                this.entity.fireEvent('emote.msg', 'Great, I lost him.');
-            });
-            this.entity.fireEvent('emote.msg', 'Fuck! Where did he go?',0.5);
+                this.entity.fireEvent('emote.msg', 'Great, I lost him.', 1);
+            }.bind(this));
+            this.entity.fireEvent('emote.msg', 'Fuck! Where did he go?', 0.5);
         },
         onIdle : function(event, from, to){
             this.entity.set('xform.v', 0, 0);
