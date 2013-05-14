@@ -20,9 +20,10 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
                 ],
                 callbacks: {
                     oninvestigate: this.onInvestigate.bind(this),
-                    onidle: this.onIdle.bind(this),
+                    onreturnToIdle: this.onIdle.bind(this),
                     ontracking: this.onTracking.bind(this),
                     onflee: this.onFlee.bind(this),
+                    onstoptracking: this.onLoseSight.bind(this)
                 }
             })
             this.entity.addListener('contact.start', this.onContact.bind(this))
@@ -31,12 +32,23 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
 
         // FSM Callbacks
         onFlee: function(){
-            this.set('radiusScale', 1.5);
+            this.set('radiusScale', 1);
             this.entity.set('xform.v', -this._tracking_vx, -this._tracking_vy);
+            this.entity.fireEvent('emote.msg', 'Please leave me alone.');
         },
         onTracking: function(){
             this.set('radiusScale', 1.5);
             this.entity.set('xform.v', this._tracking_vx, this._tracking_vy);
+            this.entity.fireEvent('emote.msg', 'Get back here!');
+        },
+        onLoseSight: function(){
+            this.set('radiusScale', 1.25);
+            this.entity.set('xform.v', this._tracking_vx, this._tracking_vy);
+            this.createTimeout(this._tracking_dist / this.get('speed'), function(){
+                this.entity.set('xform.v', 0, 0);
+                this.entity.fireEvent('emote.msg', 'Great, I lost him.');
+            });
+            this.entity.fireEvent('emote.msg', 'Fuck! Where did he go?',0.5);
         },
         onIdle : function(event, from, to){
             this.entity.set('xform.v', 0, 0);
@@ -118,8 +130,10 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
         canSeePlayer : function(){
             var result = false;
             var pc = this.state.pc;
-            var dx = this.entity.get('xform.tx') - pc.get('xform.tx');
-            var dy = this.entity.get('xform.ty') - pc.get('xform.ty');
+            var tracking_tx = pc.get('xform.tx');
+            var tracking_ty = pc.get('xform.ty');
+            var dx = this.entity.get('xform.tx') - tracking_tx;
+            var dy = this.entity.get('xform.ty') - tracking_ty;
             var sqrdist = (dx*dx) + (dy*dy);
             var radius = this.get('radius') * this.get('radiusScale');
             if (((dx*dx) + (dy*dy)) < (radius*radius)){
@@ -131,6 +145,9 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
                 if (!trace[2]){
                     result = true;
                     var dist = Math.sqrt(sqrdist);
+                    this._tracking_tx = tracking_tx;
+                    this._tracking_ty = tracking_ty;
+                    this._tracking_dist = dist;
                     this._tracking_vx = -this.get('speed') * (dx / dist);
                     this._tracking_vy = -this.get('speed') * (dy / dist);
                 }   
