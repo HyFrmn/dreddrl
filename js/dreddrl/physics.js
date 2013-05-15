@@ -251,11 +251,11 @@ define(['sge'], function(sge){
                 var ty = e.get('xform.ty');
                 var hashA = e.id;
                 var nearby = _.filter(this.state.findEntities(tx, ty, 64), function(ent){return ent.get('physics')});
-                for (var i = nearby.length - 1; i >= 0; i--) {
-                    if (e==nearby[i]){
+                for (var j = nearby.length - 1; j >= 0; j--) {
+                    if (e==nearby[j]){
                         continue;
                     }
-                    var hashB = nearby[i].id;
+                    var hashB = nearby[j].id;
                     if (hashB<hashA){
                         hash = hashB + '.' + hashA;
                     } else {
@@ -264,7 +264,7 @@ define(['sge'], function(sge){
                     if (!_.contains(tested, hash)){
                         count++;
                         tested.push(hash);
-                        this.collideEntities(e, nearby[i]);
+                        this.collideEntities(e, nearby[j]);
                     }
                 };
             };
