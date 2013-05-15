@@ -48,8 +48,8 @@ define([
                 //Hash ID to Entity ID
                 this._spatialHash = {};
                 this._spatialHashReverse = {};
-                this._spatialHashWidth = 128; //((this.map.width * 32) / 4);
-                this._spatialHashHeight = 128; //((this.map.height * 32) / 4);
+                this._spatialHashWidth = 96; //((this.map.width * 32) / 4);
+                this._spatialHashHeight = 96; //((this.map.height * 32) / 4);
 
                 this.loader = new sge.vendor.PxLoader();
                 this.loader.addProgressListener(this.progressListener.bind(this));
@@ -344,7 +344,12 @@ define([
                     var hash = (cx + delta[i][0]) + '.' + (cy + delta[i][1]);
                     var ids = this._spatialHash[hash];
                      _.each(ids, function(id){
-                        entities.push(this.getEntity(id));
+                        var entity = this.getEntity(id);
+                        var ex = entity.get('xform.tx') - tx;
+                        var ey = entity.get('xform.ty') - ty;
+                        if (((ex*ex)+(ey*ey)) <= (radius*radius)){
+                            entities.push(entity);
+                        }
                     }.bind(this));
                 };
                 return entities;
