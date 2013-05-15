@@ -11,7 +11,8 @@ define(['sge', './config'], function(sge, config){
             this.container.addChild(instruct);
             this.container.addChild(this.dialogContainer);
             this.interact = this.interact.bind(this);
-            this.input.addListener('keydown:' + config.dialogButton, this.interact);
+            this.input.addListener('keydown:' + config.AButton, this.interact);
+            this.input.addListener('keydown:' + config.BButton, this.interact);
         },
         startState : function(){
             var state = this.game._states['game'];

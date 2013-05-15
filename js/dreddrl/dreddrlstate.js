@@ -301,8 +301,9 @@ define([
 
             _removeFromHash : function(entity){
                 var hash = this._spatialHashReverse[entity.id];
-                    this._spatialHashReverse[entity.id]=undefined;
-                    this._spatialHash[hash] = _.without(this._spatialHash[hash], entity.id);
+                this._spatialHashReverse[entity.id]=undefined;
+                this._spatialHash[hash] = _.without(this._spatialHash[hash], entity.id);
+            
             },
 
             _updateHash : function(entity){
@@ -357,12 +358,12 @@ define([
 
             _interaction_tick : function(delta){
                 var closest = null;
-                var cdist = 64;
+                var cdist = 128*128;
                 var ccord = null;
                 var pcHash = this._spatialHashReverse[this.pc.id];
                 var pcTx = this.pc.get('xform.tx');
                 var pcTy = this.pc.get('xform.ty')
-                var entities = this.findEntities(pcTx, pcTy, 64)
+                var entities = this.findEntities(pcTx, pcTy, 128)
                 for (var i = entities.length - 1; i >= 0; i--) {
                     entity = entities[i];
                     if (entity.get('interact')==undefined){
@@ -379,11 +380,11 @@ define([
                     for (var j = coords.length - 1; j >= 0; j--) {
                         var dx = coords[j][0] - pcTx;
                         var dy = coords[j][1] - pcTy;
-                        var dist = Math.sqrt((dx*dx)+(dy*dy));
-                        if (dist <= entity.get('interact.dist')){
-                            if (dist < cdist){
+                        var distSqr = (dx*dx)+(dy*dy);
+                        if (distSqr <= (entity.get('interact.dist') * entity.get('interact.dist'))){
+                            if (distSqr < cdist){
                                 closest = entity;
-                                cdist = dist;
+                                cdist = distSqr;
                                 ccord = coords[j];
                             }
                         }

@@ -205,20 +205,24 @@ define([
                 this.buildWall(0,this.map.height-2,this.map.width, true);
 
                 //Build Rooms
+                var rooms = null;
                 for (var i=0;i<this.options.width;i++){
                     for (var j=0;j<this.options.height;j++){
-                        var room = new MegaBlockRoom(this, 3+this.options.padding+(6*i), 7+this.options.padding+(21*j), 5, 5)
-                        var e = room.spawn('enemy');
-                        e = room.spawn('citizen');
-                        e = room.spawn('citizen');
-                        e = room.spawn('citizen');
-                        room = new MegaBlockRoom(this, 3+this.options.padding+(6*i), 7+this.options.padding+13+(21*j), 5, 5, {doors:'top'})
-                        e = room.spawn('enemy');
-                        e = room.spawn('citizen');
-                        e = room.spawn('citizen');
-                        e = room.spawn('citizen');
+                        room = new MegaBlockRoom(this, 3+this.options.padding+(6*i), 7+this.options.padding+(21*j), 5, 5);
+                        room = new MegaBlockRoom(this, 3+this.options.padding+(6*i), 7+this.options.padding+13+(21*j), 5, 5, {doors:'top'});
                     }
                 }
+
+
+
+                //Populate Rooms
+                _.each(this.rooms, function(room){
+                    if (room.cx > (this.width / 2)){
+                        room.spawn('enemy');
+                    } else {
+                        room.spawn('citizen');
+                    }
+                }.bind(this))
 
 
                 for (var y=0;y<this.map.height-2;y++){

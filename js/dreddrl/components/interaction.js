@@ -1,4 +1,4 @@
-define(['sge'], function(sge){
+define(['sge', '../config'], function(sge, config){
     var Interact = sge.Component.extend({
         init: function(entity, data){
             this._super(entity, data);
@@ -21,11 +21,11 @@ define(['sge'], function(sge){
         activate: function(coord){
             this.activeCoord = coord;
             this.active = true;
-            this.state.input.addListener('keydown:enter', this.interact);
+            this.state.input.addListener('keydown:' + config.BButton, this.interact);
         },
         deactivate: function(){
             this.active = false;
-            this.state.input.removeListener('keydown:enter', this.interact);
+            this.state.input.removeListener('keydown:' + config.BButton, this.interact);
         },
         interact: function(){
             var evt = 'interact';
