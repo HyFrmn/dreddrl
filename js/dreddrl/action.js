@@ -55,6 +55,7 @@ define(['sge'], function(sge){
 	    evalExpr : function(expr, ctx) {
 	        //DANGEROUS;
 	        var expr_ = this.parseExpr(expr, ctx);
+
 	        var evaled = eval(expr_);
 	        return evaled;
 	    },
@@ -64,6 +65,7 @@ define(['sge'], function(sge){
 	        if(matches) {
 	            _.each(matches, function(variable) {
 	                var path = variable.match(/\$\{(@?[\w()\.]+)\}/)[1];
+	               
 	                var value = this.evalValue(path, ctx);
 	                parsedExpr = parsedExpr.replace(variable, value);
 	            }.bind(this));

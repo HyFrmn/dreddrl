@@ -106,12 +106,12 @@ define([
                     },
                     emote: {},
                     health : {alignment:-10, life: 3},
-                    enemyai : { tracking: 'pc', territory: 'albert'},
+                    enemyai : { tracking: 'pc', territory: 'albert', xp: 1},
                     deaddrop: {items:['key','gun','rammen']},
                     actions: {
-                        kill : ['switch', 0, [['set','@(pc).stats.xp', 5, 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]
+                        kill : ['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]
                     },
-                    weapons: {rps: 2}
+                    weapons: {rps: 2},
                 }
             )},
             gangboss : function(){return deepExtend(FACTORYDATA['enemy'](), {
@@ -122,7 +122,7 @@ define([
                 health : {alignment:-10, life: 12},
                 deaddrop: {count: 2, always: ['key','key','key']},
                 actions: {
-                    kill : ['switch', 0, [['set','@(pc).stats.xp', 25, 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]
+                    kill : ['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]
                 },
             })},
             freeitem : function(){ return {

@@ -1,5 +1,26 @@
-define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateMachine){
-	var EnemyAIComponent = Component.extend({
+define(['sge'], function(sge){
+	var FactionSystem = sge.Class.extend({
+        init: function(){
+            this._factions = {}
+        },
+        update : function(faction, points){
+            if (this._factions[faction]===undefined){
+                this._factions[faction] = 0
+            }
+            this._factions[faction] += points;
+            return this._factions[faction];
+        },
+        get : function(faction){
+            if (this._factions[faction]===undefined){
+                this._factions[faction] = 0
+            }
+            return this._factions[faction];
+        }
+    })
+
+    var factionSystem = new FactionSystem();
+
+    var EnemyAIComponent = sge.Component.extend({
 		init: function(entity, data){
             this._super(entity, data);
             this._tracking = null;
@@ -8,7 +29,9 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             this.data.speed = 96;
             this.data.radius = 192;
             this.data.radiusScale = 1;
-            this.fsm = StateMachine.create({
+            this.data.faction = data.faction || null;
+            this.data.xp = 1;
+            this.fsm = sge.vendor.StateMachine.create({
                 initial: 'idle',
                 events: [
                     {name: 'startTracking', from: ['idle','investigate'], to: 'tracking'},
@@ -27,9 +50,12 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
                 }
             })
             this.entity.addListener('contact.start', this.onContact.bind(this))
+            this.entity.addListener('kill', this.onKill.bind(this));
             //this.entity.addListener('contact.tile', this.onContact.bind(this))
         },
-
+        onKill: function(){
+            factionSystem.update(this.get('faction'), -this.get('xp'))
+        },
         // FSM Callbacks
         onFlee: function(){
             this.set('radiusScale', 1);
@@ -42,7 +68,6 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
             this.entity.fireEvent('emote.msg', 'Get back here!');
         },
         onLoseSight: function(){
-            console.log('loseSight');
             this.set('radiusScale', 1.25);
             this.entity.set('xform.v', this._tracking_vx, this._tracking_vy);
             this.createTimeout(this._tracking_dist / this.get('speed'), function(){
@@ -94,10 +119,12 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
 
         tick_idle : function(delta){
             if (this.canSeePlayer()){
-                if (this.entity.get('health.pct')>0.2){
-                    this.fsm.startTracking();
-                } else {
-                    this.fsm.startFleeing();
+                if (factionSystem.get(this.get('faction'))<0){
+                    if (this.entity.get('health.pct')>0.2){
+                        this.fsm.startTracking();
+                    } else {
+                        this.fsm.startFleeing();
+                    }
                 }
             }
         },
@@ -165,7 +192,7 @@ define(['sge/component', 'sge/vendor/state-machine'], function(Component, StateM
         }
         
 	})
-	Component.register('enemyai', EnemyAIComponent);
+	sge.Component.register('enemyai', EnemyAIComponent);
 
     return EnemyAIComponent;
 });

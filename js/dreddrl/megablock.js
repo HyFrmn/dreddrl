@@ -165,8 +165,8 @@ define([
 
                 this.options = {
                     padding: 3,
-                    width: 7,
-                    height: 3,
+                    width: 2,
+                    height: 1,
                 }
 
                 this.width = this.options.width*6 + this.options.padding*2 + 1;
@@ -217,11 +217,7 @@ define([
 
                 //Populate Rooms
                 _.each(this.rooms, function(room){
-                    if (room.cx > (this.width / 2)){
-                        room.spawn('enemy');
-                    } else {
-                        room.spawn('citizen');
-                    }
+                    room.spawn('enemy');    
                 }.bind(this))
 
 
@@ -254,7 +250,7 @@ define([
                  
                 
                 //Setup Encounter System
-                //*
+                /*
                 this.encounterSystem = new encounters.EncounterSystem(this.state, this);
                 this.encounterSystem.create(encounters.CheckupEncounter);
                 this.encounterSystem.create(encounters.ExecuteEncounter);
@@ -293,7 +289,7 @@ define([
 
             },
             tick : function(delta){
-                this.encounterSystem.tick();
+                //this.encounterSystem.tick();
             },
             getRandomEncounterRoom : function(options){
                 options = options || {};

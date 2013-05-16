@@ -5,8 +5,8 @@ define(['sge','../action'], function(sge, Action){
 			this.async = true;
 		},
 		start: function(path, value, method){
-			var val = this.evalExpr(value);
-			this.setAttr(path, value, method);
+			var val = this.evalExpr(value, this.entity);
+			this.setAttr(path, val, method);
 		}
 	})
 	Action.register('set', SetAction);
