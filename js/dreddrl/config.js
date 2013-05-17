@@ -7,6 +7,6 @@ define(function(){
 		AButton : 'space',
 		BButton : 'enter',
 		XButton : 'X',
-		YButton : 'Y'
+		YButton : 'Z'
 	}
 })
