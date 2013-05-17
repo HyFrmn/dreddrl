@@ -92,7 +92,7 @@ define([
                     },
                     simpleai : {}
                 })},
-            enemy : function(){
+            lawbreaker : function(){
                 var msgs = [
                     'I am the law.',
                     'Objection noted.',
@@ -114,7 +114,7 @@ define([
                     weapons: {rps: 2},
                 }
             )},
-            gangboss : function(){return deepExtend(FACTORYDATA['enemy'](), {
+            gangboss : function(){return deepExtend(FACTORYDATA['lawbreaker'](), {
                 sprite : {
                     src : 'assets/sprites/albertbrownhair.png',
                 },

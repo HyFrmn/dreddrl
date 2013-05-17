@@ -6,6 +6,7 @@ define([
     ],
     function(sge, Factory, encounters, Map){
     	var FLOORTILE =  { srcX : 0, srcY: 0, spriteSheet: 'future2'};
+        var FLOORTILE2 =  { srcX : 1, srcY: 1, spriteSheet: 'future2'};
         var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spriteSheet: 'future2'}
         var DOOROPENTILE1 = { srcX : 1, srcY: 36, spriteSheet: 'future2'}
         var DOOROPENTILE2 = { srcX : 1, srcY: 37, spriteSheet: 'future2'}
@@ -29,7 +30,7 @@ define([
         var MegaBlockRoom = sge.Class.extend({
             init: function(gen, cx, cy, width, height, options){
                 this.level = gen;
-                this.options = _.extend({doors:'bottom', open: true}, options ||{})
+                this.options = _.extend({doors:'bottom', open: true, locked: false}, options ||{})
                 this.cx = cx
                 this.cy = cy
                 this.width = width;
@@ -98,7 +99,7 @@ define([
                 var door = this.level.addEntity('door', {xform:{
                     tx: ((cx + 0.5) * 32),
                     ty: ((cy + 0.5) * 32),
-                }, door: {open: open, room: this},
+                }, door: {open: open, room: this, locked: this.options.locked},
                 interact : {
                     targets: [[((cx + 0.5) * 32),((cy + 0.5) * 32)],[((cx + 0.5) * 32),((cy - 1.5) * 32)]]
                 }});
@@ -165,8 +166,8 @@ define([
 
                 this.options = {
                     padding: 3,
-                    width: 2,
-                    height: 1,
+                    width: 9,
+                    height: 5,
                 }
 
                 this.width = this.options.width*6 + this.options.padding*2 + 1;
@@ -180,11 +181,20 @@ define([
                 this.map = state.map;
                 this.factory = state.factory;
                 _.each(this.map._tiles, function(t){
-                    t.fade = 0;
-                    t.layers = {
+                    if ((t.x>(this.width/3)&&t.x<(this.width*2/3))&&(t.y>(this.height/3)&&t.y<(this.height*2/3))) {
+                        t._mask=true;
+                        t.layers = {
+                            'layer0' : FLOORTILE2
+                    }
+                    } else {
+                        t._mask = false;
+                        t.layers = {
                             'layer0' : FLOORTILE
                     }
-                });
+                    }
+                    t.fade = 0;
+                    
+                }.bind(this));
 
                 // Build level borders.
                 this.buildWall(0,1,this.map.width,true);
@@ -204,12 +214,31 @@ define([
                 }
                 this.buildWall(0,this.map.height-2,this.map.width, true);
 
+
                 //Build Rooms
                 var rooms = null;
                 for (var i=0;i<this.options.width;i++){
                     for (var j=0;j<this.options.height;j++){
-                        room = new MegaBlockRoom(this, 3+this.options.padding+(6*i), 7+this.options.padding+(21*j), 5, 5);
-                        room = new MegaBlockRoom(this, 3+this.options.padding+(6*i), 7+this.options.padding+13+(21*j), 5, 5, {doors:'top'});
+                        var tx = 3+this.options.padding+(6*i);
+                        var ty = 7+this.options.padding+(21*j);
+                        if (this.map.getTile(tx,ty)._mask!=true){
+                            var locked = false;
+                            var open = (Math.random() > 0.5 ? true : false);
+                            if (!open){
+                                locked = (Math.random() > 0.5 ? true : false)
+                            }
+                            room = new MegaBlockRoom(this, tx, ty, 5, 5, {open: open, locked: locked});
+                        }
+                        tx = 3+this.options.padding+(6*i);
+                        ty = 7+this.options.padding+13+(21*j);
+                        if (this.map.getTile(tx,ty)._mask!=true){
+                            var locked = false;
+                            var open = (Math.random() > 0.5 ? true : false);
+                            if (!open){
+                                locked = (Math.random() > 0.5 ? true : false)
+                            }
+                            room = new MegaBlockRoom(this, tx, ty, 5, 5, {doors: 'top', open: open, locked: locked});
+                        }
                     }
                 }
 
@@ -217,7 +246,10 @@ define([
 
                 //Populate Rooms
                 _.each(this.rooms, function(room){
-                    room.spawn('enemy');    
+                    room.spawn('lawbreaker');
+                    room.spawn('citizen');    
+                    room.spawn('citizen');
+
                 }.bind(this))
 
 
@@ -250,7 +282,7 @@ define([
                  
                 
                 //Setup Encounter System
-                /*
+                //*
                 this.encounterSystem = new encounters.EncounterSystem(this.state, this);
                 this.encounterSystem.create(encounters.CheckupEncounter);
                 this.encounterSystem.create(encounters.ExecuteEncounter);
@@ -289,7 +321,7 @@ define([
 
             },
             tick : function(delta){
-                //this.encounterSystem.tick();
+                this.encounterSystem.tick();
             },
             getRandomEncounterRoom : function(options){
                 options = options || {};

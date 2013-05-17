@@ -24,6 +24,7 @@ define(['sge'], function(sge){
 		init: function(entity, data){
             this._super(entity, data);
             this._tracking = null;
+            this._anger = Math.random();
             this.data.tracking = data.tracking || null;
             this.data.territory = data.territory;
             this.data.speed = 96;
@@ -119,7 +120,7 @@ define(['sge'], function(sge){
 
         tick_idle : function(delta){
             if (this.canSeePlayer()){
-                if (factionSystem.get(this.get('faction'))<0){
+                if (this.isThreat(this.state.pc)){
                     if (this.entity.get('health.pct')>0.2){
                         this.fsm.startTracking();
                     } else {
@@ -131,7 +132,9 @@ define(['sge'], function(sge){
 
         tick_investigate : function(delta){
             if (this.canSeePlayer()){
-                this.fsm.startTracking();
+                if (this.isThreat(this.state.pc)){
+                    this.fsm.startTracking();
+                }
             }
         },
 
@@ -155,6 +158,11 @@ define(['sge'], function(sge){
         },
 
         // Helper Functions
+        isThreat : function(){
+            //console.log('Threat', (factionSystem.get(this.get('faction'))/-4));
+            return Boolean((factionSystem.get(this.get('faction'))/-4)>this._anger);
+        },
+
         canSeePlayer : function(){
             var result = false;
             var pc = this.state.pc;
