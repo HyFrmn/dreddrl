@@ -27,6 +27,22 @@ define([
             return coords;
         };
 
+        var MegaBlockRegion = sge.Class.extend({
+            init: function(level, cx, cy, width, height, options){
+                this.level = level;
+                //Region Interface;
+                var realWidth = width * 32;
+                var realHeight = height * 32;
+
+                this.top = (cy*32) - (realHeight/2) + 16;
+                this.bottom = (cy*32) + (realHeight/2) + 16;
+                this.left = (cx*32)-(realWidth/2) + 16;
+                this.right = (cx*32)+(realWidth/2) + 16;
+                this.entities = [];
+                this.level.state._addRegion(this);
+            }
+        })
+
         var MegaBlockRoom = sge.Class.extend({
             init: function(gen, cx, cy, width, height, options){
                 this.level = gen;
@@ -40,6 +56,16 @@ define([
                 this.doors = [];
                 this.plot();
                 this.level.rooms.push(this);
+                var realWidth = width * 32;
+                var realHeight = height * 32;
+
+                //Region Interface;
+                this.top = (cy*32) - (realHeight/2) + 16;
+                this.bottom = (cy*32) + (realHeight/2) + 16;
+                this.left = (cx*32)-(realWidth/2) + 16;
+                this.right = (cx*32)+(realWidth/2) + 16;
+                this.entities = [];
+                this.level.state._addRegion(this);
             },
             isLocked : function(){
                 var locked = false;
@@ -92,8 +118,6 @@ define([
 
                 this.cover = new CAAT.Actor().setFillStyle('black').setSize(this.width*32,this.height*32).setLocation((this.cx-(this.width-1)/2)*32+16, (this.cy-(this.height-1)/2)*32+16);
                 this.level.map.canopy.addChild(this.cover);
-
-                this.update();
             },
             createDoor : function(cx, cy, open){
                 var door = this.level.addEntity('door', {xform:{
@@ -128,23 +152,17 @@ define([
                 if (this.doors.length){
                     //console.log('Update',this.doors[0].get('door.open'));
                     if (this.doors[0].get('door.open')){
-                        _.each(this.getTiles(), function(tile){
-                            tile.fade = 0;
-                            tile.update();
-                        });
                         this.cover.setVisible(false);
-                    } else {
-                        _.each(this.getTiles(), function(tile){
-                            tile.fade = 1;
-                            tile.update();
+                        _.each(this.entities, function(e){
+                            e.get('xform.container').setVisible(true);
                         })
+                    } else {
                         this.cover.setVisible(true);
+                        _.each(this.entities, function(e){
+                            e.get('xform.container').setVisible(false);
+                        });
                     }
                 } else { 
-                    _.each(this.getTiles(), function(tile){
-                        tile.fade = 1;
-                        tile.update();
-                    })
                     this.cover.setVisible(true);
                 }
             }
@@ -166,8 +184,8 @@ define([
 
                 this.options = {
                     padding: 3,
-                    width: 9,
-                    height: 5,
+                    width: 7,
+                    height: 3,
                 }
 
                 this.width = this.options.width*6 + this.options.padding*2 + 1;
@@ -180,6 +198,7 @@ define([
                 this.block = block;
                 this.map = state.map;
                 this.factory = state.factory;
+                //*
                 _.each(this.map._tiles, function(t){
                     if ((t.x>(this.width/3)&&t.x<(this.width*2/3))&&(t.y>(this.height/3)&&t.y<(this.height*2/3))) {
                         t._mask=true;
@@ -195,6 +214,8 @@ define([
                     t.fade = 0;
                     
                 }.bind(this));
+                //*/
+
 
                 // Build level borders.
                 this.buildWall(0,1,this.map.width,true);
@@ -228,6 +249,7 @@ define([
                                 locked = (Math.random() > 0.5 ? true : false)
                             }
                             room = new MegaBlockRoom(this, tx, ty, 5, 5, {open: open, locked: locked});
+                            room.name = 'Room ' + i + '-' + j + ' A';
                         }
                         tx = 3+this.options.padding+(6*i);
                         ty = 7+this.options.padding+13+(21*j);
@@ -238,13 +260,16 @@ define([
                                 locked = (Math.random() > 0.5 ? true : false)
                             }
                             room = new MegaBlockRoom(this, tx, ty, 5, 5, {doors: 'top', open: open, locked: locked});
+                            room.name = 'Room ' + i + '-' + j + ' B';
                         }
                     }
                 }
-
+                market = new MegaBlockRegion(this, this.width/2, this.height/2, this.width/3, this.height/3);
+                market.name = 'Market';
 
 
                 //Populate Rooms
+                //*
                 _.each(this.rooms, function(room){
                     room.spawn('lawbreaker');
                     room.spawn('citizen');    
@@ -252,6 +277,25 @@ define([
 
                 }.bind(this))
 
+                var npcs=64;
+                while (npcs--){
+                    var tx = sge.random.range(market.left, market.right);
+                    var ty = sge.random.range(market.top, market.bottom);
+                    var tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
+                    while (!tile.passable){
+                        tx = sge.random.range(market.left, market.right);
+                        ty = sge.random.range(market.top, market.bottom);
+                        tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
+                    }
+                    this.addEntity('citizen',{
+                        xform: {
+                            tx: tx,
+                            ty: ty
+                        }
+                    })
+                }
+
+                //*/
 
                 for (var y=0;y<this.map.height-2;y++){
                     var tile = this.map.getTile(0, y);
@@ -266,15 +310,7 @@ define([
                     tile.passable = false;
                 }
 
-                var npcs=0;
-                while (npcs--){
-                    this.addEntity('citizen',{
-                        xform: {
-                            tx: sge.random.range(32, (this.map.width*32) - 64),
-                            ty: sge.random.range(96, (this.map.height*32) - 192)
-                        }
-                    })
-                }
+                
 
                 this.map.setup(this.state._entityContainer);
                 this.updateState();
@@ -288,6 +324,8 @@ define([
                 this.encounterSystem.create(encounters.ExecuteEncounter);
                 this.encounterSystem.create(encounters.SerialEncounter, encounters.rescueEncounterTemplate);
     		    //*/
+
+                _.map(this.rooms, function(r){r.update()});
             },
             buildWall: function(sx, sy, length, ceil){
                 for (var x=0;x<length;x++){
@@ -317,6 +355,7 @@ define([
             updateState: function(){
                 _.each(this._entities, function(entity){
                     this.state.addEntity(entity);
+                    //console.log('Add Entity', entity.id);
                 }.bind(this));
 
             },

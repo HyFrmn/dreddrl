@@ -12,7 +12,41 @@ define([
 
         INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is your responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
-    	var DreddRLState = sge.GameState.extend({
+    	
+        var HashTable = sge.Class.extend({
+            init: function(){
+                this._table = {};
+                this._reverseTable = {};
+            },
+            add: function(key, item){
+                if (this._table[key]===undefined){
+                    this._table[key]=[];
+                }
+                if (!_.contains(this._table[key], item)){
+                    this._table[key].push(item);
+                    if (this._reverseTable[item]===undefined){
+                        this._reverseTable[item] = [];
+                    }
+                    this._reverseTable[item].push(key);
+                }
+            },
+            get: function(key){
+                return this._table[key];
+            },
+            reverseGet : function(item){
+                if (this._reverseTable[item]===undefined){
+                    this._reverseTable[item] = [];
+                }
+                return this._reverseTable[item]
+            },
+            remove: function(key, item){
+                this._table[key] = _.without(this._table[key], item);
+                this._reverseTable[item] = _.without(this._reverseTable[item], key);
+            }
+
+        });
+
+        var DreddRLState = sge.GameState.extend({
     		initState: function(options){
                 
                 // Tile Map
@@ -48,8 +82,13 @@ define([
                 //Hash ID to Entity ID
                 this._spatialHash = {};
                 this._spatialHashReverse = {};
-                this._spatialHashWidth = 96; //((this.map.width * 32) / 4);
-                this._spatialHashHeight = 96; //((this.map.height * 32) / 4);
+                this._spatialHashWidth = 32; //((this.map.width * 32) / 4);
+                this._spatialHashHeight = 32; //((this.map.height * 32) / 4);
+
+                this._spatialHashRegions = {};
+                this._spatialHashRegionsReverse = {};
+
+                this._regionEntityHash = new HashTable();
 
                 this.loader = new sge.vendor.PxLoader();
                 this.loader.addProgressListener(this.progressListener.bind(this));
@@ -303,24 +342,9 @@ define([
                 var hash = this._spatialHashReverse[entity.id];
                 this._spatialHashReverse[entity.id]=undefined;
                 this._spatialHash[hash] = _.without(this._spatialHash[hash], entity.id);
-            
             },
 
             _updateHash : function(entity){
-                var tx = Math.floor(entity.get('xform.tx') / 32);
-                var ty = Math.floor(entity.get('xform.ty') / 32);
-                /*
-                var oldTile = entity.get('xform.tile');
-                var tile = this.map.getTile(tx, ty);
-                if (oldTile!=tile){
-                    if (oldTile){
-                        oldTile.entities = _.without(oldTile.entities, entity);
-                    }
-                    tile.entities.push(entity);
-                    tile.update();
-                }
-                entity.set('xform.tile', tile);
-                */
                 var cx = Math.floor(entity.get('xform.tx') / this._spatialHashWidth);
                 var cy = Math.floor(entity.get('xform.ty') / this._spatialHashHeight);
                 var hash = cx + '.' + cy;
@@ -333,26 +357,89 @@ define([
                     }
                     this._spatialHash[hash].push(entity.id);
                     this._spatialHashReverse[entity.id] = hash;
-                }     
+
+                    this._updateRegion(entity, hash);
+        
+                } 
+            },
+
+            _updateRegion : function(entity, hash){
+                var origRegions = this._regionEntityHash.reverseGet(entity.id);
+                var tx = entity.get('xform.tx');
+                var ty = entity.get('xform.ty');
+
+                //Remove old regions.
+                var pruned = _.filter(origRegions, function(region){
+                    if ((tx>region.left&&tx<region.right)&&(ty>region.top&&ty<region.bottom)){
+                        return true;
+                    } else {
+                        this._regionEntityHash.remove(region, entity.id);
+                        console.log('Leaving: ' + region.name);
+                        region.entities = _.without(region.entities, entity);
+                        return false;
+                    }
+                }.bind(this));
+                newRegions = this._spatialHashRegionsReverse[hash] || [];
+                 _.each(newRegions, function(region){
+                    if (!_.contains(pruned, region)){
+                        if ((tx>region.left&&tx<region.right)&&(ty>region.top&&ty<region.bottom)){
+                            this._regionEntityHash.add(region, entity.id);
+                            console.log('Enter: ' + region.name);
+                            region.entities.push(entity);
+                        }
+                    }
+                }.bind(this));
             },
             
+            _addRegion : function(region){
+                this._spatialHashRegions[region] = [];
+                for (var j = region.top; j <= region.bottom+this._spatialHashHeight; j+=this._spatialHashHeight){
+                    if (j>region.bottom){
+                        j = region.bottom;
+                    }
+                    for (var i = region.left; i <= region.right+this._spatialHashWidth; i+=this._spatialHashWidth) {
+                        if (i>region.right){
+                            i = region.right;
+                        }
+                        var cx = Math.floor(i / this._spatialHashWidth);
+                        var cy = Math.floor(j / this._spatialHashHeight);
+                        var hash = cx + '.' + cy;
+                        if (!_.contains(this._spatialHashRegions[region], hash)){
+                            this._spatialHashRegions[region].push(hash);
+                            if (this._spatialHashRegionsReverse[hash]===undefined){
+                                this._spatialHashRegionsReverse[hash]=[];
+                            };
+                            this._spatialHashRegionsReverse[hash].push(region);
+                        }
+                        if (i>=region.right){
+                            break;
+                        }
+                    }
+                    if(j>=region.bottom){
+                        break;
+                    }
+                }
+            },
+
             findEntities : function(tx, ty, radius){
                 var entities = [];
                 var cx = Math.floor(tx / this._spatialHashWidth);
                 var cy = Math.floor(ty / this._spatialHashHeight);
+                var rad = Math.ceil(radius / 32);
                 delta = [[-1, -1], [0, -1], [1, -1],[-1, 0], [0, 0], [1, 0],[-1, 1], [0, 1], [1, 1]];
-                for (var i = delta.length - 1; i >= 0; i--) {
-                    var hash = (cx + delta[i][0]) + '.' + (cy + delta[i][1]);
-                    var ids = this._spatialHash[hash];
-                     _.each(ids, function(id){
-                        var entity = this.getEntity(id);
-                        var ex = entity.get('xform.tx') - tx;
-                        var ey = entity.get('xform.ty') - ty;
-                        if (((ex*ex)+(ey*ey)) <= (radius*radius)){
-                            entities.push(entity);
-                        }
-                    }.bind(this));
-                };
+                for (var j = -rad; j<=rad; j++)
+                    for (var i = -rad; i <= rad; i++) {
+                        var hash = ((cx + i) + '.' + (cy + j));
+                        var ids = this._spatialHash[hash];
+                         _.each(ids, function(id){
+                            var entity = this.getEntity(id);
+                            var ex = entity.get('xform.tx') - tx;
+                            var ey = entity.get('xform.ty') - ty;
+                            if (((ex*ex)+(ey*ey)) <= (radius*radius)){
+                                entities.push(entity);
+                            }
+                        }.bind(this));
+                    };
                 return entities;
             },
 

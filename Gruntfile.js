@@ -23,7 +23,7 @@ module.exports = function(grunt) {
 		      out: "build/required.js",
 		      //dir: "build/",
 		      //optimize: "none",
-		      include: ['sge'],
+		      exclude: ['sge'],
 		      packages: ['dreddrl']
 		    }
 		  }

@@ -1,5 +1,5 @@
-define(['sge/component'], function(Component){
-	var HealthComponent = Component.extend({
+define(['sge'], function(sge){
+	var HealthComponent = sge.Component.extend({
 		init: function(entity, data){
             this._super(entity, data);
             this.data.visible = data.visible === undefined ? true : data.visible;
@@ -68,7 +68,7 @@ define(['sge/component'], function(Component){
             return (this.get('life') / this.get('maxLife'));
         }
 	})
-	Component.register('health', HealthComponent);
+	sge.Component.register('health', HealthComponent);
 
     return HealthComponent;
 });

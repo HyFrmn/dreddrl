@@ -1,5 +1,5 @@
-define(['sge/component'], function(Component){
-    var JudgeMovementComponent = Component.extend({
+define(['sge'], function(sge){
+    var JudgeMovementComponent = sge.Component.extend({
         init: function(entity, data){
             this._super(entity, data);
             this.data.speed = 8;
@@ -43,7 +43,7 @@ define(['sge/component'], function(Component){
             }
         }
     });
-    Component.register('judge.movement', JudgeMovementComponent);
+    sge.Component.register('judge.movement', JudgeMovementComponent);
 
     return JudgeMovementComponent;
 })
