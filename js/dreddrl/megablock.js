@@ -262,9 +262,9 @@ function(sge, Factory, encounters, Map){
                     var ty = 7+this.options.padding+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
-                        var open = true; //(Math.random() > 0.5 ? true : false);
+                        var open = false; //(Math.random() > 0.5 ? true : false);
                         if (!open){
-                            locked = (Math.random() > 0.5 ? true : false)
+                            locked = (Math.random() > 0.75 ? true : false)
                         }
                         room = new MegaBlockRoom(this, tx, ty, 5, 5, {open: open, locked: locked});
                         room.name = 'Room ' + i + '-' + j + ' A';
@@ -278,9 +278,9 @@ function(sge, Factory, encounters, Map){
                     ty = 7+this.options.padding+13+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
-                        var open = true; //(Math.random() > 0.5 ? true : false);
+                        var open = false; //(Math.random() > 0.5 ? true : false);
                         if (!open){
-                            locked = (Math.random() > 0.5 ? true : false)
+                            locked = (Math.random() > 0.75 ? true : false)
                         }
                         room = new MegaBlockRoom(this, tx, ty, 5, 5, {doors: 'top', open: open, locked: locked});
                         room.name = 'Room ' + i + '-' + j + ' B';
@@ -372,8 +372,10 @@ function(sge, Factory, encounters, Map){
             _.each(this.rooms, function(room){
                 if (!room._populated){
                     room._populated = true;
-                    room.spawn('citizen');    
-                    room.spawn('citizen');
+                    var spawnType = sge.random.item(['citizen','lawbreaker']);
+                    room.spawn(spawnType);    
+                    room.spawn(spawnType);
+                    room.spawn(spawnType);
                 }
             }.bind(this));
 
