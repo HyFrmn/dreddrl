@@ -332,6 +332,7 @@ define(['sge', './item'], function(sge, Item){
 	        start: function(){
 	            //Create Mother
 	            var gangBossRoom = this.block.getRandomEncounterRoom();
+	            gangBossRoom._populated = true
 	            var gangBoss = this.state.factory('gangboss', {
 	                xform: {
 	                    tx: gangBossRoom.cx * 32,
@@ -352,6 +353,10 @@ define(['sge', './item'], function(sge, Item){
 	            });
 	            gangBoss.tags.push('gangboss');
 	            this.block.state.addEntity(gangBoss);
+	            var lawbreakers = 5;
+	            while (lawbreakers--){
+	            	gangBossRoom.spawn('lawbreaker');
+	            }
 	            this.targetEntity = gangBoss;
 	        },
 	        finish: function(){
@@ -408,7 +413,6 @@ define(['sge', './item'], function(sge, Item){
 						[
 							['dialog', 'Help me someone stole my watch!!' ],
 							['set', 'encounter.status', 1],
-							['set', 'interact.priority', false],
 							['if', '${@(encounter.perp).active}',[
 								['event', 'encounter.perp', 'target.set']
 							],[

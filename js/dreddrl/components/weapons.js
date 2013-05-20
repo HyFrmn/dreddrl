@@ -44,10 +44,12 @@ define(['sge', '../config', './bullet'],function(sge, config){
 					vx = 1;
 					break;
 			}
+			var tx = this.entity.get('xform.tx');
+			var ty = this.entity.get('xform.ty');
 			var bullet = new sge.Entity({
 				xform: {
-					tx: this.entity.get('xform.tx'),
-					ty: this.entity.get('xform.ty'),
+					tx: tx,
+					ty: ty,
 					vx: vx * speed,
 					vy: vy * speed,
                     container: '_entityContainer'
@@ -58,6 +60,7 @@ define(['sge', '../config', './bullet'],function(sge, config){
 			});
 			this.state.addEntity(bullet);
 			bullet.set('xform.v', vx * speed, vy * speed);
+			
 		},
 		register: function(state){
 			this.state = state;

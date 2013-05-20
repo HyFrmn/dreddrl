@@ -28,24 +28,26 @@ function(sge, Factory, encounters, Map){
     };
 
     var MegaBlockRegion = sge.Class.extend({
-        init: function(level, cx, cy, width, height, options){
+        init: function(level, left, right, top, bottom, options){
             this.level = level;
-            //Region Interface;
-            var realWidth = width * 32;
-            var realHeight = height * 32;
 
-            this.top = (cy*32) - (realHeight/2) + 16;
-            this.bottom = (cy*32) + (realHeight/2) + 16;
-            this.left = (cx*32)-(realWidth/2) + 16;
-            this.right = (cx*32)+(realWidth/2) + 16;
+            //Region Interface;
+            this.top = top;
+            this.bottom = bottom;
+            this.left = left;
+            this.right = right;
             this.entities = [];
             this.level.state._addRegion(this);
+        },
+        test : function(tx, ty){
+            return Boolean((tx>this.left)&&(tx<this.right)&&(ty>this.top)&&(ty<this.bottom));
         }
     })
 
     var MegaBlockRoom = sge.Class.extend({
         init: function(gen, cx, cy, width, height, options){
             this.level = gen;
+            this._populated = false;
             this.options = _.extend({doors:'bottom', open: true, locked: false}, options ||{})
             this.cx = cx
             this.cy = cy
@@ -67,6 +69,9 @@ function(sge, Factory, encounters, Map){
             this.right = (cx*32)+(realWidth/2) + 16;
             this.entities = [];
             this.level.state._addRegion(this);
+        },
+        test : function(tx, ty){
+            return Boolean((tx>this.left)&&(tx<this.right)&&(ty>this.top)&&(ty<this.top));
         },
         isLocked : function(){
             var locked = false;
@@ -211,7 +216,7 @@ function(sge, Factory, encounters, Map){
                 if ((t.x>(this.width/3)&&t.x<(this.width*2/3))&&(t.y>(this.height/3)&&t.y<(this.height*2/3))) {
                     t._mask=true;
                     t.layers = {
-                        'layer0' : FLOORTILE2
+                        'layer0' : FLOORTILE
                 }
                 } else {
                     t._mask = false;
@@ -243,6 +248,11 @@ function(sge, Factory, encounters, Map){
             }
             this.buildWall(0,this.map.height-2,this.map.width, true);
 
+            var marketLeft = (this.width*32);
+            var marketRight = 0;
+            var marketTop = this.height*32;
+            var marketBottom = 0;
+
 
             //Build Rooms
             var rooms = null;
@@ -252,39 +262,50 @@ function(sge, Factory, encounters, Map){
                     var ty = 7+this.options.padding+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
-                        var open = (Math.random() > 0.5 ? true : false);
+                        var open = true; //(Math.random() > 0.5 ? true : false);
                         if (!open){
                             locked = (Math.random() > 0.5 ? true : false)
                         }
                         room = new MegaBlockRoom(this, tx, ty, 5, 5, {open: open, locked: locked});
                         room.name = 'Room ' + i + '-' + j + ' A';
+                    } else {
+                        marketLeft = Math.min(marketLeft, tx*32);
+                        marketRight = Math.max(marketRight, tx*32+32);
+                        marketTop = Math.min(marketTop, ty*32);
+                        marketBottom = Math.max(marketBottom, ty*32+32);
                     }
                     tx = 3+this.options.padding+(6*i);
                     ty = 7+this.options.padding+13+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
-                        var open = (Math.random() > 0.5 ? true : false);
+                        var open = true; //(Math.random() > 0.5 ? true : false);
                         if (!open){
                             locked = (Math.random() > 0.5 ? true : false)
                         }
                         room = new MegaBlockRoom(this, tx, ty, 5, 5, {doors: 'top', open: open, locked: locked});
                         room.name = 'Room ' + i + '-' + j + ' B';
+                    } else {
+                        marketLeft = Math.min(marketLeft, tx*32);
+                        marketRight = Math.max(marketRight, tx*32+32);
+                        marketTop = Math.min(marketTop, ty*32);
+                        marketBottom = Math.max(marketBottom, ty*32+32);
                     }
                 }
             }
-            market = new MegaBlockRegion(this, this.width/2, this.height/2, this.width/3, this.height/3);
+
+            _.each(this.map._tiles, function(t){
+                if ((t.x>=Math.floor(marketLeft/32)&&t.x<(marketRight/32))&&(t.y>=Math.floor(marketTop/32)&&t.y<(marketBottom/32))) {
+                    t.layers = {
+                            'layer0' : FLOORTILE2
+                    }
+                }
+            }.bind(this));
+
+            market = new MegaBlockRegion(this, marketLeft, marketRight, marketTop, marketBottom);
             market.name = 'Market';
 
-
-            //Populate Rooms
+            //Populate market place.
             //*
-            _.each(this.rooms, function(room){
-                room.spawn('lawbreaker');
-                room.spawn('citizen');    
-                room.spawn('citizen');
-
-            }.bind(this))
-
             var npcs=64;
             var citizen = null;
             while (npcs--){
@@ -300,32 +321,34 @@ function(sge, Factory, encounters, Map){
                     xform: {
                         tx: tx,
                         ty: ty
+                    },
+                    simpleai : {
+                        region: market
+                    }
+                })
+            }
+
+            var lawbreaker=4;
+            var lawbreaker = null;
+            while (lawbreaker--){
+                var tx = sge.random.range(market.left, market.right);
+                var ty = sge.random.range(market.top, market.bottom);
+                var tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
+                while (!tile.passable){
+                    tx = sge.random.range(market.left, market.right);
+                    ty = sge.random.range(market.top, market.bottom);
+                    tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
+                }
+                lawbreaker =  this.addEntity('lawbreaker',{
+                    xform: {
+                        tx: tx,
+                        ty: ty
                     }
                 })
             }
 
             //*/
 
-            for (var y=0;y<this.map.height-2;y++){
-                var tile = this.map.getTile(0, y);
-                tile.layers = {
-                    'layer0' : CEILTILE
-                }
-                tile.passable = false;
-                tile = this.map.getTile(this.map.width-1, y);
-                tile.layers = {
-                    'layer0' : CEILTILE
-                }
-                tile.passable = false;
-            }
-
-            
-
-            this.map.setup(this.state._entityContainer);
-            this.updateState();
-            
-             
-            
             //Setup Encounter System
             //*
             this.encounterSystem = new encounters.EncounterSystem(this.state, this);
@@ -341,7 +364,43 @@ function(sge, Factory, encounters, Map){
                     }
                 }
             });
-		    //*/
+            //*/
+
+
+            //Populate Rooms
+            //*
+            _.each(this.rooms, function(room){
+                if (!room._populated){
+                    room._populated = true;
+                    room.spawn('citizen');    
+                    room.spawn('citizen');
+                }
+            }.bind(this));
+
+
+            
+
+            for (var y=0;y<this.map.height-2;y++){
+                var tile = this.map.getTile(0, y);
+                tile.layers = {
+                    'layer0' : CEILTILE
+                }
+                tile.passable = false;
+                tile = this.map.getTile(this.map.width-1, y);
+                tile.layers = {
+                    'layer0' : CEILTILE
+                }
+                tile.passable = false;
+            }
+            //*/
+            
+
+            this.map.setup(this.state._entityContainer);
+            //this.updateState();
+            
+             
+            
+            
 
             _.map(this.rooms, function(r){r.update()});
         },
@@ -367,12 +426,13 @@ function(sge, Factory, encounters, Map){
         },
         addEntity: function(type, options){
             var entity = this.factory(type, options);
-            this._entities.push(entity);
+            this.state.addEntity(entity);
+            //this._entities.push(entity);
             return entity;
         },
         updateState: function(){
             _.each(this._entities, function(entity){
-                this.state.addEntity(entity);
+                //this.state.addEntity(entity);
                 //console.log('Add Entity', entity.id);
             }.bind(this));
 

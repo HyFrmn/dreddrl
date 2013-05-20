@@ -6,52 +6,34 @@ define(['sge'], function(sge){
             this._tracking = null;
             this.data.tracking = data.tracking || null;
             this.data.territory = data.territory;
+            this.data.speed = data.speed || 64;
+            this.data.region = data.region || null;
             this.fsm = sge.vendor.StateMachine.create({
                 initial: 'idle',
                 events: [
-                    {name: 'seePlayer', from: 'idle', to: 'tracking'},
-                    {name: 'losePlayer', from:'tracking', to: 'idle'}
+                    {name: 'hearDistress', from: 'idle', to: 'fleeing'},
+                    {name: 'returnToIdle', from:'*', to: 'idle'}
+
                 ],
+                callbacks : {
+                    onreturnToIdle: this.onIdle.bind(this),
+                    onfleeing: this.onFlee.bind(this),
+                }
             })
             this.data.radius = 96;
             this._idleCounter = 0;
-            this.entity.addListener('contact.tile', this.onContact.bind(this))
-        },
-        seePlayer: function(){
-            this.data.radius = 256;
-            this.fsm.seePlayer();
-        },
-        losePlayer: function(){
-            this.data.radius = 128;
-            this.fsm.losePlayer();
+            this.entity.addListener('contact.tile', this.onContact.bind(this));
+            this.entity.addListener('hear.distress', function(tx, ty){
+                if (this.fsm.current == 'idle'){
+                    this.fsm.hearDistress(tx, ty);
+                } else {
+                    //this.onFleeUpdate(tx, ty);
+                }
+            }.bind(this));
         },
         register: function(state){
             this._super(state);
             this.map = this.state.map;
-        },
-        getPC: function(){
-            if (this._tracking===null){
-                this._tracking = this.entity.state.getEntitiesWithTag(this.get('tracking'))[0];
-            }
-            return this._tracking;
-        },
-        getPCPosition: function(){
-            var pc = this.getPC();
-            var dx = this.entity.get('xform.tx') - pc.get('xform.tx');
-            var dy = this.entity.get('xform.ty') - pc.get('xform.ty');
-            var dist = (dx*dx)+(dy*dy);
-            return [pc, dx, dy, dist];
-        },
-        canSeePlayer: function(dist){
-            var pc = this.getPC();
-            var nearby = this.state.findEntities(this.entity.get('xform.tx'), this.entity.get('xform.ty'), this.get('radius'));
-            if (_.contains(nearby, pc)){
-                data = this.getPCPosition();
-                if (data[3]<=(this.data.radius*this.data.radius)) {
-                    return data;
-                }
-            }
-            return null;
         },
         onContact : function(){
             if (this.fsm.current=='idle'){
@@ -59,17 +41,58 @@ define(['sge'], function(sge){
                 this._idleCounter += 30;
             }
         },
+        onIdle : function(event, from, to){
+            this.entity.set('xform.v', 0, 0);
+        },
+        onFleeUpdate : function(cx, cy){
+            var dx = this.entity.get('xform.tx') - cx;
+            var dy = this.entity.get('xform.ty') - cy;
+            var length = Math.sqrt((dx*dx)+(dy*dy));
+            var vx = dx / length;
+            var vy = dy / length;
+            this.entity.set('xform.v', vx * 2 * this.get('speed'), vy * 2 * this.get('speed'));
+        },
+        onFlee : function(event, from, to, cx, cy){
+            this.onFleeUpdate(cx, cy);  
+            this.state.createTimeout(3, function(){
+                this.fsm.returnToIdle();
+            }.bind(this));
+        },
         tick : function(delta){
-            if (this._idleCounter<0){
-                this._idleCounter=30 + (Math.random() * 30);
-                var vx = 64 * ((Math.random() * 2) - 1);
-                var vy = 64 * ((Math.random() * 2) - 1);
-                if (sge.random.unit()>0.15){
-                    vx = vy = 0;
+            if (this.fsm.current=='idle'){
+                var region = this.get('region');
+                var tx = this.entity.get('xform.tx');
+                var ty = this.entity.get('xform.ty');
+                var vx = vy = 0;
+                if (region){
+                    if (!region.test(tx, ty)){
+                        var dx = tx - ((region.right-region.left)/2 + region.left);
+                        var dy = ty - ((region.bottom-region.top)/2 + region.top);
+                        var length = Math.sqrt((dx*dx)+(dy*dy));
+                        vx = -(dx / length) * this.get('speed');
+                        vy = -(dy / length)  * this.get('speed'); 
+                        this.entity.set('xform.v', vx, vy);
+                        this._idleCounter = 0;
+                        return;
+                    }
                 }
-                this.entity.set('xform.v', vx, vy);
-            } else {
-                this._idleCounter--;
+
+                if (this._idleCounter<0){
+                    this._idleCounter=30 + (Math.random() * 30);
+                    if (sge.random.unit()<0.15){
+                        vx = this.get('speed') * ((Math.random() * 2) - 1);
+                        vy = this.get('speed') * ((Math.random() * 2) - 1);
+                        if (region){
+                            while (!region.test(tx+vx,ty+vy)){
+                                vx = this.get('speed') * ((Math.random() * 2) - 1);
+                                vy = this.get('speed') * ((Math.random() * 2) - 1);
+                            }
+                        }  
+                    }
+                    this.entity.set('xform.v', vx, vy);
+                } else {
+                    this._idleCounter--;
+                }
             }
         }
 	})
