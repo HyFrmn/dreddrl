@@ -6,6 +6,7 @@ define(['sge','../action'], function(sge, Action){
 		},
 		start: function(expr, trueActions, falseActions){
 	        var parsedExpr = this.parseExpr(expr, this.entity);
+	        console.log('Expr', parsedExpr);
 	        var result = Boolean(this.evalExpr(parsedExpr, this.entity));
 	        var actionList = [];
 	        if(result) {

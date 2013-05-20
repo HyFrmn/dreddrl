@@ -1,4 +1,4 @@
-define(['sge'],function(sge){
+define(['sge', '../action'],function(sge, Action){
 
 	var InventoryComponent = sge.Component.extend({
 		init: function(entity, data){
@@ -11,17 +11,13 @@ define(['sge'],function(sge){
 		},
 		pickup: function(entity){
 			var freeitem = entity.get('freeitem');
-			var newAmmo = freeitem.get('inventory.ammo');
-			var keys = Object.keys(freeitem.data);
-			this.entity.fireEvent('log', 'Picked up ' + freeitem.get('name'));
-			keys = _.without(keys,'name');
-			for (var i = keys.length - 1; i >= 0; i--) {
-				var key = keys[i];
-				if (key=='inventory.add'){
-					this.data.items.push(freeitem.data[key]);
-				} else {
-					this.entity.set(key, freeitem.data[key], 'add');
-				}
+			var item = freeitem.get('item');
+
+			this.entity.fireEvent('log', 'Picked up ' + item.name);
+			if (item.immediate){
+				Action.Factory(item.effect, this.entity);
+			} else {
+				this.data.items.push(item.id);
 			}
 
 		},

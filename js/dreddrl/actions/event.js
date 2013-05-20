@@ -9,6 +9,8 @@ define(['sge','../action'], function(sge, Action){
             var entityId = args.shift();
             if (entityId=='this'){
             	var entity = this.entity;
+            } else if (entityId.match(/encounter\./)){
+            	var entity = this.entity.get(entityId);
             } else {
 				var entity = this.state.getEntityWithTag(entityId);
 			}

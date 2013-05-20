@@ -1,10 +1,11 @@
-define(['sge'], function(sge){
+define(['sge', '../item'], function(sge, Item){
     var DeadDrop = sge.Component.extend({
         init: function(entity, data){
             this._super(entity, data);
-            this.data.items = data.items || ['rammen','gun'];
+            this.data.items = data.items || [];
             this.data.count = data.count || 1;
             this.data.always = data.always || [];
+            this.data.pickup = data.pickup;
             this.drop = this.drop.bind(this);
             this.entity.addListener('kill', this.drop);
         },
@@ -25,19 +26,42 @@ define(['sge'], function(sge){
                 return;
                 }
             for (var i=0;i<this.get('count');i++){
-                this.dropItem(sge.random.item(this.get('items')), dropDir[0], dropDir[1])
+                var item = sge.random.item(this.get('items'));
+                if (typeof item == 'string'){
+                    if (item.match(/^@/)){
+                        name = item.replace('@(','').replace(')','');
+                        item = this.entity.get(name);
+                    } else {
+                        item = Item.Factory(item);
+                    }
+                }
+                this.dropItem(item, dropDir[0], dropDir[1])
             }
             _.each(this.get('always'), function(i){
                 this.dropItem(i, tx, ty);
             }.bind(this));
         },
         dropItem: function(item, tx, ty){
-            var newItem = this.state.factory(item, {
+            var def = {
                 xform: {
                     tx: tx,
                     ty: ty,
-                }});
-
+                },
+                freeitem : {
+                    item : item
+                },
+                sprite : {
+                    frame : item.spriteFrame,
+                    src: 'assets/sprites/' + item.spriteImage
+                }
+            };
+            if (this.data.pickup){
+                def.actions = {
+                    pickup: this.data.pickup
+                }
+            }
+            console.log('Drop', def);
+            var newItem = this.state.factory('freeitem', def);
             this.state.addEntity(newItem);
             return newItem;
         }

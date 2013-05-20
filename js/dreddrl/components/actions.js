@@ -15,6 +15,25 @@ define(['sge', '../action'], function(sge, Action){
                 this.entity.addListener(keys[i], callback);
             }
         },
+        __set_value : function(evt, actionData){
+
+            this._addCallback(evt, actionData);
+        },
+        _addCallback : function(evt, actionData){
+            if (this.data[evt]!==undefined){
+                this.entity.removeListener(evt, this.data[evt]);
+            }
+            var callback = function(){
+                var tmpActionData = actionData.slice(0);
+                console.log(tmpActionData);
+                var actionType = tmpActionData.shift();
+
+                var action = Action.Load(this.entity, {type: actionType, args: tmpActionData});
+                action.run(this.state);
+            }.bind(this);
+            this.data[evt] = callback;
+            this.entity.addListener(evt, callback);
+        },
         interact: function(){
             var dialog = this.get('dialog');
             if (typeof dialog === 'string'){

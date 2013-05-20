@@ -1,4 +1,4 @@
-define(['sge'], function(sge){
+define(['sge', './item'], function(sge, Item){
 	var Encounter = sge.Class.extend({
 		init: function(system, options){
 			this.system = system;
@@ -8,6 +8,8 @@ define(['sge'], function(sge){
 			this.status = 0;
 			this.total = 1;
 			this.targetEntity = null;
+			this.entities = {};
+			this.items = {};
 			this.start(options);
 		},
 		isFinished: function(){
@@ -43,21 +45,81 @@ define(['sge'], function(sge){
 
 	var SerialEncounter = Encounter.extend({
 		start: function(options){
-			var entityNames = _.keys(options.entities || {});
 			var active = null;
+			this.total = options.steps || 1;
+
+			var itemNames = _.keys(options.items || {});
+			var items = _.map(itemNames, function(name){
+				var def = options.items[name];
+				var item = Item.Factory(def.type, def);
+				this.items[name] = item;
+			}.bind(this))
+
+			var entityNames = _.keys(options.entities || {});
 			var entities = _.map(entityNames, function(name){
 				var def = options.entities[name];
-				def.meta = def.meta || {};
-				var base = def.meta.inherit || 'npc';
-				var room = this.block.getRandomEncounterRoom();
-				def.xform = def.xform || {};
-				def.xform.tx = room.cx * 32;
-				def.xform.ty = room.cy * 32;
+				def.meta = def.meta || {spawn: null};
 				def.encounter = {encounter: this};
-				delete def.meta;
-				var entity = this.factory(base, def);
+				var entity = null
+				if (def.meta.use){
+					entity = def.meta.use;
+
+					//Update entity;
+					delete def.meta;
+					var keys = Object.keys(def);
+					keys.reverse();
+					for (var j = keys.length - 1; j >= 0; j--) {
+						var key = keys[j];
+						var comp = entity.get(key);
+						if (comp){
+							_.each(def[key], function(value, path){
+								comp.set(path, value);
+							});
+						} else {
+							comp = sge.Component.Factory(key, entity, def[key]);
+							entity.components[key] = comp;
+							comp.register(entity.state);
+						}
+					};
+
+				} else {
+					var base = def.meta.inherit || 'citizen';
+					
+					spawnType = def.meta.spawn.policy || def.meta.spawn || 'room.random';
+					spawnData = def.meta.spawn || {};
+					console.log(spawnType);
+					switch (spawnType){
+						case 'random.radius':
+							var radius = spawnData.radius || 64;
+							var theta = Math.PI * 2 * sge.random.unit();
+							var tx = this.entities[spawnData.target].get('xform.tx');
+							var ty = this.entities[spawnData.target].get('xform.ty');
+							def.xform = def.xform || {};
+							def.xform.tx = tx + Math.sin(theta) * radius;
+							def.xform.ty = ty + Math.sin(theta) * radius;
+							break;
+
+						case 'room.random':
+						default:
+							var room = this.block.getRandomEncounterRoom();
+							def.xform = def.xform || {};
+							def.xform.tx = room.cx * 32;
+							def.xform.ty = room.cy * 32;
+							break;						
+					}
+					delete def.meta;
+
+					//SPAWN LOCATION??
+
+					
+
+
+
+					entity = this.factory(base, def);
+					this.state.addEntity(entity);
+				}
 				entity.tags.push(name);
-				this.state.addEntity(entity);
+				this.entities[name] = entity;
 				return entity;
 			}.bind(this));
 			if (active==null){
@@ -85,6 +147,11 @@ define(['sge'], function(sge){
 				this.active = encounter;
 			}
 			return encounter;
+		},
+		createSerial: function(klass, template, options){
+			options = options || {};
+			var opts = sge.util.deepExtend(template, options);
+			return this.create(klass, opts);
 		},
 		getTargetEntity : function(){
 			var entity = null;
@@ -319,6 +386,68 @@ define(['sge'], function(sge){
 		}
 	}
 
+	var lostItemTemplate = {
+		steps: 2,
+		items : {
+			watch : {
+				name : 'Watch',
+				desc : 'Lost Watch',
+				value : 50,
+				type : 'watch'
+			}
+		},
+		entities: {
+			victim : {
+				meta: {
+					inherit: 'man',
+					spawn: 'room.random'
+				},
+				interact : {priority: true},
+				actions: {
+					interact: ['switch', '${encounter.status}',
+						[
+							['dialog', 'Help me someone stole my watch!!' ],
+							['set', 'encounter.status', 1],
+							['set', 'interact.priority', false],
+							['if', '${@(encounter.perp).active}',[
+								['event', 'encounter.perp', 'target.set']
+							],[
+							]]
+						],
+						[
+							['if', '(${encounter.watch.id} in [${@(pc).inventory.items}])',[
+								['dialog', 'Thanks for finding my watch.'],
+								['set', 'encounter.status',2]
+							],[
+								['dialog', 'Can you find my watch back?'],
+							]],
+							
+						],[
+							['event', 'this', 'emote.msg', 'Thanks for finding my watch.', 2]
+						]
+					]
+				}
+			},
+			perp : {
+				meta: {
+					inherit: 'lawbreaker',
+					spawn: {
+						policy: 'random.radius',
+						target: 'victim',
+						radius: 64,
+					},
+				},
+				deaddrop: {items:['@(encounter.watch)']},
+				actions: {
+					kill : ['list',[
+						['event', 'pc', 'emote.msg', 'Now where did he leave the watch?', 3],
+						['event', 'encounter.victim', 'target.set']
+						]]
+				}
+				
+			}
+		}
+	}
 
 
 	return {
@@ -327,6 +456,7 @@ define(['sge'], function(sge){
 		ExecuteEncounter : ExecuteEncounter,
 		CheckupEncounter : CheckupEncounter,
 		rescueEncounterTemplate : rescueEncounterTemplate,
+		lostItemTemplate : lostItemTemplate,
 		SerialEncounter : SerialEncounter
 	}
 })

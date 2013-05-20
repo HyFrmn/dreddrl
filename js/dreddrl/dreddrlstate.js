@@ -207,8 +207,8 @@ define([
                 } else {
                     var pc = Factory('pc', {
                         xform : {
-                            tx: 96,
-                            ty: 384,
+                            tx: this.level.startLocation.tx || 96,
+                            ty: this.level.startLocation.ty || 384,
                         }});
                     pc.tags.push('pc');
                 }
@@ -374,7 +374,7 @@ define([
                         return true;
                     } else {
                         this._regionEntityHash.remove(region, entity.id);
-                        console.log('Leaving: ' + region.name);
+                        //console.log('Leaving: ' + region.name);
                         region.entities = _.without(region.entities, entity);
                         return false;
                     }
@@ -384,7 +384,7 @@ define([
                     if (!_.contains(pruned, region)){
                         if ((tx>region.left&&tx<region.right)&&(ty>region.top&&ty<region.bottom)){
                             this._regionEntityHash.add(region, entity.id);
-                            console.log('Enter: ' + region.name);
+                            //console.log('Enter: ' + region.name);
                             region.entities.push(entity);
                         }
                     }

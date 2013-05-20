@@ -40,8 +40,8 @@ define(['sge'], function(sge){
 		            this.add(action);
 		        }
 	    },
-	    run : function(state) {
-	    		this.state = state;
+	    run : function() {
+	    		this.state = this.entity.state;
 		        this.start.apply(this, this.args);
 	    },
 	    start : function() {
@@ -79,10 +79,13 @@ define(['sge'], function(sge){
 	            name = name.replace('@(','').replace(')','');
 	            if (name=='state'){
 	            	_ctx = this.state;
-	            } else {
+	            }  else if (name.match(/encounter\./)){
+            		_ctx = this.entity.get(name);
+            	} else {
 		            _ctx = this.state.getEntitiesWithTag(name)[0];
 		        }
 	            path = path.replace('@(' + name + ').', '');
+	            console.log('name', name, _ctx.get(path))
 	        }
 	        return _ctx.get(path);
 	    },
@@ -127,6 +130,13 @@ define(['sge'], function(sge){
 	    return rpg.Action._classHash.keys();
 	};
 
+	Action.Factory = function(actionData, ctx){
+        var tmpActionData = actionData.slice(0);
+        var actionType = tmpActionData.shift();
+        console.log(actionData);
+        var action = Action.Load(ctx, {type: actionType, args: tmpActionData});
+        action.run();
+	}
 
 	return Action;
 });

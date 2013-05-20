@@ -1,0 +1,31 @@
+{
+	"ramen" : {
+		"name" : "Ramen",
+		"descripiton" : "A warm bowl of ramen noodles.",
+		"spriteFrame" : 123,
+		"spriteImage" : "scifi_icons_1.png",
+		"effect" : ["set", "health.life", "5", "add"],
+		"immediate" : true
+	},
+	"gun" : {
+		"name" : "Gun",
+		"description" : "A basic mag gun.",
+		"spriteFrame" : 1,
+		"spriteImage" : "scifi_icons_1.png",
+		"effect" : ["set", "inventory.ammo", "12", "add"],
+		"immediate" : true
+	},
+	"watch" : {
+		"name" : "Watch",
+		"description" : "A basic digital watch.",
+		"spriteFrame" : 10,
+		"spriteImage" : "scifi_icons_1.png"
+	},
+	"key" : {
+		"name" : "Key",
+		"description" : "A one time use key.",
+		"spriteFrame" : 57,
+		"spriteImage" : "scifi_icons_1.png",
+		"immediate" : true
+	}
+}

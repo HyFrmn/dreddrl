@@ -23,7 +23,8 @@ define([
     './actions/if',
     './actions/set',
     './actions/switch',
-    './actions/event'
+    './actions/event',
+    './actions/list'
 	], 
 	function(sge){
         var NPCSHEETS = [
@@ -107,7 +108,7 @@ define([
                     emote: {},
                     health : {alignment:-10, life: 3},
                     enemyai : { tracking: 'pc', territory: 'albert', xp: 1},
-                    deaddrop: {items:['key','gun','rammen']},
+                    deaddrop: {items:['key','gun','ramen']},
                     actions: {
                         kill : ['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]
                     },
@@ -137,38 +138,6 @@ define([
                 },
 
             }},
-            gun : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
-                freeitem: {
-                    'inventory.ammo': 10,
-                    'name' : 'Gun'
-                }
-            })},
-            rammen : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
-                sprite : {
-                        frame: 123
-                },
-                freeitem: {
-                    'health.life' : 5,
-                    'name' : 'Ramen'
-                }
-            })},
-            key : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
-                sprite : {
-                        frame: 57
-                },
-                freeitem: {
-                    'inventory.keys' : 1,
-                    'name' : 'Key'
-                }
-            })},
-            keycard : function(){return  deepExtend(FACTORYDATA['freeitem'](), {
-                sprite : {
-                        frame: 56
-                    },
-                freeitem: {
-                    'inventory.add' : 'keycard.blue'
-                }
-            })},
             door : function(){return {
                 xform: { container: '_entityContainer'},
                 interact : {},

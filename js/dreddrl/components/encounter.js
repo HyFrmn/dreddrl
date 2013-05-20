@@ -12,6 +12,19 @@ define(['sge'], function(sge){
 			this.encounter.status = status;
 			this.encounter.update(status);
 			return this.encounter.status;
+		},
+		__get_value : function(path){
+			var subpaths = path.split('.');
+			var name = subpaths.shift();
+			var r = null;
+			r = this.encounter.entities[name];
+			if (!r){
+				r = this.encounter.items[name];
+			}
+			if (subpaths.length){
+				r = r.get(subpaths.join('.'))
+			}
+			return r;
 		}
 	});
 	sge.Component.register('encounter', EncounterComponent);
