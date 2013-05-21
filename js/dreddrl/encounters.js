@@ -10,6 +10,7 @@ define(['sge', './item'], function(sge, Item){
 			this.targetEntity = null;
 			this.entities = {};
 			this.items = {};
+			this.rooms = {};
 			this.start(options);
 		},
 		isFinished: function(){
@@ -43,10 +44,19 @@ define(['sge', './item'], function(sge, Item){
 		}
 	});
 
+
 	var SerialEncounter = Encounter.extend({
 		start: function(options){
 			var active = null;
 			this.total = options.steps || 1;
+
+			var roomNames = _.keys(options.rooms || {});
+			var rooms = _.map(roomNames, function(name){
+				var def = options.rooms[name];
+				room = this.block.getRandomEncounterRoom();
+				room._populated = true;
+				this.rooms[name] = room;
+			}.bind(this))
 
 			var itemNames = _.keys(options.items || {});
 			var items = _.map(itemNames, function(name){
@@ -62,7 +72,8 @@ define(['sge', './item'], function(sge, Item){
 				def.encounter = {encounter: this};
 				var entity = null
 				if (def.meta.use){
-					entity = def.meta.use;
+					//Entity
+					entity = def.meta.use;;
 
 					//Update entity;
 					delete def.meta;
@@ -87,34 +98,13 @@ define(['sge', './item'], function(sge, Item){
 					
 					spawnType = def.meta.spawn.policy || def.meta.spawn || 'room.random';
 					spawnData = def.meta.spawn || {};
-					console.log(spawnType);
-					switch (spawnType){
-						case 'random.radius':
-							var radius = spawnData.radius || 64;
-							var theta = Math.PI * 2 * sge.random.unit();
-							var tx = this.entities[spawnData.target].get('xform.tx');
-							var ty = this.entities[spawnData.target].get('xform.ty');
-							def.xform = def.xform || {};
-							def.xform.tx = tx + Math.sin(theta) * radius;
-							def.xform.ty = ty + Math.sin(theta) * radius;
-							break;
-
-						case 'room.random':
-						default:
-							var room = this.block.getRandomEncounterRoom();
-							def.xform = def.xform || {};
-							def.xform.tx = room.cx * 32;
-							def.xform.ty = room.cy * 32;
-							break;						
-					}
-					delete def.meta;
-
-					//SPAWN LOCATION??
-
 					
-
-
-
+					subdata = spawnType.split('.');
+					var handler = subdata.shift();
+					this['_spawn_' + handler].apply(this, [spawnData, subdata, def]);
+					
+					//Update entity;
+					delete def.meta;
 					entity = this.factory(base, def);
 					this.state.addEntity(entity);
 				}
@@ -126,6 +116,25 @@ define(['sge', './item'], function(sge, Item){
 				active = entities[0];
 			};
 			this.targetEntity = active;
+		},
+		_spawn_random: function(spawnData, method, def){
+			var radius = spawnData.radius || 64;
+			var theta = Math.PI * 2 * sge.random.unit();
+			var tx = this.entities[spawnData.target].get('xform.tx');
+			var ty = this.entities[spawnData.target].get('xform.ty');
+			def.xform = def.xform || {};
+			def.xform.tx = tx + Math.sin(theta) * radius;
+			def.xform.ty = ty + Math.sin(theta) * radius;
+			return def
+		},
+		_spawn_room: function(spawnData, method, def){
+			var room = this.block.getRandomEncounterRoom();
+			if (method!='random'){
+				room = this.rooms[method];
+			}
+			def.xform = def.xform || {};
+			def.xform.tx = room.cx * 32;
+			def.xform.ty = room.cy * 32;
 		}
 	})
 
@@ -368,6 +377,13 @@ define(['sge', './item'], function(sge, Item){
 	    });
 
 	var rescueEncounterTemplate = {
+		steps: 3,
+		rooms : {
+			scene : {
+				spawn : ['lawbreaker','lawbreaker','lawbreaker'],
+				locked : true,
+			}
+		},
 		entities: {
 			client : {
 				meta: {
@@ -380,12 +396,20 @@ define(['sge', './item'], function(sge, Item){
 						[
 							['dialog', 'Help me, the Spacers have kidnapped my daughter. Can you get her back for me?' ],
 							['set', 'encounter.status', 1],
-							['set', 'interact.priority', false]
+							['set', 'interact.priority', false],
+							['event', 'encounter.daughter', 'target.set'],
+							['set', '@(encounter.daughter).interact.priority', true]
 						],
 						[
 							['dialog', 'Please find my daughter'],
 						]
 					]
+				}
+			},
+			daughter : {
+				meta: {
+					inherit: 'citizen',
+					spawn : 'room.scene',
 				}
 			}
 		}
@@ -421,9 +445,10 @@ define(['sge', './item'], function(sge, Item){
 						[
 							['if', '(${encounter.watch.id} in [${@(pc).inventory.items}])',[
 								['dialog', 'Thanks for finding my watch.'],
+								['set', 'interact.priority', false],
 								['set', 'encounter.status',2]
 							],[
-								['dialog', 'Can you find my watch back?'],
+								['dialog', 'Can you find my watch?'],
 							]],
 							
 						],[

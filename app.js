@@ -1,7 +1,7 @@
 requirejs.config({
     baseUrl: 'js/',
     name: "dreddrl",
-    packages: ["dreddrl"],
+    packages: ["dreddrl", "sge"],
     exclude: ['sge']
     
 });

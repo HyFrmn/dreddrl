@@ -148,7 +148,7 @@ define([
                 interact : {},
                 elevator: {}
             }},
-            man: function(){return deepExtend(FACTORYDATA['npc'](), {
+            man: function(){return deepExtend(FACTORYDATA['citizen'](), {
                 sprite : {
                     src : 'assets/sprites/gang_' + sge.random.item([1,2,6]) +'.png',
                 },

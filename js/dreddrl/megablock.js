@@ -262,7 +262,7 @@ function(sge, Factory, encounters, Map){
                     var ty = 7+this.options.padding+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
-                        var open = false; //(Math.random() > 0.5 ? true : false);
+                        var open = true; //(Math.random() > 0.5 ? true : false);
                         if (!open){
                             locked = (Math.random() > 0.75 ? true : false)
                         }
@@ -278,7 +278,7 @@ function(sge, Factory, encounters, Map){
                     ty = 7+this.options.padding+13+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
-                        var open = false; //(Math.random() > 0.5 ? true : false);
+                        var open = true; //(Math.random() > 0.5 ? true : false);
                         if (!open){
                             locked = (Math.random() > 0.75 ? true : false)
                         }
@@ -306,7 +306,7 @@ function(sge, Factory, encounters, Map){
 
             //Populate market place.
             //*
-            var npcs=64;
+            var npcs=32;
             var citizen = null;
             while (npcs--){
                 var tx = sge.random.range(market.left, market.right);

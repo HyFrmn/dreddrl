@@ -75,8 +75,8 @@ define(['sge'], function(sge){
 	    evalValue : function(path, ctx){
 	        var _ctx = ctx;
 	        if (path.match(/^@/)){
-	            var name = path.split('.')[0];
-	            name = name.replace('@(','').replace(')','');
+	            var name = path.match(/@\(([a-zA-Z0-9.]*)\)/)[1];
+	            path = path.replace(/@\(([a-zA-Z0-9.]*)\)\./,'');
 	            if (name=='state'){
 	            	_ctx = this.state;
 	            }  else if (name.match(/encounter\./)){
@@ -92,11 +92,13 @@ define(['sge'], function(sge){
 	    setAttr : function(path, value, method) {
 	    	var _ctx = this.entity;
 	        if (path.match(/^@/)){
-	            var name = path.split('.')[0];
-	            name = name.replace('@(','').replace(')','');
+	            var name = path.match(/@\(([a-zA-Z0-9.]*)\)/)[1];
+	            path = path.replace(/@\(([a-zA-Z0-9.]*)\)\./,'');
 	            if (name=='state'){
 	            	_ctx = this.state;
-	            } else {
+	            } else if (name.match(/encounter\./)){
+            		_ctx = this.entity.get(name);
+            	} else {
 		            _ctx = this.state.getEntitiesWithTag(name)[0];
 		        }
 	            path = path.replace('@(' + name + ').', '');

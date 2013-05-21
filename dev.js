@@ -1,7 +1,18 @@
 requirejs.config({
     baseUrl: 'js/',
     name: "dreddrl",
-    packages: ["dreddrl"],
+    packages: ["dreddrl","sge"],
+    shim: {
+        'sge/vendor/hammer' : {
+            exports: 'Hammer'
+        },
+        'sge/vendor/caat' : {
+            exports: 'CAAT'
+        },
+        'sge/vendor/underscore' : {
+            exports: '_'
+        }
+    },
 });
 // Start the main app logic.
 var game = null;
