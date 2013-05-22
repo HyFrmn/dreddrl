@@ -160,7 +160,11 @@ define(['sge'], function(sge){
         // Helper Functions
         isThreat : function(){
             //console.log('Threat', (factionSystem.get(this.get('faction'))/-4));
-            return Boolean((factionSystem.get(this.get('faction'))/-4)>this._anger);
+            if (this.get('faction')){
+                return Boolean((factionSystem.get(this.get('faction'))/-4)>this._anger);
+            } else {
+                return true;
+            }
         },
 
         canSeePlayer : function(){
@@ -177,7 +181,7 @@ define(['sge'], function(sge){
                                                                 Math.floor(pc.get('xform.ty') / 32),
                                                                 Math.floor(this.entity.get('xform.tx') / 32),
                                                                 Math.floor(this.entity.get('xform.ty') / 32),
-                                                                'transparent')
+                                                                'transparent');
                 if (!trace[2]){
                     result = true;
                     var dist = Math.sqrt(sqrdist);

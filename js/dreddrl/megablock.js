@@ -262,7 +262,7 @@ function(sge, Factory, encounters, Map){
                     var ty = 7+this.options.padding+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
-                        var open = true; //(Math.random() > 0.5 ? true : false);
+                        var open =  false;//(Math.random() > 0.5 ? true : false);
                         if (!open){
                             locked = (Math.random() > 0.75 ? true : false)
                         }
@@ -278,7 +278,7 @@ function(sge, Factory, encounters, Map){
                     ty = 7+this.options.padding+13+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
-                        var open = true; //(Math.random() > 0.5 ? true : false);
+                        var open = false;//(Math.random() > 0.5 ? true : false);
                         if (!open){
                             locked = (Math.random() > 0.75 ? true : false)
                         }
@@ -328,9 +328,9 @@ function(sge, Factory, encounters, Map){
                 })
             }
 
-            var lawbreaker=4;
+            var lawbreakers=4;
             var lawbreaker = null;
-            while (lawbreaker--){
+            while (lawbreakers--){
                 var tx = sge.random.range(market.left, market.right);
                 var ty = sge.random.range(market.top, market.bottom);
                 var tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
@@ -339,12 +339,13 @@ function(sge, Factory, encounters, Map){
                     ty = sge.random.range(market.top, market.bottom);
                     tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
                 }
-                lawbreaker =  this.addEntity('lawbreaker',{
+                lawbreaker =  this.addEntity('spacer',{
                     xform: {
                         tx: tx,
                         ty: ty
                     }
                 })
+                console.log('SPAWN SPACER')
             }
 
             //*/
@@ -372,7 +373,7 @@ function(sge, Factory, encounters, Map){
             _.each(this.rooms, function(room){
                 if (!room._populated){
                     room._populated = true;
-                    var spawnType = sge.random.item(['citizen','lawbreaker']);
+                    var spawnType = sge.random.item(['citizen','lawbreaker','spacer']);
                     room.spawn(spawnType);    
                     room.spawn(spawnType);
                     room.spawn(spawnType);

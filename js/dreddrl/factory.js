@@ -107,7 +107,7 @@ define([
                     },
                     emote: {},
                     health : {alignment:-10, life: 3},
-                    enemyai : { tracking: 'pc', territory: 'albert', xp: 1},
+                    enemyai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
                     deaddrop: {items:['key','gun','ramen']},
                     actions: {
                         kill : ['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]
@@ -126,6 +126,28 @@ define([
                     kill : ['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]
                 },
             })},
+            spacer : function(){
+                var msgs = [
+                    'I am the law.',
+                    'Objection noted.',
+                    'Sentence. Execution!',
+                    "You've been found guilt.",
+                    'One less Lawbreaker.'
+                ]
+                return deepExtend(FACTORYDATA['npc'](), {
+                    sprite : {
+                        src : 'assets/sprites/punk_1.png',
+                    },
+                    emote: {},
+                    health : {alignment:-10, life: 3},
+                    enemyai : { tracking: 'pc', territory: 'spacer', xp: 1, faction: 'spacer'},
+                    deaddrop: {items:['key','gun','ramen']},
+                    actions: {
+                        kill : ['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]
+                    },
+                    weapons: {rps: 2},
+                }
+            )},
             freeitem : function(){ return {
                 xform: { container: '_entityContainer'},
                 physics: {},

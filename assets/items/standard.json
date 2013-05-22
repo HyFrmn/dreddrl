@@ -26,6 +26,7 @@
 		"description" : "A one time use key.",
 		"spriteFrame" : 57,
 		"spriteImage" : "scifi_icons_1.png",
-		"immediate" : true
+		"immediate" : true,
+		"effect" : ["set", "inventory.keys", "1", "add"]
 	}
 }

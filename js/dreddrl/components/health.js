@@ -50,18 +50,20 @@ define(['sge'], function(sge){
             this.data.life = Math.min(life, this.get('maxLife'));
             var pct = this.data.life/this.get('maxLife');
             this.set('pct', pct);
-            fillColor = 'green';
-            if (pct<=0.75){
-                fillColor = 'yellow';
-            } else if (pct<=0.5) {
-                fillColor = 'orange';
-            } else if (pct<=0.25) {
-                fillColor = 'red';
+            if (this.container){
+                fillColor = 'green';
+                if (pct<=0.75){
+                    fillColor = 'yellow';
+                } else if (pct<=0.5) {
+                    fillColor = 'orange';
+                } else if (pct<=0.25) {
+                    fillColor = 'red';
+                }
+                this.container.stopCacheAsBitmap()
+                this.lifebar.setFillStyle(fillColor);
+                this.lifebar.setSize(30*(pct),4);
+                this.container.stopCacheAsBitmap();
             }
-            this.container.stopCacheAsBitmap()
-            this.lifebar.setFillStyle(fillColor);
-            this.lifebar.setSize(30*(pct),4);
-            this.container.stopCacheAsBitmap();
             return this.data.life
         },
         _get_pct : function(value, method){

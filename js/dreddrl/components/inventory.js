@@ -15,7 +15,9 @@ define(['sge', '../action'],function(sge, Action){
 
 			this.entity.fireEvent('log', 'Picked up ' + item.name);
 			if (item.immediate){
-				Action.Factory(item.effect, this.entity);
+				if (item.effect){
+					Action.Factory(item.effect, this.entity);
+				}
 			} else {
 				this.data.items.push(item.id);
 			}

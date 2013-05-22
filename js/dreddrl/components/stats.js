@@ -7,6 +7,7 @@ define(['sge'],function(sge){
 			this.data.level = 0;
 			this.data.alignment = data.alignment || 'evil';
 			this.nextLevel = 5;
+			this.levelUp();
 		},
 		addStat : function(stat, value){
 			value = value || 1;

@@ -75,6 +75,36 @@ define([
                 this.scene.addChild(this._gamePlayContainer);
                 this.scene.addChild(this._uiContainer);
 
+
+                //Create UI;
+                this._uiFunctions = [];
+                this._createUIItem('XP:', '@(pc).stats.xp');
+                this._createUIItem('AMMO:', '@(pc).inventory.ammo', {ty: 40});
+                this._createUIItem('HEALTH:', '@(pc).health.life', {ty: 64});
+                this._createUIItem('KEYS:', '@(pc).inventory.keys', {ty: 96});
+                this._createUIItem('LEVEL:', '@(pc).stats.level', {tx: 96});
+
+                this._logs = [];
+                this._cachedLogLength = this._logs.length;
+                this._logContainer = new CAAT.ActorContainer();
+                this._logContainer.setLocation(16,this.game.renderer.height - 80);
+                this.logActors = [];
+                var fontSize = 16;
+                this.logActors[0] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,0);
+                this._logContainer.addChild(this.logActors[0]);
+                this.logActors[1] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,16).setAlpha(0.75);
+                this._logContainer.addChild(this.logActors[1]);
+                this.logActors[2] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,32).setAlpha(0.5);
+                this._logContainer.addChild(this.logActors[2]);
+                this.logActors[3] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,48).setAlpha(0.25);
+                this._logContainer.addChild(this.logActors[3]);
+                this._uiContainer.addChild(this._logContainer);
+
+                this._dialogContainer = new CAAT.ActorContainer().setLocation(16,16).setVisible(false);
+                this._dialogActor = new CAAT.TextActor().setFont(fontSize + 'px sans-serif').setText('TEST!');
+                this._dialogContainer.addChild(this._dialogActor);
+                this._uiContainer.addChild(this._dialogContainer);
+
                 this.factory = Factory;
 
                 // Load Game "Plugins"
@@ -102,6 +132,10 @@ define([
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/judge_tint_red.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert_tint_red.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair_tint_red.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_1.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_4.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_1.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_2.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_6.png');
@@ -231,34 +265,7 @@ define([
 
 
                 this.map.render();
-
-                //Create UI;
-                this._uiFunctions = [];
-                this._createUIItem('XP:', '@(pc).stats.xp');
-                this._createUIItem('AMMO:', '@(pc).inventory.ammo', {ty: 40});
-                this._createUIItem('HEALTH:', '@(pc).health.life', {ty: 64});
-                this._createUIItem('LEVEL:', '@(pc).stats.level', {tx: 96});
-
-                this._logs = [];
-                this._cachedLogLength = this._logs.length;
-                this._logContainer = new CAAT.ActorContainer();
-                this._logContainer.setLocation(16,this.game.renderer.height - 80);
-                this.logActors = [];
-                var fontSize = 16;
-                this.logActors[0] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,0);
-                this._logContainer.addChild(this.logActors[0]);
-                this.logActors[1] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,16).setAlpha(0.75);
-                this._logContainer.addChild(this.logActors[1]);
-                this.logActors[2] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,32).setAlpha(0.5);
-                this._logContainer.addChild(this.logActors[2]);
-                this.logActors[3] = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(0,48).setAlpha(0.25);
-                this._logContainer.addChild(this.logActors[3]);
-                this._uiContainer.addChild(this._logContainer);
-
-                this._dialogContainer = new CAAT.ActorContainer().setLocation(16,16).setVisible(false);
-                this._dialogActor = new CAAT.TextActor().setFont(fontSize + 'px sans-serif').setText('TEST!');
-                this._dialogContainer.addChild(this._dialogActor);
-                this._uiContainer.addChild(this._dialogContainer);
+                this._updateUI();
                 this.log('You are the Law.');
             },
 

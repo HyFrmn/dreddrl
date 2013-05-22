@@ -55,6 +55,11 @@ define(['sge', './item'], function(sge, Item){
 				var def = options.rooms[name];
 				room = this.block.getRandomEncounterRoom();
 				room._populated = true;
+				if (def.locked){
+					_.each(room.doors, function(door){
+						door.set('door.locked', true);
+					});
+				}
 				this.rooms[name] = room;
 			}.bind(this))
 
@@ -146,8 +151,8 @@ define(['sge', './item'], function(sge, Item){
 			this.active = null;
 			this._index = 0;
 			this.compassActor = new CAAT.ShapeActor().setShape(CAAT.ShapeActor.SHAPE_CIRCLE).setFillStyle('blue').setSize(32,32);
-			this.state._entityContainer.addChild(this.compassActor);
-			this.state._entityContainer.setZOrder(this.compassActor, 0);
+			this.state.map.canopy.addChild(this.compassActor);
+			//this.state.map.canopy.setZOrder(this.compassActor, 0);
 		},
 		create : function(klass, options){
 			var encounter = new klass(this, options);
@@ -380,7 +385,7 @@ define(['sge', './item'], function(sge, Item){
 		steps: 3,
 		rooms : {
 			scene : {
-				spawn : ['lawbreaker','lawbreaker','lawbreaker'],
+				spawn : ['spacer','spacer','spacer'],
 				locked : true,
 			}
 		},
