@@ -100,6 +100,13 @@ define([
                 this._logContainer.addChild(this.logActors[3]);
                 this._uiContainer.addChild(this._logContainer);
 
+                this.infoContainer = new CAAT.ActorContainer().setLocation(this.game.renderer.width/3, this.game.renderer.height-96);
+                this.infoActor = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(16,16).setAlpha(1);
+                this.infoActor.setText('Some Info Message Goes Here');
+                this.infoContainer.addChild(this.infoActor);
+                this._uiContainer.addChild(this.infoContainer);
+
+
                 this._dialogContainer = new CAAT.ActorContainer().setLocation(16,16).setVisible(false);
                 this._dialogActor = new CAAT.TextActor().setFont(fontSize + 'px sans-serif').setText('TEST!');
                 this._dialogContainer.addChild(this._dialogActor);
@@ -132,10 +139,20 @@ define([
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/judge_tint_red.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert_tint_red.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair_tint_red.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert_tint_blue.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair_tint_blue.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_1.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_4.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_1_tint_red.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2_tint_red.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3_tint_red.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_4_tint_red.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_1_tint_blue.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2_tint_blue.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3_tint_blue.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_4_tint_blue.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_1.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_2.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_6.png');

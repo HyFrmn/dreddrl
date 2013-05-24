@@ -7,8 +7,7 @@ define(['sge', '../action'], function(sge, Action){
                 var callbackData = data[keys[i]].slice(0);
                 var callback = function(){
                     var actionData = callbackData.slice(0);
-                    var actionType = actionData.shift();
-                    var action = Action.Load(this.entity, {type: actionType, args: actionData});
+                    var action = Action.Factory(this.entity, actionData);
                     action.run(this.state);
                 }.bind(this);
                 this.data[keys[i]] = callback;
@@ -25,26 +24,11 @@ define(['sge', '../action'], function(sge, Action){
             }
             var callback = function(){
                 var tmpActionData = actionData.slice(0);
-                console.log(tmpActionData);
-                var actionType = tmpActionData.shift();
-
-                var action = Action.Load(this.entity, {type: actionType, args: tmpActionData});
+                var action = Action.Factory(this.entity, actionData);
                 action.run(this.state);
             }.bind(this);
             this.data[evt] = callback;
             this.entity.addListener(evt, callback);
-        },
-        interact: function(){
-            var dialog = this.get('dialog');
-            if (typeof dialog === 'string'){
-                this.state.startDialog(this.get('dialog'));
-            } else{
-                console.log(dialog)
-                dialogData = dialog.slice(0);
-                var type = dialogData.shift();
-                var action = Action.Load(this.entity, {type: type, args: dialogData});
-                action.run(this.state);
-            }
         },
     	register: function(state){
 			this.state = state;

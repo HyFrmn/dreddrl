@@ -279,7 +279,7 @@ define(['sge', './item'], function(sge, Item){
 	                },
 	                actions: {
 	                    interact :
-	                        ['switch', '${encounter.status}', 
+	                        [['switch', '${encounter.status}', 
 	                            [
 	                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
 	                                ['set', 'encounter.status', 1],
@@ -296,7 +296,7 @@ define(['sge', './item'], function(sge, Item){
 	                            ],[
 	                                ['dialog', "Welcome to Peach Trees. "]
 	                            ]
-	                        ]
+	                        ]]
 	                }
 	            });
 	            mother.tags.push('mother');
@@ -318,7 +318,7 @@ define(['sge', './item'], function(sge, Item){
 	                },
 	                actions: {
 	                   interact :
-	                        ['if', '${encounter.status}==1', 
+	                        [['if', '${encounter.status}==1', 
 	                            [
 	                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
 	                                ['set', 'encounter.status', 2],
@@ -328,7 +328,7 @@ define(['sge', './item'], function(sge, Item){
 	                            ],[
 	                                ['dialog', "Hey there. Haven't seen you around the block before."]
 	                            ]
-	                        ] 
+	                        ]]
 	                }
 	            });
 	            daughter.tags.push('daughter');
@@ -357,12 +357,12 @@ define(['sge', './item'], function(sge, Item){
 	                },
 	                actions : {
 	                	kill : 
-		                	['if', true, 
+		                	[['if', true, 
 		                		[
 		                			['set','@(pc).stats.xp', 5, 'add'],
 	                				['set', 'encounter.status',1]
 	                			]
-	                		]
+	                		]]
 	                }
 	            });
 	            gangBoss.tags.push('gangboss');
@@ -397,7 +397,7 @@ define(['sge', './item'], function(sge, Item){
 				},
 				interact : {priority: true},
 				actions: {
-					interact: ['switch', '${encounter.status}',
+					interact: [['switch', '${encounter.status}',
 						[
 							['dialog', 'Help me, the Spacers have kidnapped my daughter. Can you get her back for me?' ],
 							['set', 'encounter.status', 1],
@@ -408,7 +408,7 @@ define(['sge', './item'], function(sge, Item){
 						[
 							['dialog', 'Please find my daughter'],
 						]
-					]
+					]]
 				}
 			},
 			daughter : {
@@ -438,7 +438,7 @@ define(['sge', './item'], function(sge, Item){
 				},
 				interact : {priority: true},
 				actions: {
-					interact: ['switch', '${encounter.status}',
+					interact: [['switch', '${encounter.status}',
 						[
 							['dialog', 'Help me someone stole my watch!!' ],
 							['set', 'encounter.status', 1],
@@ -459,7 +459,7 @@ define(['sge', './item'], function(sge, Item){
 						],[
 							['event', 'this', 'emote.msg', 'Thanks for finding my watch.', 2]
 						]
-					]
+					]]
 				}
 			},
 			perp : {
@@ -473,10 +473,10 @@ define(['sge', './item'], function(sge, Item){
 				},
 				deaddrop: {items:['@(encounter.watch)']},
 				actions: {
-					kill : ['list',[
+					kill : [
 						['event', 'pc', 'emote.msg', 'Now where did he leave the watch?', 3],
 						['event', 'encounter.victim', 'target.set']
-						]]
+						]
 				}
 				
 			}

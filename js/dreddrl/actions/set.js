@@ -1,11 +1,7 @@
 define(['sge','../action'], function(sge, Action){
 	var SetAction = Action.extend({
-		init: function(entity, data){
-			this._super(entity, data);
-			this.async = true;
-		},
 		start: function(path, value, method){
-			var val = this.evalExpr(value, this.entity);
+			var val = this.evalExpr(value, this.ctx);
 			this.setAttr(path, val, method);
 		}
 	})

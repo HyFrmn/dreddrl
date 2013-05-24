@@ -190,8 +190,8 @@ function(sge, Factory, encounters, Map){
 
             this.options = {
                 padding: 3,
-                width: 7,
-                height: 3,
+                width: 5,
+                height: 2,
             }
 
 
@@ -306,7 +306,7 @@ function(sge, Factory, encounters, Map){
 
             //Populate market place.
             //*
-            var npcs=32;
+            var npcs=4;
             var citizen = null;
             while (npcs--){
                 var tx = sge.random.range(market.left, market.right);
@@ -328,7 +328,7 @@ function(sge, Factory, encounters, Map){
                 })
             }
 
-            var lawbreakers=4;
+            var lawbreakers=2;
             var lawbreaker = null;
             while (lawbreakers--){
                 var tx = sge.random.range(market.left, market.right);

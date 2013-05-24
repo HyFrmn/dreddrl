@@ -31,6 +31,8 @@ define(['sge'], function(sge){
             this.data.radius = 192;
             this.data.radiusScale = 1;
             this.data.faction = data.faction || null;
+            this.data.region = data.region;
+            this._idleCounter = -1;
             this.data.xp = 1;
             this.fsm = sge.vendor.StateMachine.create({
                 initial: 'idle',
@@ -126,6 +128,39 @@ define(['sge'], function(sge){
                     } else {
                         this.fsm.startFleeing();
                     }
+                }
+            } else {
+                var region = this.get('region');
+                var tx = this.entity.get('xform.tx');
+                var ty = this.entity.get('xform.ty');
+                var vx = vy = 0;
+                if (region){
+                    if (!region.test(tx, ty)){
+                        var dx = tx - ((region.right-region.left)/2 + region.left);
+                        var dy = ty - ((region.bottom-region.top)/2 + region.top);
+                        var length = Math.sqrt((dx*dx)+(dy*dy));
+                        vx = -(dx / length) * this.get('speed');
+                        vy = -(dy / length)  * this.get('speed'); 
+                        this.entity.set('xform.v', vx, vy);
+                        this._idleCounter = 0;
+                        return;
+                    }
+                }
+                if (this._idleCounter<0){
+                    this._idleCounter=30 + (Math.random() * 30);
+                    if (sge.random.unit()<0.15){
+                        vx = this.get('speed') * ((Math.random() * 2) - 1);
+                        vy = this.get('speed') * ((Math.random() * 2) - 1);
+                        if (region){
+                            while (!region.test(tx+vx,ty+vy)){
+                                vx = this.get('speed') * ((Math.random() * 2) - 1);
+                                vy = this.get('speed') * ((Math.random() * 2) - 1);
+                            }
+                        }  
+                    }
+                    this.entity.set('xform.v', vx, vy);
+                } else {
+                    this._idleCounter--;
                 }
             }
         },

@@ -1,61 +1,37 @@
 define(['sge'], function(sge){
 	var Action = sge.Class.extend({
-		init: function(entity, data){
-			this.entity = entity;
-			this.children = []
-			this.label = null;
-
-			if(data.type === undefined) {
-                data.type = 'action';
-	        }
-	        if(data.label === undefined) {
-	            data.label = data.type;
-	        }
-	        if(data.children === undefined) {
-	            data.children = [];
-	        }
-	        if(data.args === undefined) {
-	            data.args = [];
-	        }
-	        this.type = data.type;
-	        this.args = data.args;
-	        this.label = data.label;
-	        this.leaf = true;
-	        this.loadChildren(data);
-			},
-		add : function(child) {
-	        this.children.push(child);
-	    },
-	    remove : function(child) {
-		        this.children.remove(child);
-		    },
-	    uiInterface : function(){
-		        return null;
-	    },
-	    
-	    loadChildren : function(data) {
-		        for(var i = 0; i < data.children.length; i++) {
-		            var child = data.children[i];
-		            var action = rpg.Action.Load(child);
-		            this.add(action);
-		        }
-	    },
-	    run : function() {
-	    		this.state = this.entity.state;
-		        this.start.apply(this, this.args);
-	    },
-	    start : function() {
-
-	    },
-	    end : function() {
-		        var eventSystem = this.getEngine().getPlugin('event');
-		        eventSystem.actions = eventSystem.actions.without(this);
-		        this.getEvent().run();
-	    },
-	    evalExpr : function(expr, ctx) {
+		init: function(ctx, data){
+			this.ctx = ctx;
+			this.data = data;
+			this.async = false;
+			this._next = null;
+		},
+		start: function(){
+			this.end();
+		},
+		end: function(){
+			this.next();
+		},
+		run: function(){
+			this.start.apply(this, this.data);
+			if (!this.async){
+				this.end();
+			}
+		},
+		next: function(){
+			if (this._next){
+				this._next.run();
+			}
+		},
+		chain: function(action){
+			if (this._next){
+				action.chain(this._next);
+			}
+			this._next = action;
+		},
+		evalExpr : function(expr, ctx) {
 	        //DANGEROUS;
 	        var expr_ = this.parseExpr(expr, ctx);
-
 	        var evaled = eval(expr_);
 	        return evaled;
 	    },
@@ -78,11 +54,11 @@ define(['sge'], function(sge){
 	            var name = path.match(/@\(([a-zA-Z0-9.]*)\)/)[1];
 	            path = path.replace(/@\(([a-zA-Z0-9.]*)\)\./,'');
 	            if (name=='state'){
-	            	_ctx = this.state;
+	            	_ctx = this.ctx.state;
 	            }  else if (name.match(/encounter\./)){
-            		_ctx = this.entity.get(name);
+            		_ctx = this.ctx.get(name);
             	} else {
-		            _ctx = this.state.getEntitiesWithTag(name)[0];
+		            _ctx = this.ctx.state.getEntitiesWithTag(name)[0];
 		        }
 	            path = path.replace('@(' + name + ').', '');
 	            console.log('name', name, _ctx.get(path))
@@ -90,32 +66,34 @@ define(['sge'], function(sge){
 	        return _ctx.get(path);
 	    },
 	    setAttr : function(path, value, method) {
-	    	var _ctx = this.entity;
+	    	var _ctx = this.ctx;
 	        if (path.match(/^@/)){
 	            var name = path.match(/@\(([a-zA-Z0-9.]*)\)/)[1];
 	            path = path.replace(/@\(([a-zA-Z0-9.]*)\)\./,'');
 	            if (name=='state'){
-	            	_ctx = this.state;
+	            	_ctx = this.ctx.state;
 	            } else if (name.match(/encounter\./)){
-            		_ctx = this.entity.get(name);
+            		_ctx = this.ctx.get(name);
             	} else {
-		            _ctx = this.state.getEntitiesWithTag(name)[0];
+		            _ctx = this.ctx.state.getEntitiesWithTag(name)[0];
 		        }
 	            path = path.replace('@(' + name + ').', '');
 	        }
 	        return _ctx.set(path, value, method);
 	    },
-	});
+
+	})
 
 	Action._classHash = {};
 
 	Action.Load = function(entity, data) {
-		var type = data.type;
+		var tmp = data.slice(0)
+		var type = tmp.shift();
 	    var cls = Action._classHash[type];
 	    if(cls === undefined) {
 	        return null;
 	    }
-	    var comp = new cls(entity, data);
+	    var comp = new cls(entity, tmp);
 	    comp.type = type;
 	    return comp;
 	};
@@ -132,12 +110,20 @@ define(['sge'], function(sge){
 	    return rpg.Action._classHash.keys();
 	};
 
-	Action.Factory = function(actionData, ctx){
-        var tmpActionData = actionData.slice(0);
-        var actionType = tmpActionData.shift();
-        console.log(actionData);
-        var action = Action.Load(ctx, {type: actionType, args: tmpActionData});
-        action.run();
+	Action.Factory = function(ctx, actionList){
+		var firstAction = null;
+		var lastAction = null;
+        var actions = _.map(actionList, function(actionData){
+        	var action = Action.Load(ctx, actionData);
+        	if (lastAction){
+        		lastAction.chain(action);
+        	} else {
+        		console.log('First', action, actionData);
+        		firstAction = action;
+        	}
+        	lastAction = action;
+        });
+        return firstAction;
 	}
 
 	return Action;
