@@ -26,7 +26,7 @@ define(['sge'], function(sge){
                     this.data.life = 0;
                     this.entity.fireEvent('kill', 'Ran out of health.');
                 } else {
-                    this.entity.fireEvent('tint', 'blue', 0.25);
+                    this.entity.fireEvent('tint', 'red', 0.25);
                 }
             }.bind(this));
         },

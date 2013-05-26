@@ -1,0 +1,296 @@
+{
+    "crimeBoss" : {
+        "steps" : 1,
+        "description" : "Defeat the local Crime Boss.",
+        "rooms" : {
+            "hangout" : {
+                "locked" : true,
+                "spawn" : ["spacer", "spacer", "spacer", "spacer", "spacer"]
+            }
+        },
+        "entities" : {
+            "crimeboss" : {
+                "meta" : {
+                    "inherit" : "spacer",
+                    "spawn" : "room.hangout"
+                },
+                "actions" : {
+                    "kill" : [
+                        ["set", "encounter.status",1],
+                        ["set", "@(pc).stats.xp", 300, "add"]
+                    ]
+                }
+            }
+        }
+    },
+    "rescueEncounter": {
+        "steps": 3,
+        "description" : "Rescue the kidnap victim.",
+        "rooms": {
+            "scene": {
+                "locked": true
+            }
+        },
+        "entities": {
+            "client": {
+                "meta": {
+                    "inherit": "man",
+                    "spawn": "room.random"
+                },
+                "interact": {
+                    "priority": true
+                },
+                "actions": {
+                    "interact": [
+                        [
+                            "switch",
+                            "${encounter.status}",
+                            [
+                                [
+                                    "dialog",
+                                    "Help me, the Spacers have kidnapped my daughter. Can you get her back for me?"
+                                ],
+                                [
+                                    "set",
+                                    "encounter.status",
+                                    1
+                                ],
+                                [
+                                    "set",
+                                    "interact.priority",
+                                    false
+                                ],
+                                [
+                                    "event",
+                                    "encounter.daughter",
+                                    "target.set"
+                                ],
+                                [
+                                    "set",
+                                    "@(encounter.daughter).interact.priority",
+                                    true
+                                ]
+                            ],
+                            [
+                                [
+                                    "dialog",
+                                    "Please find my daughter"
+                                ]
+                            ],
+                            [
+                                [
+                                    "dialog",
+                                    "Thank you for saving my daughter from the spacers."
+                                ],
+                                [
+                                    "set",
+                                    "encounter.status",
+                                    3
+                                ],
+                                [
+                                    "set",
+                                    "interact.priority",
+                                    false
+                                ],
+                                [   
+                                    "set",
+                                    "@(pc).stats.xp",
+                                    150,
+                                    "add"
+                                ]
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "daughter": {
+                "meta": {
+                    "inherit": "citizen",
+                    "spawn": "room.scene"
+                },
+                "actions": {
+                    "interact": [
+                        [
+                            "if",
+                            "${@(encounter.spacer1).active} || ${@(encounter.spacer2).active} || ${@(encounter.spacer3).active}",
+                            [
+                                [
+                                    "event",
+                                    "pc",
+                                    "emote.msg",
+                                    "Please Help Me!"
+                                ]
+                            ],
+                            [
+                                [
+                                    "dialog",
+                                    "Thank you for saving me."
+                                ],
+                                [
+                                    "event",
+                                    "encounter.client",
+                                    "target.set"
+                                ],
+                                [
+                                    "set",
+                                    "encounter.status",
+                                    2
+                                ],
+                                [
+                                    "set",
+                                    "interact.priority",
+                                    false
+                                ],
+                                [
+                                    "set",
+                                    "@(encounter.client).interact.priority",
+                                    true
+                                ]
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "spacer1": {
+                "meta": {
+                    "inherit": "spacer",
+                    "spawn": "room.scene"
+                }
+            },
+            "spacer2": {
+                "meta": {
+                    "inherit": "spacer",
+                    "spawn": "room.scene"
+                }
+            },
+            "spacer3": {
+                "meta": {
+                    "inherit": "spacer",
+                    "spawn": "room.scene"
+                }
+            }
+        }
+    },
+    "lostItem": {
+        "steps": 2,
+        "description" : "Find the the lost watch.",
+        "items": {
+            "watch": {
+                "name": "Watch",
+                "desc": "Lost Watch",
+                "value": 50,
+                "type": "watch"
+            }
+        },
+        "entities": {
+            "victim": {
+                "meta": {
+                    "inherit": "man",
+                    "spawn": "room.random"
+                },
+                "interact": {
+                    "priority": true
+                },
+                "actions": {
+                    "interact": [
+                        [
+                            "switch",
+                            "${encounter.status}",
+                            [
+                                [
+                                    "dialog",
+                                    "Help me someone stole my watch!!"
+                                ],
+                                [
+                                    "set",
+                                    "encounter.status",
+                                    1
+                                ],
+                                [
+                                    "if",
+                                    "${@(encounter.perp).active}",
+                                    [
+                                        [
+                                            "event",
+                                            "encounter.perp",
+                                            "target.set"
+                                        ]
+                                    ],
+                                    []
+                                ]
+                            ],
+                            [
+                                [
+                                    "if",
+                                    "(${encounter.watch.id} in [${@(pc).inventory.items}])",
+                                    [
+                                        [
+                                            "dialog",
+                                            "Thanks for finding my watch."
+                                        ],
+                                        [
+                                            "set",
+                                            "interact.priority",
+                                            false
+                                        ],
+                                        [
+                                            "set",
+                                            "encounter.status",
+                                            2
+                                        ]
+                                    ],
+                                    [
+                                        [
+                                            "dialog",
+                                            "Can you find my watch?"
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            [
+                                [
+                                    "event",
+                                    "this",
+                                    "emote.msg",
+                                    "Thanks for finding my watch.",
+                                    2
+                                ]
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "perp": {
+                "meta": {
+                    "inherit": "lawbreaker",
+                    "spawn": {
+                        "policy": "random.radius",
+                        "target": "victim",
+                        "radius": 64
+                    }
+                },
+                "deaddrop": {
+                    "items": [
+                        "@(encounter.watch)"
+                    ]
+                },
+                "actions": {
+                    "kill": [
+                        [
+                            "event",
+                            "pc",
+                            "emote.msg",
+                            "Now where did he leave the watch?",
+                            3
+                        ],
+                        [
+                            "event",
+                            "encounter.victim",
+                            "target.set"
+                        ]
+                    ]
+                }
+            }
+        }
+    }
+}

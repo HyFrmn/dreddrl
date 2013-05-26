@@ -1,7 +1,75 @@
 define(['sge'], function(sge){
+	var ContextWrapper = sge.Class.extend({
+		init: function(array){
+			this.array = array;
+		},
+		get : function(path){
+			var subpaths = path.split('.');
+			var data = this.array;
+			while (subpaths.length){
+				var data = data[subpaths.shift()];
+			}
+			return data;
+		}
+	})
+
+	var Context = sge.Class.extend({
+		init: function(data){
+			this._subContexts = {};
+			this._defaultContext = this;
+			this.data = data || {}
+		},
+		addSubContext : function(name, context, default_){
+			if (context.get===undefined){
+				context = new ContextWrapper(context);
+			}
+			if (default_){
+				this._defaultContext = context;
+			}
+			if (!this._defaultContext){
+				this._defaultContext = context
+			}
+			this._subContexts[name] = context;
+		},
+		_getContext : function(path){
+			var match = path.match(/[\w]*/)[0];
+			ctx = this._defaultContext;
+			if (this._subContexts[match]!==undefined){
+				ctx = this._subContexts[match];
+				path = path.replace(/[\w]*\.?/,'');
+			}
+			return {
+				ctx : ctx,
+				path : path,
+			}
+		},
+		get : function(path, value, method){
+			var match = path.match(/[\w]*/)[0];
+			var scoped = this._getContext(path);
+			if (!scoped.path.length){
+				return scoped.ctx;
+			}
+			if (scoped.ctx==this){
+				return this.data[path];
+			}
+			return scoped.ctx.get(scoped.path, value, method);
+		},
+		set : function(path, value, method){
+			
+			var scoped = this._getContext(path);
+			return scoped.ctx.set(scoped.path, value, method);
+		}
+	})
+
+
 	var Action = sge.Class.extend({
-		init: function(ctx, data){
-			this.ctx = ctx;
+		init: function(entity, data){
+			this.ctx = new Context();
+			this.ctx.addSubContext('entity', entity, true);
+			this.ctx.addSubContext('state', entity.state);
+			this.ctx.addSubContext('action', this);
+			this.entity = entity;
+			this.state = entity.state;
 			this.data = data;
 			this.async = false;
 			this._next = null;
@@ -49,7 +117,7 @@ define(['sge'], function(sge){
 	        return parsedExpr;
 	    },
 	    evalValue : function(path, ctx){
-	        var _ctx = ctx;
+	        var _ctx = ctx || this.ctx;
 	        if (path.match(/^@/)){
 	            var name = path.match(/@\(([a-zA-Z0-9.]*)\)/)[1];
 	            path = path.replace(/@\(([a-zA-Z0-9.]*)\)\./,'');
@@ -58,7 +126,7 @@ define(['sge'], function(sge){
 	            }  else if (name.match(/encounter\./)){
             		_ctx = this.ctx.get(name);
             	} else {
-		            _ctx = this.ctx.state.getEntitiesWithTag(name)[0];
+		            _ctx = this.state.getEntitiesWithTag(name)[0];
 		        }
 	            path = path.replace('@(' + name + ').', '');
 	            console.log('name', name, _ctx.get(path))
@@ -71,23 +139,39 @@ define(['sge'], function(sge){
 	            var name = path.match(/@\(([a-zA-Z0-9.]*)\)/)[1];
 	            path = path.replace(/@\(([a-zA-Z0-9.]*)\)\./,'');
 	            if (name=='state'){
-	            	_ctx = this.ctx.state;
+	            	_ctx = this.ctx;
 	            } else if (name.match(/encounter\./)){
             		_ctx = this.ctx.get(name);
             	} else {
-		            _ctx = this.ctx.state.getEntitiesWithTag(name)[0];
+		            _ctx = this.state.getEntitiesWithTag(name)[0];
 		        }
 	            path = path.replace('@(' + name + ').', '');
 	        }
 	        return _ctx.set(path, value, method);
 	    },
+	    get : function(path){
+	    	console.log(path);
+	    	if (path.match(/data\./)){
+	    		path = path.replace(/data\./,'');
+	    		index = parseInt(path.split('.')[0]);
+	    		path = path.replace(index+'.','');
+	    		var val = this.data[index];
+	    		console.log(path, index, val);
+	    		if (path){
+	    			val = val[path];
+	    		}
+	    		return val;
+	    	}
+	    },
+	    set : function(path, value){
 
+	    }
 	})
 
 	Action._classHash = {};
 
 	Action.Load = function(entity, data) {
-		var tmp = data.slice(0)
+		var tmp = data.slice()
 		var type = tmp.shift();
 	    var cls = Action._classHash[type];
 	    if(cls === undefined) {
@@ -118,7 +202,6 @@ define(['sge'], function(sge){
         	if (lastAction){
         		lastAction.chain(action);
         	} else {
-        		console.log('First', action, actionData);
         		firstAction = action;
         	}
         	lastAction = action;

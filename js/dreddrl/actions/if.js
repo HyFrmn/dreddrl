@@ -10,7 +10,7 @@ define(['sge','../action'], function(sge, Action){
 	        } else {
 	            actionList = falseActions.slice(0);
 	        }
-	        var action = Action.Factory(this.ctx, actionList);
+	        var action = Action.Factory(this.entity, actionList);
 	        this.chain(action);
 		}
 	});

@@ -49,7 +49,7 @@ define(['sge', './item'], function(sge, Item){
 		start: function(options){
 			var active = null;
 			this.total = options.steps || 1;
-
+			this.description = options.description || "";
 			var roomNames = _.keys(options.rooms || {});
 			var rooms = _.map(roomNames, function(name){
 				var def = options.rooms[name];
@@ -58,6 +58,11 @@ define(['sge', './item'], function(sge, Item){
 				if (def.locked){
 					_.each(room.doors, function(door){
 						door.set('door.locked', true);
+					});
+				}
+				if (def.spawn){
+					_.each(def.spawn, function(type){
+						room.spawn(type);
 					});
 				}
 				this.rooms[name] = room;
@@ -143,6 +148,11 @@ define(['sge', './item'], function(sge, Item){
 		}
 	})
 
+	var serialData = null;
+	sge.util.ajax('/assets/encounters/standard.json', function(rawText){
+				serialData = JSON.parse(rawText);
+	}.bind(this));
+
 	var EncounterSystem = sge.Class.extend({
 		init: function(state, level){
 			this.state = state;
@@ -162,10 +172,11 @@ define(['sge', './item'], function(sge, Item){
 			}
 			return encounter;
 		},
-		createSerial: function(klass, template, options){
+		createSerial: function(template, options){
+			tmpl = sge.util.deepExtend({}, serialData[template]);
 			options = options || {};
-			var opts = sge.util.deepExtend(template, options);
-			return this.create(klass, opts);
+			var opts = sge.util.deepExtend(tmpl, options);
+			return this.create(SerialEncounter, opts);
 		},
 		getTargetEntity : function(){
 			var entity = null;
@@ -258,239 +269,13 @@ define(['sge', './item'], function(sge, Item){
 		},
 		switch: function(){
 			this.active = this.next();
+			this.state.info(this.active.description);
 		}
 	})
-
-	var CheckupEncounter = Encounter.extend({
-	        start: function(){
-	        	this.total = 3;
-	            //Create Mother
-	            var mothersRoom = this.block.getRandomEncounterRoom();
-	            var mother = this.state.factory('woman', {
-	                xform: {
-	                    tx: mothersRoom.cx * 32,
-	                    ty: mothersRoom.cy * 32
-	                },
-	                interact : {
-	                	priority: true
-	                },
-	                encounter: {
-	                    encounter : this,
-	                },
-	                actions: {
-	                    interact :
-	                        [['switch', '${encounter.status}', 
-	                            [
-	                                ['dialog', "Please help me! I haven't seen my daughter all day. Can you find her and make sure she is ok. Thanks."],
-	                                ['set', 'encounter.status', 1],
-                                    ['event', 'daughter', 'target.set'],
-                                    ['set', 'interact.priority', false],
-                                    ['set', '@(daughter).interact.priority', true]
-	                            ],[
-	                                ['dialog', "Have you found my daughter yet?! I'm worried!"]
-	                            ],[
-	                                ['dialog', "Thank you for finding my daughter. Here take this for your trouble."],
-	                                ['set','@(pc).stats.xp', 50, 'add'],
-	                                ['set', 'interact.priority', false],
-	                                ['set', 'encounter.status', 3]
-	                            ],[
-	                                ['dialog', "Welcome to Peach Trees. "]
-	                            ]
-	                        ]]
-	                }
-	            });
-	            mother.tags.push('mother');
-	            this.block.state.addEntity(mother);
-	            this.targetEntity = mother;
-	            
-
-	            //Create Daughter
-	            var daughtersRoom = this.block.getRandomEncounterRoom({exclude: [mothersRoom]});
-	            var daughter = this.state.factory('woman.young', {
-	                xform: {
-	                    tx: daughtersRoom.cx * 32,
-	                    ty: daughtersRoom.cy * 32
-	                },
-	                interact : {
-	                },
-	                encounter: {
-	                    encounter : this,
-	                },
-	                actions: {
-	                   interact :
-	                        [['if', '${encounter.status}==1', 
-	                            [
-	                                ['dialog', "Yes, I'm doing fine. Tell my mom I'm fine."],
-	                                ['set', 'encounter.status', 2],
-	                                ['set', 'interact.priority', false],
-	                                ['set', '@(mother).interact.priority', true],
-                                    ['event', 'mother', 'target.set']
-	                            ],[
-	                                ['dialog', "Hey there. Haven't seen you around the block before."]
-	                            ]
-	                        ]]
-	                }
-	            });
-	            daughter.tags.push('daughter');
-	            this.block.state.addEntity(daughter);
-	        },
-	        finish: function(){
-	        	this._super();
-	        	var pc = this.getPC();
-	        	pc.set('stats.xp', 50, 'add');
-	        	this.state.log('Completed Checkup Encounter');
-	        }
-	    });
-
-	    var ExecuteEncounter = Encounter.extend({
-	        start: function(){
-	            //Create Mother
-	            var gangBossRoom = this.block.getRandomEncounterRoom();
-	            gangBossRoom._populated = true
-	            var gangBoss = this.state.factory('gangboss', {
-	                xform: {
-	                    tx: gangBossRoom.cx * 32,
-	                    ty: gangBossRoom.cy * 32
-	                },
-	                encounter: {
-	                	encounter : this
-	                },
-	                actions : {
-	                	kill : 
-		                	[['if', true, 
-		                		[
-		                			['set','@(pc).stats.xp', 5, 'add'],
-	                				['set', 'encounter.status',1]
-	                			]
-	                		]]
-	                }
-	            });
-	            gangBoss.tags.push('gangboss');
-	            this.block.state.addEntity(gangBoss);
-	            var lawbreakers = 5;
-	            while (lawbreakers--){
-	            	gangBossRoom.spawn('lawbreaker');
-	            }
-	            this.targetEntity = gangBoss;
-	        },
-	        finish: function(){
-	        	this._super();
-	        	var pc = this.getPC();
-	        	pc.set('stats.xp', 50, 'add');
-	        	this.state.log('Completed Execute Gang Boss');
-	        }
-	    });
-
-	var rescueEncounterTemplate = {
-		steps: 3,
-		rooms : {
-			scene : {
-				spawn : ['spacer','spacer','spacer'],
-				locked : true,
-			}
-		},
-		entities: {
-			client : {
-				meta: {
-					inherit: 'man',
-					spawn: 'room.random'
-				},
-				interact : {priority: true},
-				actions: {
-					interact: [['switch', '${encounter.status}',
-						[
-							['dialog', 'Help me, the Spacers have kidnapped my daughter. Can you get her back for me?' ],
-							['set', 'encounter.status', 1],
-							['set', 'interact.priority', false],
-							['event', 'encounter.daughter', 'target.set'],
-							['set', '@(encounter.daughter).interact.priority', true]
-						],
-						[
-							['dialog', 'Please find my daughter'],
-						]
-					]]
-				}
-			},
-			daughter : {
-				meta: {
-					inherit: 'citizen',
-					spawn : 'room.scene',
-				}
-			}
-		}
-	}
-
-	var lostItemTemplate = {
-		steps: 2,
-		items : {
-			watch : {
-				name : 'Watch',
-				desc : 'Lost Watch',
-				value : 50,
-				type : 'watch'
-			}
-		},
-		entities: {
-			victim : {
-				meta: {
-					inherit: 'man',
-					spawn: 'room.random'
-				},
-				interact : {priority: true},
-				actions: {
-					interact: [['switch', '${encounter.status}',
-						[
-							['dialog', 'Help me someone stole my watch!!' ],
-							['set', 'encounter.status', 1],
-							['if', '${@(encounter.perp).active}',[
-								['event', 'encounter.perp', 'target.set']
-							],[
-							]]
-						],
-						[
-							['if', '(${encounter.watch.id} in [${@(pc).inventory.items}])',[
-								['dialog', 'Thanks for finding my watch.'],
-								['set', 'interact.priority', false],
-								['set', 'encounter.status',2]
-							],[
-								['dialog', 'Can you find my watch?'],
-							]],
-							
-						],[
-							['event', 'this', 'emote.msg', 'Thanks for finding my watch.', 2]
-						]
-					]]
-				}
-			},
-			perp : {
-				meta: {
-					inherit: 'lawbreaker',
-					spawn: {
-						policy: 'random.radius',
-						target: 'victim',
-						radius: 64,
-					},
-				},
-				deaddrop: {items:['@(encounter.watch)']},
-				actions: {
-					kill : [
-						['event', 'pc', 'emote.msg', 'Now where did he leave the watch?', 3],
-						['event', 'encounter.victim', 'target.set']
-						]
-				}
-				
-			}
-		}
-	}
-
 
 	return {
 		Encounter : Encounter,
 		EncounterSystem : EncounterSystem,
-		ExecuteEncounter : ExecuteEncounter,
-		CheckupEncounter : CheckupEncounter,
-		rescueEncounterTemplate : rescueEncounterTemplate,
-		lostItemTemplate : lostItemTemplate,
 		SerialEncounter : SerialEncounter
 	}
 })

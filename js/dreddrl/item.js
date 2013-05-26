@@ -9,7 +9,6 @@ define(['sge'], function(sge){
 	var id=0;
 	var Item = sge.Class.extend({
 		init: function(options){
-			console.log(options, options.spriteFrame || 1)
 			this.id = id++;
 			this.name = options.name || 'Simple Item';
 			this.description = options.description || 'A simple object.'
@@ -44,7 +43,6 @@ define(['sge'], function(sge){
 	ajax('assets/items/standard.json', function(rawtext){
 		var data = JSON.parse(rawtext);
 		library = data;
-		console.log(library);
 	});
 
 	Item.Factory = function(name, options){

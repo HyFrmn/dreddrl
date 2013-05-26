@@ -4,7 +4,7 @@
 		"descripiton" : "A warm bowl of ramen noodles.",
 		"spriteFrame" : 123,
 		"spriteImage" : "scifi_icons_1.png",
-		"effect" : ["set", "health.life", "5", "add"],
+		"effect" : [["set", "health.life", "5", "add"]],
 		"immediate" : true
 	},
 	"gun" : {
@@ -12,7 +12,7 @@
 		"description" : "A basic mag gun.",
 		"spriteFrame" : 1,
 		"spriteImage" : "scifi_icons_1.png",
-		"effect" : ["set", "inventory.ammo", "12", "add"],
+		"effect" : [["set", "inventory.ammo", "12", "add"]],
 		"immediate" : true
 	},
 	"watch" : {
@@ -27,6 +27,6 @@
 		"spriteFrame" : 57,
 		"spriteImage" : "scifi_icons_1.png",
 		"immediate" : true,
-		"effect" : ["set", "inventory.keys", "1", "add"]
+		"effect" : [["set", "inventory.keys", "1", "add"]]
 	}
 }

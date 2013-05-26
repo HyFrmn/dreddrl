@@ -8,6 +8,7 @@ define(['sge', '../action'], function(sge, Action){
                 var callback = function(){
                     var actionData = callbackData.slice(0);
                     var action = Action.Factory(this.entity, actionData);
+                    action.ctx.addSubContext('event', Array.prototype.slice.call(arguments));
                     action.run(this.state);
                 }.bind(this);
                 this.data[keys[i]] = callback;
@@ -25,6 +26,7 @@ define(['sge', '../action'], function(sge, Action){
             var callback = function(){
                 var tmpActionData = actionData.slice(0);
                 var action = Action.Factory(this.entity, actionData);
+                action.ctx.addSubContext('event', Array.prototype.slice.call(arguments));
                 action.run(this.state);
             }.bind(this);
             this.data[evt] = callback;

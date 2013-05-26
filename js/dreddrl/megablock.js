@@ -190,7 +190,7 @@ function(sge, Factory, encounters, Map){
 
             this.options = {
                 padding: 3,
-                width: 5,
+                width: 6,
                 height: 2,
             }
 
@@ -344,8 +344,7 @@ function(sge, Factory, encounters, Map){
                         tx: tx,
                         ty: ty
                     }
-                })
-                console.log('SPAWN SPACER')
+                });
             }
 
             //*/
@@ -353,10 +352,9 @@ function(sge, Factory, encounters, Map){
             //Setup Encounter System
             //*
             this.encounterSystem = new encounters.EncounterSystem(this.state, this);
-            this.encounterSystem.create(encounters.CheckupEncounter);
-            this.encounterSystem.create(encounters.ExecuteEncounter);
-            this.encounterSystem.createSerial(encounters.SerialEncounter, encounters.rescueEncounterTemplate);
-            this.encounterSystem.createSerial(encounters.SerialEncounter, encounters.lostItemTemplate, {
+            this.encounterSystem.createSerial('rescueEncounter');
+            this.encounterSystem.createSerial('crimeBoss');
+            this.encounterSystem.createSerial('lostItem', {
                 entities : {
                     victim : {
                         meta : {
@@ -464,9 +462,13 @@ function(sge, Factory, encounters, Map){
                         continue;
                     }
                 }
+                if (room._populated){
+                    continue
+                }
                 var goodRoom = room;
                 break;
             }
+            goodRoom._populated = true;
             return goodRoom;
         },
 	});

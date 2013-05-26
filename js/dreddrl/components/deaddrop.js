@@ -60,7 +60,6 @@ define(['sge', '../item'], function(sge, Item){
                     pickup: this.data.pickup
                 }
             }
-            console.log('Drop', def);
             var newItem = this.state.factory('freeitem', def);
             this.state.addEntity(newItem);
             return newItem;

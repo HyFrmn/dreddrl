@@ -74,6 +74,9 @@ define([
                     weapons: {rps: 10},
                     stats: {},
                     emote: {},
+                    actions: {
+                        'region.enter' : [['event', 'this', 'info', 'Entering ${event.0.name}']]
+                    }
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     movement : {
@@ -89,7 +92,7 @@ define([
             citizen : function(){return deepExtend(FACTORYDATA['npc'](), {
                     interact : {},
                     actions: {
-                        interact : ['event', 'this', 'emote.msg', "I'm a citizen.", 1],
+                        interact : [['event', 'this', 'emote.msg', "I'm a citizen.", 1]],
                     },
                     simpleai : {}
                 })},
@@ -110,7 +113,7 @@ define([
                     enemyai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
                     deaddrop: {items:['key','gun','ramen']},
                     actions: {
-                        kill : ['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]
+                        kill : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
                     },
                     weapons: {rps: 2},
                 }
@@ -123,7 +126,7 @@ define([
                 health : {alignment:-10, life: 12},
                 deaddrop: {count: 2, always: ['key','key','key']},
                 actions: {
-                    kill : ['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]
+                    kill : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]]
                 },
             })},
             spacer : function(){
@@ -143,7 +146,7 @@ define([
                     enemyai : { tracking: 'pc', territory: 'spacer', xp: 1, faction: 'spacer'},
                     deaddrop: {items:['key','gun','ramen']},
                     actions: {
-                        kill : ['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]
+                        kill : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
                     },
                     weapons: {rps: 2},
                 }

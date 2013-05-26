@@ -61,6 +61,8 @@ define([
                 this._logQueue = [];
                 this._logTimer = -1;
 
+                this._msgs = []
+
                 this._track_x = null;
                 this._track_y = null;
                 this._debug_count = 0;
@@ -102,7 +104,7 @@ define([
 
                 this.infoContainer = new CAAT.ActorContainer().setLocation(this.game.renderer.width/3, this.game.renderer.height-96);
                 this.infoActor = new CAAT.TextActor().setFont( fontSize + 'px sans-serif').setLocation(16,16).setAlpha(1);
-                this.infoActor.setText('Some Info Message Goes Here');
+                this.infoActor.setText('Some Info Message Goes Here').setVisible(false);
                 this.infoContainer.addChild(this.infoActor);
                 this._uiContainer.addChild(this.infoContainer);
 
@@ -319,6 +321,9 @@ define([
                 funcs.push(entity.addListener('log', function(msg){
                     this.logCallback(msg);
                 }.bind(this)));
+                funcs.push(entity.addListener('info', function(msg){
+                    this.info(msg);
+                }.bind(this)));
                 funcs.push(entity.addListener('xform.move', function(){
                     this._updateHash(entity);
                 }.bind(this)));
@@ -343,6 +348,24 @@ define([
 
             logCallback : function(msg){
                 this.log(msg);
+            },
+
+            info : function(msg){
+                this._msgs.push(msg);
+                if (this._infoTimeout==null){
+                    this._infoNext();
+                };
+            },
+
+            _infoNext: function(){
+                if (this._msgs.length){
+                    msg = this._msgs.shift();
+                    this.infoActor.setText(msg).setVisible(true);
+                    this._infoTimeout = this.createTimeout(2, this._infoNext.bind(this));
+                } else {
+                    this.infoActor.setVisible(false);
+                    this._infoTimeout = null;
+                }
             },
 
             log : function(msg){
@@ -409,6 +432,7 @@ define([
                         if ((tx>region.left&&tx<region.right)&&(ty>region.top&&ty<region.bottom)){
                             this._regionEntityHash.add(region, entity.id);
                             //console.log('Enter: ' + region.name);
+                            entity.fireEvent('region.enter', region);
                             region.entities.push(entity);
                         }
                     }
