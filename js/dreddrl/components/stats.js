@@ -23,7 +23,7 @@ define(['sge'],function(sge){
 			this.entity.set('health.maxLife', 7 + level);
 			this.entity.set('health.life', 7 + level);
 			this.nextLevel += (level * 10);
-			this.entity.fireEvent('log','Level Up: ' + level);
+			this.entity.fireEvent('state.log','Level Up: ' + level);
 		},
 		_set_xp: function(xp, method){
 			var xp = this.__set_value('xp', xp, method);

@@ -6,27 +6,33 @@ define(['sge'], function(sge){
             this.data.life = data.life || 100;
             this.data.maxLife = data.maxLife || data.life || 100;
             this.data.alignment = data.alignment || 0;
-            this.entity.addListener('contact.start', function(entity){
-                if (!entity.get('health')){
-                    return;
-                }
-                var alignA = this.get('alignment');
-                var alignB = entity.get('health.alignment');
-                if ((alignA==0)||(alignB==0)){
-                    return;
-                }
-                if ((alignA<0)&&(alignB<0)){
-                    return
-                }
-                if ((alignA>0)&&(alignB>0)){
-                    return
-                }
-            	this.set('life', -1, 'add');
-                if (this.data.life <= 0){
-                    this.data.life = 0;
-                    this.entity.fireEvent('kill', 'Ran out of health.');
+
+            this._stuned = false;
+
+            this.entity.addListener('entity.takeDamage', function(damageProfile){
+                if (damageProfile.damageType=='STUN'){
+                    if (!this._stuned){
+                        this._stuned = true;
+                        this.entity.fireEvent('sprite.tint','cyan');
+                        this.entity.get('enemyai').active = false;
+                        this.entity.set('xform.v', 0, 0);
+
+                        this._stunTimeout = this.state.createTimeout(damageProfile.damage, function(){
+                            this._stuned=false;
+                            this.entity.fireEvent('sprite.tint');
+                            this.entity.get('enemyai').active = true;
+                        }.bind(this));
+                    } else {
+                        this._stunTimeout._length += damageProfile.damage/2;
+                    }
                 } else {
-                    this.entity.fireEvent('tint', 'red', 0.25);
+                    this.set('life', -damageProfile.damage, 'add');
+                    if (this.data.life <= 0){
+                        this.data.life = 0;
+                        this.entity.fireEvent('entity.kill', 'Ran out of health.');
+                    } else {
+                        this.entity.fireEvent('sprite.tint', 'red', 0.25);
+                    }
                 }
             }.bind(this));
         },
@@ -48,9 +54,16 @@ define(['sge'], function(sge){
         _set_life : function(value, method){
             var life = this.__set_value('life', value, method);
             this.data.life = Math.min(life, this.get('maxLife'));
-            var pct = this.data.life/this.get('maxLife');
-            this.set('pct', pct);
+            var pct = this.get('pct');
             if (this.container){
+                
+                if (this.get('alignment')==0){
+                    if (pct==1){
+                        this.container.setVisible(false)
+                    } else {
+                        this.container.setVisible(true);
+                    }
+                }
                 fillColor = 'green';
                 if (pct<=0.75){
                     fillColor = 'yellow';

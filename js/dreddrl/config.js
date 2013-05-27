@@ -6,7 +6,7 @@ define(function(){
 		dialogButton : 'space',  //B,
 		AButton : 'space',
 		BButton : 'enter',
-		XButton : 'X',
-		YButton : 'Z'
+		XButton : 'Z',
+		YButton : 'X'
 	}
 })

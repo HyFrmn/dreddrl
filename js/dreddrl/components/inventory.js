@@ -13,7 +13,7 @@ define(['sge', '../action'],function(sge, Action){
 			var freeitem = entity.get('freeitem');
 			var item = freeitem.get('item');
 
-			this.entity.fireEvent('log', 'Picked up ' + item.name);
+			this.entity.fireEvent('state.log', 'Picked up ' + item.name);
 			if (item.immediate){
 				if (item.effect){
 					action = Action.Factory(this.entity, item.effect);

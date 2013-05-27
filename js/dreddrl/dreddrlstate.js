@@ -143,6 +143,8 @@ define([
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair_tint_red.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert_tint_blue.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair_tint_blue.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert_tint_cyan.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair_tint_cyan.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_1.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3.png');
@@ -151,6 +153,10 @@ define([
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2_tint_red.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3_tint_red.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_4_tint_red.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_1_tint_cyan.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2_tint_cyan.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3_tint_cyan.png');
+                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_4_tint_cyan.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_1_tint_blue.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2_tint_blue.png');
                 this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3_tint_blue.png');
@@ -314,14 +320,14 @@ define([
             addEntity: function(entity){
                 this._super(entity);
                 var funcs = [];
-                funcs.push(entity.addListener('kill', function(){
+                funcs.push(entity.addListener('entity.kill', function(){
                     entity.active = false;
                     this._killList.push(entity);
                 }.bind(this)));
-                funcs.push(entity.addListener('log', function(msg){
+                funcs.push(entity.addListener('state.log', function(msg){
                     this.logCallback(msg);
                 }.bind(this)));
-                funcs.push(entity.addListener('info', function(msg){
+                funcs.push(entity.addListener('state.info', function(msg){
                     this.info(msg);
                 }.bind(this)));
                 funcs.push(entity.addListener('xform.move', function(){

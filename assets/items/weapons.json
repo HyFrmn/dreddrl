@@ -1,0 +1,25 @@
+{
+	"weapons" : {
+			"lawgiver" : {
+				"name" : "Lawgiver",
+				"description" : "The standard issue firearm for a judge.",
+				"ammo" : ["maground", "stun"]
+			},
+			"maggun" : {
+				"name" : "Mag Gun",
+				"description" : "A lightweight portable gauss gun. Fire the same ammunition as the lawgiver.",
+				"ammo" : ["maground"]
+			}
+		},
+	"ammo" : {
+		"maground" : {
+			"damage" : 2,
+			"damageSpread" : 2
+		},
+		"stun" : {
+			"damage" : 1,
+			"damageType" : "STUN",
+			"drawColor" : "blue"
+		}
+	}
+}

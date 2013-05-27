@@ -75,7 +75,7 @@ define([
                     stats: {},
                     emote: {},
                     actions: {
-                        'region.enter' : [['event', 'this', 'info', 'Entering ${event.0.name}']]
+                        'region.enter' : [['event', 'this', 'state.info', 'Entering ${event.0.name}']]
                     }
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
@@ -83,7 +83,7 @@ define([
                         map: this.map,
                         speed: 16
                     },
-                    health : {alignment:0, life: 1},
+                    health : {alignment:0, life: 8},
                     sprite : {
                         src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
                     },
@@ -109,7 +109,7 @@ define([
                         src : 'assets/sprites/albert.png',
                     },
                     emote: {},
-                    health : {alignment:-10, life: 3},
+                    health : {alignment:-10, life: 5},
                     enemyai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
                     deaddrop: {items:['key','gun','ramen']},
                     actions: {
@@ -139,7 +139,7 @@ define([
                 ]
                 return deepExtend(FACTORYDATA['npc'](), {
                     sprite : {
-                        src : 'assets/sprites/punk_1.png',
+                        src : 'assets/sprites/punk_' + sge.random.item([1,2,3]) +'.png',
                     },
                     emote: {},
                     health : {alignment:-10, life: 3},
