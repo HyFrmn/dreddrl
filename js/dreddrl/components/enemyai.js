@@ -24,7 +24,6 @@ define(['sge'], function(sge){
 		init: function(entity, data){
             this._super(entity, data);
             this._tracking = null;
-            this._anger = Math.random();
             this.data.tracking = data.tracking || null;
             this.data.territory = data.territory;
             this.data.speed = 96;
@@ -32,8 +31,9 @@ define(['sge'], function(sge){
             this.data.radiusScale = 1;
             this.data.faction = data.faction || null;
             this.data.region = data.region;
+            this.data.anger = 0;
             this._idleCounter = -1;
-            this.data.xp = 1;
+            this.data.xp = 2;
             this.fsm = sge.vendor.StateMachine.create({
                 initial: 'idle',
                 events: [
@@ -52,12 +52,14 @@ define(['sge'], function(sge){
                     onstopTracking: this.onLoseSight.bind(this)
                 }
             })
-            this.entity.addListener('contact.start', this.onContact.bind(this))
-            this.entity.addListener('kill', this.onKill.bind(this));
+            this.entity.addListener('entity.takeDamage', this.onDamaged.bind(this))
+            this.entity.addListener('entity.kill', this.onKill.bind(this));
+            this.entity.addListener('ai.investigate', this.onInvestigateLocation.bind(this));
             //this.entity.addListener('contact.tile', this.onContact.bind(this))
         },
         onKill: function(){
-            factionSystem.update(this.get('faction'), -this.get('xp'))
+            factionSystem.update(this.get('faction'), -this.get('xp'));
+            console.log('Faction:', factionSystem.get(this.get('faction')));
         },
         // FSM Callbacks
         onFlee: function(){
@@ -69,6 +71,18 @@ define(['sge'], function(sge){
             this.set('radiusScale', 1.5);
             this.entity.set('xform.v', this._tracking_vx, this._tracking_vy);
             this.entity.fireEvent('emote.msg', 'Get back here!');
+            var entities = this.state.findEntities(this.entity.get('xform.tx'), this.entity.get('xform.ty'), 128);
+            _.each(entities, function(entity){
+                if (entity==this.entity){
+                    return;
+                }
+                if (entity.get('enemyai')){
+                    if (entity.get('enemyai.faction')==this.get('faction')){
+                        console.log('Signal Comrad');
+                        entity.fireEvent('ai.investigate', this._tracking_tx, this._tracking_ty);
+                    }
+                }
+            }.bind(this));
         },
         onLoseSight: function(){
             this.set('radiusScale', 1.25);
@@ -83,31 +97,52 @@ define(['sge'], function(sge){
             this.entity.set('xform.v', 0, 0);
             this.set('radiusScale', 1)
         },
-        onInvestigate : function(event, from, to, e){
+        onInvestigate : function(event, from, to, tx, ty){
             this.set('radiusScale', 1.5);
-            var dx = e.get('xform.vx');
-            var dy = e.get('xform.vy');
+            this.set('anger', -5, 'add');
+            var dx = this.entity.get('xform.tx') - tx;
+            var dy = this.entity.get('xform.ty') - ty;
             var length = Math.sqrt((dx*dx)+(dy*dy));
             var sx = (-dx/length)*this.get('speed');
             var sy = (-dy/length)*this.get('speed');
             this.entity.set('xform.v', sx, sy);
             this.createTimeout(1, function(){
                 this.fsm.returnToIdle();
-            }.bind(this))
-            this.entity.fireEvent('emote.msg', 'What the hell was that?');
+            }.bind(this));
+            var entities = this.state.findEntities(this.entity.get('xform.tx'), this.entity.get('xform.ty'), 128);
+            _.each(entities, function(entity){
+                if (entity==this.entity){
+                    return;
+                }
+                if (entity.get('enemyai')){
+                    if (entity.get('enemyai.faction')==this.get('faction')){
+                        console.log('Signal Comrad');
+                        entity.fireEvent('ai.investigate', tx, ty);
+                    }
+                }
+            }.bind(this));
         },
         onAfterInvestigate : function(event, from, to, e){
             if (this._timeout){
                 this._timeout.clear();
             }
         },
-        onContact : function(e){
-            if (_.contains(e.tags, 'bullet')){
+        onInvestigateLocation : function(tx, ty){
+            console.log('SIGNAL', this.fsm.current);
+            if (this.fsm.current=='idle'){
+                this.entity.fireEvent('emote.msg', 'What was what?');
+                this.fsm.investigateHit(tx, ty);
+            }
+        },
+        onDamaged : function(damageProfile){
+            if (this.active){
                 var health = this.entity.get('health.pct');
+                this.set('anger', -3, 'add');
                 if (health < 0.3){
                     this.fsm.startFleeing();
                 } else if (this.fsm.current=='idle'){
-                    this.fsm.investigateHit(e);
+                    this.entity.fireEvent('emote.msg', 'What the hell was that?');
+                    this.fsm.investigateHit(damageProfile.tx, damageProfile.ty);
                 }
             }
         },
@@ -163,6 +198,11 @@ define(['sge'], function(sge){
             } else {
                 this._idleCounter--;
             }
+            if (this.get('anger')<0){
+                this.set('anger', delta, 'add');
+            } else {
+                this.set('anger', 0);
+            }
         },
 
         tick_investigate : function(delta){
@@ -196,7 +236,9 @@ define(['sge'], function(sge){
         isThreat : function(){
             //console.log('Threat', (factionSystem.get(this.get('faction'))/-4));
             if (this.get('faction')){
-                return Boolean((factionSystem.get(this.get('faction'))/-4)>this._anger);
+                var factionFactor = factionSystem.get(this.get('faction'));
+                var angerFactor = this.get('anger');
+                return Boolean((factionFactor+angerFactor)<-4);
             } else {
                 return true;
             }

@@ -44,7 +44,7 @@ function(sge, Factory, encounters, Map){
         }
     })
 
-    var MegaBlockRoom = sge.Class.extend({
+    var MegaBlockRoom = MegaBlockRegion.extend({
         init: function(gen, cx, cy, width, height, options){
             this.level = gen;
             this._populated = false;
@@ -369,7 +369,6 @@ function(sge, Factory, encounters, Map){
             //Populate Rooms
             //*
             _.each(this.rooms, function(room){
-                console.log(room.name, room._populated);
                 if (!room._populated){
                     room._populated = true;
                     var spawnType = sge.random.item(['citizen','lawbreaker','spacer']);

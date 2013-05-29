@@ -24,7 +24,8 @@ define([
     './actions/set',
     './actions/switch',
     './actions/event',
-    './actions/list'
+    './actions/list',
+    './actions/followpath'
 	], 
 	function(sge){
         var NPCSHEETS = [
@@ -71,7 +72,7 @@ define([
                         speed: 64
                     },
                     health : {alignment:5, life: 100},
-                    weapons: {rps: 10},
+                    weapons: {rps: 10, weapon: 'lawgiver'},
                     stats: {},
                     emote: {},
                     actions: {
@@ -92,9 +93,10 @@ define([
             citizen : function(){return deepExtend(FACTORYDATA['npc'](), {
                     interact : {},
                     actions: {
-                        interact : [['event', 'this', 'emote.msg', "I'm a citizen.", 1]],
+                        //interact : [['event', 'this', 'emote.msg', "I'm a citizen.", 1]],
+                        interact : [['followpath']]
                     },
-                    simpleai : {}
+                    //simpleai : {},
                 })},
             lawbreaker : function(){
                 var msgs = [
@@ -113,7 +115,7 @@ define([
                     enemyai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
                     deaddrop: {items:['key','gun','ramen']},
                     actions: {
-                        kill : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
+                        'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
                     },
                     weapons: {rps: 2},
                 }
@@ -126,7 +128,7 @@ define([
                 health : {alignment:-10, life: 12},
                 deaddrop: {count: 2, always: ['key','key','key']},
                 actions: {
-                    kill : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]]
+                    'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]]
                 },
             })},
             spacer : function(){
@@ -146,7 +148,7 @@ define([
                     enemyai : { tracking: 'pc', territory: 'spacer', xp: 1, faction: 'spacer'},
                     deaddrop: {items:['key','gun','ramen']},
                     actions: {
-                        kill : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
+                        'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
                     },
                     weapons: {rps: 2},
                 }

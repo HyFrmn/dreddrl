@@ -13,7 +13,7 @@ define(['sge'], function(sge){
         pickup: function(entity){
             if (entity.hasTag('pc')){
                 entity.fireEvent('pickup', this.entity);
-                this.entity.fireEvent('kill');
+                this.entity.fireEvent('entity.kill');
             }
         },
     	register: function(state){

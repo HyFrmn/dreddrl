@@ -78,12 +78,17 @@ define(['sge'], function(sge){
 			this.end();
 		},
 		end: function(){
+			if (this.async){
+				this.state._activeActions = _.without(this.state._activeActions, this);
+			}
 			this.next();
 		},
 		run: function(){
 			this.start.apply(this, this.data);
 			if (!this.async){
 				this.end();
+			} else {
+				this.state._activeActions.push(this);
 			}
 		},
 		next: function(){

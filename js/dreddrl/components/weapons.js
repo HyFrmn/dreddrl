@@ -34,11 +34,19 @@ define(['sge', '../config', './bullet'],function(sge, config){
 		},
 		onContact : function(entity){
 			if (entity!=this.data.sourceEntity){
-				damageProfile = {
-					damage : this.get('damage'),
-					damageType : this.get('damageType'),
+				if (entity.get('health')){
+					if (entity.get('health.alignment')!=0){
+						damageProfile = {
+							damage : this.get('damage'),
+							damageType : this.get('damageType'),
+							vx: this.entity.get('xform.vx'),
+							vy: this.entity.get('xform.vy'),
+							tx: this.entity.get('xform.tx'),
+							ty: this.entity.get('xform.ty'),
+						}
+						entity.fireEvent('entity.takeDamage', damageProfile);
+					}
 				}
-				entity.fireEvent('entity.takeDamage', damageProfile);
 				this.kill();
 			};
 		},
@@ -49,16 +57,24 @@ define(['sge', '../config', './bullet'],function(sge, config){
 	sge.Component.register('projectile', ProjectileComponent);
 
 	var Weapon = sge.Class.extend({
-		init: function(entity){
+		init: function(entity, options){
+			options = options || {};
 			this.entity = entity;
 			this.state = entity.state;
 			this._fireType = Weapon.FIRETYPES.PROJECTILE;
-			this._projectileType = 'stun';
+			this._ammoTypes = options.ammo || ['maground'];
+			this._ammoIndex = 0;
+			this._projectileType = this._ammoTypes[this._ammoIndex];
+			this._cooldown = 0;
+			this._rps = options.rps || 3;
+
 		},
 		fire: function(){
-			if (this.hasAmmo()){
-				this.consumeAmmo();
-				this.fireProjectile()
+			if (this.canFire()){
+				if (this.hasAmmo()){
+					this.consumeAmmo();
+					this.fireProjectile()
+				}
 			}
 		},
 		fireProjectile : function(){
@@ -102,6 +118,27 @@ define(['sge', '../config', './bullet'],function(sge, config){
 		consumeAmmo: function(){
 
 		},
+		switchAmmo : function(){
+			this._ammoIndex++;
+			if (this._ammoIndex>=this._ammoTypes.length){
+				this._ammoIndex = 0;
+			}
+			this._projectileType = this._ammoTypes[this._ammoIndex];
+			this.entity.fireEvent('state.info', 'Switched to ' + this._projectileType + ' ammo.');
+		},
+		canFire : function(){
+			if (this._cooldown>0){
+				return false;
+			} else {
+				this._cooldown = 1 / (this._rps);
+				return true;
+			}
+		},
+		tick : function(delta){
+			if (this._cooldown>0){
+				this._cooldown -= delta;
+			}
+		}
 
 	});
 
@@ -117,6 +154,11 @@ define(['sge', '../config', './bullet'],function(sge, config){
 		Weapon.DATA = JSON.parse(rawText);
 	});
 
+	Weapon.Factory = function(entity, weaponType){
+		var weapon = new Weapon(entity, Weapon.DATA.weapons[weaponType]);
+		return weapon;
+	}
+
 	var WeaponsComponent = sge.Component.extend({
 		init: function(entity, data){
 			this._super(entity, data);
@@ -125,25 +167,18 @@ define(['sge', '../config', './bullet'],function(sge, config){
 			this.fire = this.fire.bind(this);
 			this.entity.addListener('weapon.fire', this.fire.bind(this));
 			this.entity.addListener('weapon.switch', this.switchWeapon.bind(this));
-			this.activeWeapon = new Weapon(this.entity);
-			this._weaponList = ['stun','maground'];
+			this.activeWeapon = Weapon.Factory(this.entity, data.weapon || 'maggun');
+			this._weaponList = ['maground'];
 			this._weaponIndex = 0;
 		},
 		tick: function(delta){
-			if (this.get('cooldown')>0){
-				this.set('cooldown', -delta, 'add');
-			}
+			this.activeWeapon.tick(delta);
 		},
 		fire: function(){
 			this.activeWeapon.fire();
 		},
 		switchWeapon: function(){
-			this._weaponIndex++;
-			if (this._weaponIndex>=this._weaponList.length){
-				this._weaponIndex=0;
-			}
-			this.activeWeapon._projectileType = this._weaponList[this._weaponIndex];
-			this.entity.fireEvent('state.info', 'Loaded ' + this.activeWeapon._projectileType + ' ammo.');
+			this.activeWeapon.switchAmmo();
 		},
 		register: function(state){
 			this.state = state;

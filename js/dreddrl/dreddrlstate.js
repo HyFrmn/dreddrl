@@ -73,6 +73,8 @@ define([
                 this._uiContainer = new CAAT.ActorContainer();
                 this._gamePlayContainer = new CAAT.ActorContainer();
                 this._entityContainer = new CAAT.ActorContainer();
+
+                this._activeActions = [];
                 
                 this.scene.addChild(this._gamePlayContainer);
                 this.scene.addChild(this._uiContainer);
@@ -585,6 +587,12 @@ define([
                 };
                 if (this._debugTick){ var t=Date.now(); console.log('Component Time:', t-debugTime, this._entity_ids.length); debugTime=t};
                 
+                //Update Action System
+                var actions = this._activeActions.slice();
+                for (var i = actions.length - 1; i >= 0; i--) {
+                    actions[i].tick(delta);
+                };
+
                 //Prune entities
                 _.each(this._killList, function(e){
                     this._removeFromHash(e);

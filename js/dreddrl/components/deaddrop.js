@@ -7,7 +7,7 @@ define(['sge', '../item'], function(sge, Item){
             this.data.always = data.always || [];
             this.data.pickup = data.pickup;
             this.drop = this.drop.bind(this);
-            this.entity.addListener('kill', this.drop);
+            this.entity.addListener('entity.kill', this.drop);
         },
         drop: function(){
             var dropDir = null;

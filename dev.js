@@ -1,7 +1,7 @@
 requirejs.config({
     baseUrl: 'js/',
     name: "dreddrl",
-    packages: ["dreddrl","sge"],
+    packages: ["dreddrl"],
     shim: {
         'sge/vendor/hammer' : {
             exports: 'Hammer'
