@@ -46,8 +46,8 @@ define(['sge', '../config', './bullet'],function(sge, config){
 						}
 						entity.fireEvent('entity.takeDamage', damageProfile);
 					}
+					this.kill();
 				}
-				this.kill();
 			};
 		},
 		isEnemy: function(){

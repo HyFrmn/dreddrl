@@ -306,7 +306,7 @@ function(sge, Factory, encounters, Map){
 
             //Populate market place.
             //*
-            var npcs=4;
+            var npcs=16;
             var citizen = null;
             while (npcs--){
                 var tx = sge.random.range(market.left, market.right);
@@ -328,7 +328,7 @@ function(sge, Factory, encounters, Map){
                 })
             }
 
-            var lawbreakers=2;
+            var lawbreakers=8;
             var lawbreaker = null;
             while (lawbreakers--){
                 var tx = sge.random.range(market.left, market.right);

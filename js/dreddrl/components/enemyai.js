@@ -142,7 +142,7 @@ define(['sge'], function(sge){
                     this.fsm.startFleeing();
                 } else if (this.fsm.current=='idle'){
                     this.entity.fireEvent('emote.msg', 'What the hell was that?');
-                    this.fsm.investigateHit(damageProfile.tx, damageProfile.ty);
+                    this.fsm.investigateHit(damageProfile.tx + damageProfile.vx, damageProfile.ty + damageProfile.vy);
                 }
             }
         },
