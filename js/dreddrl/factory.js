@@ -72,7 +72,7 @@ define([
                         speed: 64
                     },
                     health : {alignment:5, life: 100},
-                    weapons: {rps: 10, weapon: 'lawgiver'},
+                    combat: {faction: 'judge', weapon: 'lawgiver'},
                     stats: {},
                     emote: {},
                     actions: {
@@ -93,10 +93,12 @@ define([
             citizen : function(){return deepExtend(FACTORYDATA['npc'](), {
                     interact : {},
                     actions: {
-                        //interact : [['event', 'this', 'emote.msg', "I'm a citizen.", 1]],
-                        interact : [['followpath']]
+                        interact : [['event', 'this', 'emote.msg', "I'm a citizen.", 1]],
+                        //interact : [['followpath']]
                     },
-                    //simpleai : {},
+                    enemyai : {
+                        
+                    },
                 })},
             lawbreaker : function(){
                 var msgs = [
@@ -111,21 +113,20 @@ define([
                         src : 'assets/sprites/albert.png',
                     },
                     emote: {},
-                    health : {alignment:-10, life: 5},
+                    health : {alignment:-10, life: 8},
                     enemyai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
                     deaddrop: {items:['key','gun','ramen']},
                     actions: {
                         'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
                     },
-                    weapons: {rps: 2},
+                    combat: {faction : 'lawbreak'},
                 }
             )},
             gangboss : function(){return deepExtend(FACTORYDATA['lawbreaker'](), {
                 sprite : {
                     src : 'assets/sprites/albertbrownhair.png',
                 },
-                weapons: {rps: 4},
-                health : {alignment:-10, life: 12},
+                health : {alignment:-10, life: 24},
                 deaddrop: {count: 2, always: ['key','key','key']},
                 actions: {
                     'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]]
@@ -144,13 +145,13 @@ define([
                         src : 'assets/sprites/punk_' + sge.random.item([1,2,3]) +'.png',
                     },
                     emote: {},
-                    health : {alignment:-10, life: 3},
+                    health : {alignment:-10, life: 5},
                     enemyai : { tracking: 'pc', territory: 'spacer', xp: 1, faction: 'spacer'},
                     deaddrop: {items:['key','gun','ramen']},
                     actions: {
                         'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
                     },
-                    weapons: {rps: 2},
+                    combat: {faction : 'spacer'},
                 }
             )},
             freeitem : function(){ return {

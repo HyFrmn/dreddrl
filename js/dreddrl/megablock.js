@@ -70,9 +70,6 @@ function(sge, Factory, encounters, Map){
             this.entities = [];
             this.level.state._addRegion(this);
         },
-        test : function(tx, ty){
-            return Boolean((tx>this.left)&&(tx<this.right)&&(ty>this.top)&&(ty<this.top));
-        },
         isLocked : function(){
             var locked = false;
             _.each(this.doors, function(door){
@@ -322,8 +319,8 @@ function(sge, Factory, encounters, Map){
                         tx: tx,
                         ty: ty
                     },
-                    simpleai : {
-                        region: market
+                    enemyai : {
+                        region: market,
                     }
                 })
             }
@@ -343,6 +340,9 @@ function(sge, Factory, encounters, Map){
                     xform: {
                         tx: tx,
                         ty: ty
+                    },
+                    enemyai : {
+                        region: market,
                     }
                 });
             }
@@ -372,9 +372,21 @@ function(sge, Factory, encounters, Map){
                 if (!room._populated){
                     room._populated = true;
                     var spawnType = sge.random.item(['citizen','lawbreaker','spacer']);
-                    room.spawn(spawnType);    
-                    room.spawn(spawnType);
-                    room.spawn(spawnType);
+                    room.spawn(spawnType, {
+                        enemyai: {
+                            region: room
+                        }
+                    });    
+                    room.spawn(spawnType, {
+                        enemyai: {
+                            region: room
+                        }
+                    });
+                    room.spawn(spawnType, {
+                        enemyai: {
+                            region: room
+                        }
+                    });
                 }
             }.bind(this));
 

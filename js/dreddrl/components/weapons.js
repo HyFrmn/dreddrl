@@ -34,8 +34,9 @@ define(['sge', '../config', './bullet'],function(sge, config){
 		},
 		onContact : function(entity){
 			if (entity!=this.data.sourceEntity){
-				if (entity.get('health')){
-					if (entity.get('health.alignment')!=0){
+				//TODO: Faction should not be part of ai. Maybe stats?
+				if (entity.get('health') && entity.get('combat')) {
+					if (entity.get('health.alignment')!=0 && entity.get('combat.faction')!=this.data.sourceEntity.get('combat.faction')){
 						damageProfile = {
 							damage : this.get('damage'),
 							damageType : this.get('damageType'),
@@ -159,11 +160,12 @@ define(['sge', '../config', './bullet'],function(sge, config){
 		return weapon;
 	}
 
-	var WeaponsComponent = sge.Component.extend({
+	var CombatComponent = sge.Component.extend({
 		init: function(entity, data){
 			this._super(entity, data);
-			this.data.cooldown = 0;
-			this.data.rps = parseInt(data.rps || 3); //Round per second
+
+			this.data.faction = data.faction || 'citizen';
+
 			this.fire = this.fire.bind(this);
 			this.entity.addListener('weapon.fire', this.fire.bind(this));
 			this.entity.addListener('weapon.switch', this.switchWeapon.bind(this));
@@ -188,6 +190,6 @@ define(['sge', '../config', './bullet'],function(sge, config){
 			this.state = null;
 		}
 	});
-	sge.Component.register('weapons', WeaponsComponent);
-    return WeaponsComponent;
+	sge.Component.register('combat', CombatComponent);
+    return CombatComponent;
 })

@@ -29,7 +29,6 @@ define(['sge'], function(sge){
             this.data.speed = 96;
             this.data.radius = 192;
             this.data.radiusScale = 1;
-            this.data.faction = data.faction || null;
             this.data.region = data.region;
             this.data.anger = 0;
             this._idleCounter = -1;
@@ -39,6 +38,7 @@ define(['sge'], function(sge){
                 events: [
                     {name: 'startTracking', from: ['idle','investigate'], to: 'tracking'},
                     {name: 'stopTracking', from:'tracking', to: 'idle'},
+                    {name: 'loseSight', from:'tracking', to:'investigate'},
                     {name: 'investigateHit', from: 'idle', to:'investigate'},
                     {name: 'returnToIdle', from: '*', to: 'idle'},
                     {name: 'startFleeing', from:'*', to: 'flee'},
@@ -49,7 +49,7 @@ define(['sge'], function(sge){
                     onreturnToIdle: this.onIdle.bind(this),
                     ontracking: this.onTracking.bind(this),
                     onflee: this.onFlee.bind(this),
-                    onstopTracking: this.onLoseSight.bind(this)
+                    onloseSight: this.onLoseSight.bind(this)
                 }
             })
             this.entity.addListener('entity.takeDamage', this.onDamaged.bind(this))
@@ -58,8 +58,8 @@ define(['sge'], function(sge){
             //this.entity.addListener('contact.tile', this.onContact.bind(this))
         },
         onKill: function(){
-            factionSystem.update(this.get('faction'), -this.get('xp'));
-            console.log('Faction:', factionSystem.get(this.get('faction')));
+            factionSystem.update(this.entity.get('combat.faction'), -this.get('xp'));
+            console.log('Faction:', factionSystem.get(this.entity.get('combat.faction')));
         },
         // FSM Callbacks
         onFlee: function(){
@@ -77,7 +77,7 @@ define(['sge'], function(sge){
                     return;
                 }
                 if (entity.get('enemyai')){
-                    if (entity.get('enemyai.faction')==this.get('faction')){
+                    if (entity.get('enemyai.faction')==this.entity.get('combat.faction')){
                         console.log('Signal Comrad');
                         entity.fireEvent('ai.investigate', this._tracking_tx, this._tracking_ty);
                     }
@@ -85,42 +85,17 @@ define(['sge'], function(sge){
             }.bind(this));
         },
         onLoseSight: function(){
-            this.set('radiusScale', 1.25);
+            this.set('radiusScale', 1);
             this.entity.set('xform.v', this._tracking_vx, this._tracking_vy);
-            this.createTimeout(this._tracking_dist / this.get('speed'), function(){
-                this.entity.set('xform.v', 0, 0);
-                this.entity.fireEvent('emote.msg', 'Great, I lost him.', 1);
-            }.bind(this));
             this.entity.fireEvent('emote.msg', 'Fuck! Where did he go?', 0.5);
+            this.investigate(this._tracking_tx, this._tracking_ty);
         },
         onIdle : function(event, from, to){
             this.entity.set('xform.v', 0, 0);
             this.set('radiusScale', 1)
         },
         onInvestigate : function(event, from, to, tx, ty){
-            this.set('radiusScale', 1.5);
-            this.set('anger', -5, 'add');
-            var dx = this.entity.get('xform.tx') - tx;
-            var dy = this.entity.get('xform.ty') - ty;
-            var length = Math.sqrt((dx*dx)+(dy*dy));
-            var sx = (-dx/length)*this.get('speed');
-            var sy = (-dy/length)*this.get('speed');
-            this.entity.set('xform.v', sx, sy);
-            this.createTimeout(1, function(){
-                this.fsm.returnToIdle();
-            }.bind(this));
-            var entities = this.state.findEntities(this.entity.get('xform.tx'), this.entity.get('xform.ty'), 128);
-            _.each(entities, function(entity){
-                if (entity==this.entity){
-                    return;
-                }
-                if (entity.get('enemyai')){
-                    if (entity.get('enemyai.faction')==this.get('faction')){
-                        console.log('Signal Comrad');
-                        entity.fireEvent('ai.investigate', tx, ty);
-                    }
-                }
-            }.bind(this));
+            this.investigate(tx, ty);
         },
         onAfterInvestigate : function(event, from, to, e){
             if (this._timeout){
@@ -143,6 +118,7 @@ define(['sge'], function(sge){
                 } else if (this.fsm.current=='idle'){
                     this.entity.fireEvent('emote.msg', 'What the hell was that?');
                     this.fsm.investigateHit(damageProfile.tx + damageProfile.vx, damageProfile.ty + damageProfile.vy);
+                    this.broadcastInvestigation()
                 }
             }
         },
@@ -172,12 +148,7 @@ define(['sge'], function(sge){
             var vx = vy = 0;
             if (region){
                 if (!region.test(tx, ty)){
-                    var dx = tx - ((region.right-region.left)/2 + region.left);
-                    var dy = ty - ((region.bottom-region.top)/2 + region.top);
-                    var length = Math.sqrt((dx*dx)+(dy*dy));
-                    vx = -(dx / length) * this.get('speed');
-                    vy = -(dy / length)  * this.get('speed'); 
-                    this.entity.set('xform.v', vx, vy);
+                    this.trackPosition(tx,ty);
                     this._idleCounter = 0;
                     return;
                 }
@@ -207,15 +178,20 @@ define(['sge'], function(sge){
 
         tick_investigate : function(delta){
             if (this.canSeePlayer()){
+                console.log('I see london')
                 if (this.isThreat(this.state.pc)){
+                    this.entity.fireEvent('emote.msg', 'Found you.', 1);
+
                     this.fsm.startTracking();
                 }
+            } else {
+                this.trackPosition(this._tracking_tx, this._tracking_ty);
             }
         },
 
         tick_tracking : function(delta){
             if (!this.canSeePlayer()){
-                this.fsm.stopTracking();
+                this.fsm.loseSight();
             } else {
                 this.entity.set('xform.v', this._tracking_vx, this._tracking_vy);
                 if (Math.abs(this._tracking_vx / this.get('speed')) < 0.1 || Math.abs(this._tracking_vy / this.get('speed')) < 0.1 ){
@@ -234,9 +210,12 @@ define(['sge'], function(sge){
 
         // Helper Functions
         isThreat : function(){
-            //console.log('Threat', (factionSystem.get(this.get('faction'))/-4));
-            if (this.get('faction')){
-                var factionFactor = factionSystem.get(this.get('faction'));
+            if (!this.entity.get('combat')){
+                return false;
+            }
+            var faction = this.entity.get('combat.faction');
+            if (faction){
+                var factionFactor = factionSystem.get(faction);
                 var angerFactor = this.get('anger');
                 return Boolean((factionFactor+angerFactor)<-4);
             } else {
@@ -270,6 +249,40 @@ define(['sge'], function(sge){
                 }   
             }
             return result;
+        },
+
+        trackPosition : function(tx, ty){
+            var dx = this.entity.get('xform.tx') - tx;
+            var dy = this.entity.get('xform.ty') - ty;
+            var length = Math.sqrt((dx*dx)+(dy*dy));
+            if (length<5){
+                this.fsm.returnToIdle();
+            } else {
+                var sx = (-dx/length)*this.get('speed');
+                var sy = (-dy/length)*this.get('speed');
+                this.entity.set('xform.v', sx, sy);
+            }  
+        },
+
+        investigate : function(tx, ty){
+            this.set('radiusScale', 1.5);
+            this.set('anger', -5, 'add');
+            this.trackPosition(tx, ty);       
+        },
+
+        broadcastInvestigation : function(tx, ty){
+            var entities = this.state.findEntities(this.entity.get('xform.tx'), this.entity.get('xform.ty'), 128);
+            _.each(entities, function(entity){
+                if (entity==this.entity){
+                    return;
+                }
+                if (entity.get('combat') && entity.get('enemyai')){
+                    if (entity.get('combat.faction')==this.entity.get('combat.faction')){
+                        console.log('Signal Comrad');
+                        entity.fireEvent('ai.investigate', tx, ty);
+                    }
+                }
+            }.bind(this));
         },
 
         createTimeout: function(length, callback){
