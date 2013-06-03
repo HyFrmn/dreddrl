@@ -115,7 +115,7 @@ define([
                     emote: {},
                     health : {alignment:-10, life: 8},
                     enemyai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
-                    deaddrop: {items:['key','gun','ramen']},
+                    deaddrop: {items:['key','gun','ramen','ramen','ramen']},
                     actions: {
                         'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
                     },
@@ -147,7 +147,7 @@ define([
                     emote: {},
                     health : {alignment:-10, life: 5},
                     enemyai : { tracking: 'pc', territory: 'spacer', xp: 1, faction: 'spacer'},
-                    deaddrop: {items:['key','gun','ramen']},
+                    deaddrop: {items:['key','gun','ramen','ramen','ramen']},
                     actions: {
                         'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
                     },

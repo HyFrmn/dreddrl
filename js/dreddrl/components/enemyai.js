@@ -1,4 +1,4 @@
-define(['sge'], function(sge){
+define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
 	var FactionSystem = sge.Class.extend({
         init: function(){
             this._factions = {}
@@ -32,6 +32,7 @@ define(['sge'], function(sge){
             this.data.region = data.region;
             this.data.anger = 0;
             this._idleCounter = -1;
+            this._followPathAction = null;
             this.data.xp = 2;
             this.fsm = sge.vendor.StateMachine.create({
                 initial: 'idle',
@@ -49,7 +50,7 @@ define(['sge'], function(sge){
                     onreturnToIdle: this.onIdle.bind(this),
                     ontracking: this.onTracking.bind(this),
                     onflee: this.onFlee.bind(this),
-                    onloseSight: this.onLoseSight.bind(this)
+                    onloseSight: this.onLoseSight.bind(this),
                 }
             })
             this.entity.addListener('entity.takeDamage', this.onDamaged.bind(this))
@@ -92,7 +93,19 @@ define(['sge'], function(sge){
         },
         onIdle : function(event, from, to){
             this.entity.set('xform.v', 0, 0);
-            this.set('radiusScale', 1)
+            this.set('radiusScale', 1);
+            var tx = this.entity.get('xform.tx');
+            var ty = this.entity.get('xform.ty');
+            var region = this.get('region');
+            if (region){
+                if (!region.test(tx, ty)){
+                    this._followPathAction = new FollowPathAction(this.entity);
+                    this._followPathAction.start((region.left+region.right)/2,(region.top+region.bottom)/2);
+                    this._followPathAction.end = function(){
+                        this._followPathAction = null;
+                    }.bind(this);
+                }
+            }
         },
         onInvestigate : function(event, from, to, tx, ty){
             this.investigate(tx, ty);
@@ -142,13 +155,17 @@ define(['sge'], function(sge){
                     return;
                 }
             }
+            if (this._followPathAction){
+                this._followPathAction.tick(delta);
+                return;
+            }
             var region = this.get('region');
             var tx = this.entity.get('xform.tx');
             var ty = this.entity.get('xform.ty');
             var vx = vy = 0;
             if (region){
                 if (!region.test(tx, ty)){
-                    this.trackPosition(tx,ty);
+                    this.trackPosition((region.left+region.right)/2,(region.top+region.bottom)/2);
                     this._idleCounter = 0;
                     return;
                 }

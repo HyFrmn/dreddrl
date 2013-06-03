@@ -1,12 +1,14 @@
 define(['sge','../action'], function(sge, Action){
 	var FollowPathAction = Action.extend({
-		start: function(){
+		start: function(destX ,destY){
 	        this.async = true;
 	        var tx = this.entity.get('xform.tx');
 	        var ty = this.entity.get('xform.ty');
-	        var tileX = Math.floor(tx/32)
-	        var tileY = Math.floor(ty/32)
-	        this.pathPoints = this.state.map.getPath(tileX, tileY,3,3);
+	        var tileX = Math.floor(tx/32);
+	        var tileY = Math.floor(ty/32);
+	        var endTileX = Math.floor(this.parseExpr(destX)/32);
+	        var endTileY = Math.floor(this.parseExpr(destY)/32);
+	        this.pathPoints = this.state.map.getPath(tileX, tileY,endTileX,endTileY);
 		},
 		tick: function(delta){
 			console.log(this.pathPoints.length)

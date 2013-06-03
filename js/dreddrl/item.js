@@ -39,10 +39,12 @@ define(['sge'], function(sge){
 		};
 	}
 
-	var library = null;
+	var library = {};
 	ajax('assets/items/standard.json', function(rawtext){
 		var data = JSON.parse(rawtext);
-		library = data;
+		data.forEach(function(item){
+			library[item.id]=item;
+		})
 	});
 
 	Item.Factory = function(name, options){

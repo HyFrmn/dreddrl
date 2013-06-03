@@ -160,7 +160,7 @@ define(['sge', './item'], function(sge, Item){
 			this.encounters = [];
 			this.active = null;
 			this._index = 0;
-			this.compassActor = new CAAT.ShapeActor().setShape(CAAT.ShapeActor.SHAPE_CIRCLE).setFillStyle('green').setSize(32,32);
+			this.compassActor = new CAAT.ShapeActor().setShape(CAAT.ShapeActor.SHAPE_CIRCLE).setFillStyle('yellow').setSize(32,32);
 			this.state.map.canopy.addChild(this.compassActor);
 			//this.compassActor.setAlpha(1);
 			//this.state.map.canopy.setZOrder(this.compassActor, 0);

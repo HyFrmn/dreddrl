@@ -15,7 +15,7 @@
                     "spawn" : "room.hangout"
                 },
                 "actions" : {
-                    "kill" : [
+                    "entity.kill" : [
                         ["set", "encounter.status",1],
                         ["set", "@(pc).stats.xp", 100, "add"]
                     ]
@@ -145,6 +145,11 @@
                                     "set",
                                     "@(encounter.client).interact.priority",
                                     true
+                                ],
+                                [
+                                    "followpath",
+                                    "${@(encounter.client).xform.tx}",
+                                    "${@(encounter.client).xform.ty}"
                                 ]
                             ]
                         ]
@@ -281,7 +286,7 @@
                     ]
                 },
                 "actions": {
-                    "kill": [
+                    "entity.kill": [
                         [
                             "event",
                             "pc",

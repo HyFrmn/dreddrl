@@ -1,13 +1,15 @@
-{
-	"ramen" : {
-		"name" : "Ramen",
-		"descripiton" : "A warm bowl of ramen noodles.",
+[
+	 { 
+	 	"id" : "ramen",
+ 		"name" : "Ramen",
+		"description" : "A warm bowl of ramen noodles.",
 		"spriteFrame" : 123,
 		"spriteImage" : "scifi_icons_1.png",
 		"effect" : [["set", "health.life", "5", "add"]],
 		"immediate" : true
 	},
-	"gun" : {
+	{
+		"id" : "gun",
 		"name" : "Gun",
 		"description" : "A basic mag gun.",
 		"spriteFrame" : 1,
@@ -15,13 +17,15 @@
 		"effect" : [["set", "inventory.ammo", "12", "add"]],
 		"immediate" : true
 	},
-	"watch" : {
+	{
+		"id" : "watch",
 		"name" : "Watch",
 		"description" : "A basic digital watch.",
 		"spriteFrame" : 10,
 		"spriteImage" : "scifi_icons_1.png"
 	},
-	"key" : {
+	{
+		"id" : "key",
 		"name" : "Key",
 		"description" : "A one time use key.",
 		"spriteFrame" : 57,
@@ -29,4 +33,4 @@
 		"immediate" : true,
 		"effect" : [["set", "inventory.keys", "1", "add"]]
 	}
-}
+]
