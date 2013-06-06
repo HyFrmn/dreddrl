@@ -1,0 +1,82 @@
+<!doctype html>
+<html ng-app="editor">
+  <head>
+      <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
+    <script src="editor.js"></script>
+    <link rel="stylesheet" href="editor.css">
+  </head>
+  <body ng-controller="ItemCtrl">
+    <tabs>
+      <pane title="Items">
+        <button ng-click="save()"/>Save</button>
+        <div class="drl-item-list">
+          <ul>
+            <li ng-repeat="item in items" class="drl-item-container">
+              <h3>{{item.name}}</h3>
+              <div class="drl-item-preview-container">
+                <img src="/assets/sprites/scifi_icons_1.png" class="drl-item-preview" ng-style="{left: item.previewLeft + 'px', top: item.previewTop + 'px', position: relative, display: block}"/>
+              </div>
+              <p>{{item.description}}</p>
+              <h4>Effects<button ng-click="addActionCallback(item)">+</button></h4>
+              <div class="drl-item-effect-container">
+                <ul ng-repeat="action in item.effect" class="drl-item-effect-list">
+                  <li>
+                    <div>
+                      <span ng-repeat="arg in action" class="drl-action-arg">{{ arg }}</span>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="drl-action-create-form" ng-show="newAction.item">
+          <form ng-submit="addAction()">
+            <ul>
+              <li>
+                <label>Action:</label>
+                <select name="action" ng-model="newAction.action" ng-change="updateActionCallback()">
+                  <option ng-repeat="(type, action) in ActionMeta" value="{{ type }}">{{ type }}</option>
+                </select>
+              </li>
+              <li ng-repeat="arg in newAction.args">
+                <label>{{ arg.name }}:</label>
+                <input type="text" name="arg{{ $index }}" value="component.attr" ng-model="arg.value" />
+              </li>
+            </ul>
+            <input type="submit" value="Add Action" />
+          </form>
+        </div>
+        <div class="item-create-form" />
+          <form ng-submit="createItem()">
+            <ul>
+              <li>
+                <label>Name:</label>
+                <input type="text" name="name" value="item" ng-model="newItem.name" />
+              </li>
+              <li>
+                <label>Description:</label>
+                <input type="text" name="description" value="" ng-model="newItem.description"/>
+              </li>
+              <li>
+                <label>SpriteSheet:</label>
+                <input type="text" name="spritesheet" value="scifi_icons_1.png" ng-model="newItem.spriteImage"/>
+              </li>
+              <li>
+                <label>Frame:</label>
+                <input type="number" name="frame" value="1" ng-change="updateNewItemPreview()" ng-model="newItem.spriteFrame"/>
+              </li>
+              <li>
+                <label>Preview:</label>
+                <div class="drl-item-preview-container">
+                  <img src="/assets/sprites/scifi_icons_1.png" class="drl-item-preview" ng-style="{left: newItem.previewLeft + 'px', top: newItem.previewTop + 'px', position: relative, display: block}"/>
+                </div>
+              </li>
+            </ul>
+            <input type="submit" value="Create Item" />
+          </form>
+        </div>
+      </pane> 
+    </tabs>
+  </body>
+</html>

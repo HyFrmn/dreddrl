@@ -1,0 +1,51 @@
+.drl-item-list ul {
+	padding: 0px;
+}
+
+.drl-item-container {
+	border: 1px solid black;
+	width: 320px;
+	padding: 0.5em;
+	list-style: none;
+}
+
+.drl-item-container h3 {
+	padding: 0px;
+	margin: 0px
+}
+
+.drl-item-container .drl-item-preview-container {
+	float: right;
+}
+
+.drl-item-preview-container {
+	width: 23px;
+	height: 23px;
+	overflow: hidden;
+}
+
+.drl-item-preview {
+	top: 0px;
+	left: 0px;
+	position: relative;
+	display: block;
+
+}
+
+.drl-item-effect-list {
+	list-style: none
+}
+
+.drl-item-effect-container {
+	padding-left: 1em;
+}
+
+.drl-action-arg:first-child {
+	padding: 0.25em;
+	background: black;
+	color: white;
+}
+
+.drl-action-arg {
+	padding: 0.25em;
+}
