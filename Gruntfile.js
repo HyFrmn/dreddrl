@@ -22,9 +22,20 @@ module.exports = function(grunt) {
 		      name: 'dreddrl',
 		      out: "build/required.js",
 		      //dir: "build/",
-		      //optimize: "none",
+		      optimize: "none",
 		      //exclude: ['sge'],
-		      packages: ['dreddrl','sge']
+		      packages: ['dreddrl','sge'],
+		      shim: {
+		        'sge/vendor/hammer' : {
+		            exports: 'Hammer'
+		        },
+		        'sge/vendor/caat' : {
+		            exports: 'CAAT'
+		        },
+		        'sge/vendor/underscore' : {
+		            exports: '_'
+		        }
+		    }
 		    }
 		  }
 }

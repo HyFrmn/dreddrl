@@ -3,13 +3,15 @@ define(
 		'./dreddrlstate',
 		'./dialogstate',
 		'./pausestate',
-		'./mainmenustate'
+		'./mainmenustate',
+		'./config'
 	],
-function(DreddRLState, DialogState, PauseState, MainMenuState){
+function(DreddRLState, DialogState, PauseState, MainMenuState, config){
 	return {
 		DreddRLState : DreddRLState,
 		DialogState : DialogState,
 		PauseState : PauseState,
-		MainMenuState : MainMenuState
+		MainMenuState : MainMenuState,
+		config : config
 	}
 })

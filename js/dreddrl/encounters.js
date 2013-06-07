@@ -148,9 +148,12 @@ define(['sge', './item'], function(sge, Item){
 		}
 	})
 
-	var serialData = null;
+	var serialData = {};
 	sge.util.ajax('/assets/encounters/standard.json', function(rawText){
-				serialData = JSON.parse(rawText);
+				data = JSON.parse(rawText);
+				data.forEach(function(encounter){
+					serialData[encounter.name] = encounter;
+				})
 	}.bind(this));
 
 	var EncounterSystem = sge.Class.extend({

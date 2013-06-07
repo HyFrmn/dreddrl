@@ -1,5 +1,5 @@
-{
-    "crimeBoss" : {
+[
+    {   "name" : "crimeBoss", 
         "steps" : 1,
         "description" : "Defeat the local Crime Boss.",
         "rooms" : {
@@ -23,7 +23,7 @@
             }
         }
     },
-    "rescueEncounter": {
+    {   "name" : "rescueEncounter", 
         "steps": 3,
         "description" : "Rescue the kidnap victim.",
         "rooms": {
@@ -176,7 +176,7 @@
             }
         }
     },
-    "lostItem": {
+    {   "name" : "lostItem",
         "steps": 2,
         "description" : "Find the the lost watch.",
         "items": {
@@ -304,4 +304,4 @@
             }
         }
     }
-}
+]

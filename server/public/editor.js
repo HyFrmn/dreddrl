@@ -82,6 +82,56 @@ ActionMeta = {
   }]
 }
 
+CompMeta = {
+  "meta" : {
+    "inherit" : { "type" : "string", "default" : "citizen"},
+    "room" : {"type" : "string" },
+    "spawn" : {"type" : "string"}
+  },
+  "interact" : {
+    "priority" : {"type" : "checkbox"}
+  }
+}
+
+var EncounterCtrl = function($scope, $http){
+  $scope.compMeta = CompMeta;
+
+  $scope.encounters = [
+  ]
+
+
+  $scope.save = function(){
+    $scope.encounters.forEach(function(item){
+      $http.post('/encounter/', item);
+    });
+  }
+
+  $scope.saveItem = function(encounter){
+    console.log(encounter)
+    $http.put('/encounter/'+encounter.name, encounter).success(function(){
+      console.log('Saved:', encounter.name);
+      $scope.log.splice(0, 0,'Saved: ' + encounter.name);
+    });
+  }
+
+  $scope.removeEntity = function(encounter, name){
+    delete encounter.entities[name];
+    console.log(name);
+  }
+
+  $scope.hasCompMeta = function(typ){
+    if ($scope.compMeta[typ]!==undefined){
+      return "true";
+    }
+    return "false";
+  }
+
+  $scope.encounters = [];
+  $http.get('/encounter/').success(function(data){
+    $scope.encounters = data;
+  });
+}
+
 var _updatePreview = function(scope){
     var frame = parseInt(scope.spriteFrame);
     console.log('Update:', frame)

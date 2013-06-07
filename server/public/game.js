@@ -1,8 +1,9 @@
 requirejs.config({
     baseUrl: 'js/',
+    /*
     name: "dreddrl",
     packages: ["dreddrl"],
-    /*
+    
     shim: {
         'sge/vendor/hammer' : {
             exports: 'Hammer'
@@ -20,7 +21,12 @@ requirejs.config({
 var game = null;
 requirejs(['sge','dreddrl'],
 function   (sge, dreddrl) {
+    console.log(sge,dreddrl, _, CAAT)
+
+    dreddrl.config.itemDataUrl = '/item/';
     dreddrl.DreddRLState.init();
+
+
     function getURLParameter(name) {
         return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
     }

@@ -7,6 +7,9 @@ define(function(){
 		AButton : 'space',
 		BButton : 'enter',
 		XButton : 'Z',
-		YButton : 'X'
+		YButton : 'X',
+
+		itemDataUrl : '/assets/items/standard.json',
+		weaponDataUrl : '/assets/items/weapons.json',
 	}
 })

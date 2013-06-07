@@ -1,4 +1,4 @@
-define(['sge'], function(sge){
+define(['sge', './config'], function(sge, config){
 	/*
 	*
 	* Abstract Item Class
@@ -38,14 +38,15 @@ define(['sge'], function(sge){
 			}
 		};
 	}
-
 	var library = {};
-	ajax('assets/items/standard.json', function(rawtext){
-		var data = JSON.parse(rawtext);
-		data.forEach(function(item){
-			library[item.id]=item;
-		})
-	});
+	Item.bootstrap = function(){
+		ajax(config.itemDataUrl, function(rawtext){
+			var data = JSON.parse(rawtext);
+			data.forEach(function(item){
+				library[item.id]=item;
+			})
+		});
+	}
 
 	Item.Factory = function(name, options){
 		options = options || {};

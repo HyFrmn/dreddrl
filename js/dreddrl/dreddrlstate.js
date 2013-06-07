@@ -6,9 +6,11 @@ define([
         './factory',
         './map',
         './encounters',
-        './megablock'
+        './megablock',
+        './weapon',
+        './item'
     ],
-    function(sge, config, BlockLevelGenerator, Physics, Factory, Map, encounters, megablock){
+    function(sge, config, BlockLevelGenerator, Physics, Factory, Map, encounters, megablock, Weapon, Item){
 
         INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is your responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
@@ -636,6 +638,11 @@ define([
                 }.bind(this))
             },
     	})
+
+        DreddRLState.init = function(){
+            Item.bootstrap();
+            Weapon.bootstrap();
+        }
 
     	return DreddRLState;
     }

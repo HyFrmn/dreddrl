@@ -1,3 +1,11 @@
+.tab-pane {
+	display: none;
+}
+
+.tab-pane.active {
+	display: block;
+}
+
 .drl-item-list ul {
 	padding: 0px;
 }
