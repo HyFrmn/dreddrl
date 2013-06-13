@@ -1,0 +1,16 @@
+<div class="drl-action-edit-form hidden popup" ng-show"parentAction">
+  <form ng-submit="editAction()">
+    <ul>
+      <li>
+        <label>Action:</label>
+        <span name="action" ng-model="actionType">
+        </span>
+      </li>
+      <li ng-repeat="arg in actionArgs">
+        <label>{{ arg.name }}:</label>
+        <input type="text" name="arg{{ $index }}" value="component.attr" ng-model="arg.value" />
+      </li>
+    </ul>
+    <input type="submit" value="Add Action" />
+  </form>
+</div>

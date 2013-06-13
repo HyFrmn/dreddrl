@@ -642,6 +642,7 @@ define([
         DreddRLState.init = function(){
             Item.bootstrap();
             Weapon.bootstrap();
+            encounters.EncounterSystem.bootstrap();
         }
 
     	return DreddRLState;

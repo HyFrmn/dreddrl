@@ -46,56 +46,294 @@ angular.module('editor', []).
       replace: true
     };
 
-  })
+  }).
+  directive('action', function(){
+    return {
+      restrict: 'E',
+      transclude: true,
+      scope: { action: '='},
+      //template: '<div><span ng-repeat="(arg, meta) in actionData(action)">{{ arg }}</span></div>',
+      templateUrl: 'templates/action.html',
+      controller: function($scope, $element, $attrs, $transclude) { 
+        var _actionData = function(action){
+          console.log(action)
+          var actionType = action[0];
+          var meta = [{
+            "name" : "actiontype",
+            "type" : "actiontype"
+          }].concat($scope.ActionMeta[actionType]);
+          decorated = [];
+          action.forEach(function(arg, index){
+            data = meta[index] || {};
+            data.value = arg;
+            decorated.push(data);
+        });
+        
+        $scope.addAction = function(parentAction){
+          console.log('Add action to:', parentAction)
+          $scope.$emit('addAction', parentAction);
+        }
 
-ActionMeta = {
-  "set" : [{
-    "name" : "path",
-    "type" : "path",
-  },{
-    "name" : "value",
-    "type" : "mixed"
-  },{
-    "name" : "method",
-    "type" : "string",
-    "enum" : {
-        "none" : null,
-        "Add" : "add",
-        "Multiply" : "mult"
+        return decorated;
+      }
+        $scope.actionData = _actionData($scope.action);
+      },
+      //*
+      _actionData : function(action){
+        return {'foo':'bar'}
+        var actionType = action[0];
+        var meta = [{
+          "name" : "actiontype",
+          "type" : "actiontype"
+        }].concat($scope.ActionMeta[actionType]);
+        decorated = {};
+        action.forEach(function(arg, index){
+          decorated[arg] = meta[index];
+        });
+        console.log(decorated)
+        return decorated;
+      }
+      //*/
     }
-  }],
+  }).
+  directive('createentityform', function(){
+    return {
+      restrict: 'E',
+      transclude: true,
+      templateUrl: 'templates/createentityform.html',
+      replace: true,
+      controller: function($scope, $element, $attrs){
+        $scope.entityName = 'entity';
 
-  "if" : [{
-    "name" : "expr",
-    "type" : "expr"
-  },{
-    "name" : "trueactions",
-    "type" : "actionlist"
-  },{
-    "name" : "falseactions",
-    "type" : "actionlist"
-  }],
 
-  "dialog" : [{
-    "name" : "text",
-    "type" : "string"
-  }]
-}
+        $scope.$on('addEntity', function(evt, parentObject){
+          $scope.parentObject = parentObject;
+          $($element).bPopup();
+        });
 
-CompMeta = {
-  "meta" : {
-    "inherit" : { "type" : "string", "default" : "citizen"},
-    "room" : {"type" : "string" },
-    "spawn" : {"type" : "string"}
-  },
-  "interact" : {
-    "priority" : {"type" : "checkbox"}
-  }
-}
+        $scope.createEntity = function(){
+          var entity = {
+            meta : {
+              inherit: 'citizen',
+              spawn: 'room.random',
+            }
+          }
+          console.log($scope.parentObject, $scope.entityName, entity);
+          $scope.parentObject[$scope.entityName] = entity;
+          $($element).bPopup().close();
+        }
+
+      },
+
+    }
+  }).
+  directive('createcompform', function(){
+    return {
+      restrict: 'E',
+      transclude: true,
+      templateUrl: 'templates/createcompform.html',
+      replace: true,
+      controller: function($scope, $element, $attrs){
+        $scope.compName = 'comp';
+
+
+        $scope.$on('addComponent', function(evt, entity){
+          $scope.entity = entity;
+          $($element).bPopup();
+        });
+
+        $scope.createComp = function(){
+          $scope.entity[$scope.compName] = {};
+          $($element).bPopup().close();
+        }
+
+      },
+
+    }
+  }).
+  directive('editcompform', function(){
+    return {
+      restrict: 'E',
+      transclude: true,
+      template : '<div  />',
+      //templateUrl: 'templates/editcompform.html',
+      replace: true,
+      controller: function($scope, $element, $attrs){
+        var elem = $($element).prependTo('body');
+        $scope.compName = 'comp';
+        
+
+        $scope.setTemplate = function(name){
+          name = name || '';
+          $scope.templateUrl = '/templates/edit' + name + 'compform.html';
+        }
+        $scope.setTemplate();
+        $scope.$on('editComponent', function(evt, saveObject, entity, compName){
+          console.log(saveObject, entity, compName);
+          $scope.saveObject = saveObject;
+          $scope.entity = entity;
+          $scope.compName = compName;
+          $scope.comp = entity[compName];
+          $scope.newCompData = [];
+          var meta = $scope.CompMeta[compName];
+          if (compName!='actions'){
+            $scope.setTemplate();
+            for (var key in meta) {
+              if (key=='*'){
+                continue;
+              }
+              if (meta.hasOwnProperty(key)) {
+                argData = {name: key, value: meta[key]['default'] || ""}
+                if ($scope.comp[key]){
+                  argData.value = $scope.comp[key];
+                }
+                $scope.newCompData.push(argData);
+              }
+            }
+          } else {
+            $scope.setTemplate('action');
+            for (key in $scope.comp){
+              if (!key.match(/^[$][$]/)){
+                $scope.newCompData.push({name:key, value:$scope.comp[key]});
+              }
+            }
+          }
+
+          elem.bPopup();
+        });
+
+        $scope.updateComponent = function(){
+          //$scope.entity[$scope.compName] = $scope.comp;
+          var newComp = $scope.newCompData;
+          console.log(newComp);
+          for (var i = 0; i<newComp.length;i++) {
+            argData = newComp[i]
+            if (argData.value=="" || argData.value===undefined){
+              delete $scope.entity[$scope.compName][argData.name];
+            } else {
+              $scope.entity[$scope.compName][argData.name] = argData.value;
+            }
+          }
+          $scope.$emit('save', $scope.saveObject);
+          $scope.newCompData = [];
+          $($element).bPopup().close();
+        }
+
+        $scope.addActionList = function(){
+          var typ = prompt('What callback?');
+          $scope.newCompData.push({name:typ, value:[]});
+        }
+
+      },
+
+    }
+  }).
+  directive('createactionform', function(){
+    return {
+      restrict: 'E',
+      transclude: true,
+      templateUrl: 'templates/createactionform.html',
+      replace: true,
+      controller: function($scope, $element, $attrs){
+        $scope.actionType = '';
+        $scope.actionArgs = [];
+        $scope.parentAction = null;
+        $scope.mode = 'edit';
+
+        $scope.updateActionCallback = function(){
+          console.log('action update', this.actionType);
+          var meta = $scope.ActionMeta[this.actionType];
+          $scope.actionType = this.actionType;
+          $scope.actionArgs = meta.slice(0);
+        }
+
+        $scope.createAction = function(){
+          var newAction = [$scope.actionType];
+          $scope.actionArgs.forEach(function(arg){
+            newAction.push(arg.value);
+          });
+          console.log('AddAction', newAction)
+          $scope.parentAction.push(newAction);
+          $scope.parentAction = null;
+          $scope.$emit('save', $scope.saveObject)
+          //$scope.saveObject = null;
+          $($element).bPopup().close();
+        }
+
+        $scope.updateAction = function(){
+          var newAction = [$scope.actionType];
+          $scope.actionArgs.forEach(function(arg){
+            newAction.push(arg.value);
+          });
+          console.log('Edit Action', newAction)
+          $scope.parentAction.splice($scope.actionIndex, 1, newAction);
+          $scope.parentAction = null;
+          $scope.$emit('save', $scope.saveObject)
+          //$scope.saveObject = null;
+          $($element).bPopup().close();
+        }
+
+        $scope.$on('addAction', function(evt, saveObject, action){
+          $scope.saveObject = saveObject;
+          console.log('Adding a new action:', action)
+          $scope.mode = 'create';
+          $scope.parentAction = action;
+          $($element).bPopup();
+        })
+
+        $scope.$on('editAction', function(evt, saveObject, action, index){
+          console.log('Editing action:', action[0], saveObject)
+          $scope.saveObject = saveObject;
+          $scope.mode = 'edit';
+          $scope.parentAction = action;
+          $scope.actionType = action[index][0];
+          meta = $scope.ActionMeta[$scope.actionType].slice(0);
+          $scope.actionArgs = [];
+          meta.forEach(function(m, i){
+            m.value = action[index][i+1];
+            $scope.actionArgs.push(m);
+          });
+          $scope.actionIndex = index;
+          $($element).bPopup();
+        })
+      },
+      
+    }
+  }).
+  controller('AppCtrl', ['$scope', '$http', function($scope, $http){
+    $scope.ready = false;
+    $scope.ActionMeta = {};
+    $scope.CompMeta = {};
+    $http.get('/config/actionmeta.json').success(function(data){
+      $scope.ActionMeta = data;
+      $http.get('/config/compmeta.json').success(function(data){
+        $scope.CompMeta = data;
+        $scope.ready = true
+        $scope.appUrl = '/templates/app.html'
+        console.log($scope)
+      });
+    });
+    
+    $scope.hasCompMeta = function(typ){
+      if ($scope.CompMeta[typ]!==undefined){
+        return "true";
+      }
+      return "false";
+    }
+
+    $scope.getCompDataType = function(typ, key){
+      var meta = $scope.CompMeta[typ];
+      var val = null;
+      if (meta[key]!==undefined){
+        val = meta[key].type;
+      } else {
+        val = meta['*'].type
+      }
+      return val;
+    }
+  }]);
 
 var EncounterCtrl = function($scope, $http){
-  $scope.compMeta = CompMeta;
-
   $scope.encounters = [
   ]
 
@@ -106,12 +344,34 @@ var EncounterCtrl = function($scope, $http){
     });
   }
 
+  $scope.$on('save', function(evt, encounter){
+    $scope.saveItem(encounter);
+  });
+
   $scope.saveItem = function(encounter){
-    console.log(encounter)
-    $http.put('/encounter/'+encounter.name, encounter).success(function(){
+    console.log('Saving:', encounter)
+    $http.put('/encounter/'+encounter.id, encounter).success(function(){
       console.log('Saved:', encounter.name);
-      $scope.log.splice(0, 0,'Saved: ' + encounter.name);
     });
+  }
+
+  $scope.addRoom = function(encounter){
+    var roomName = prompt("What's the name of this room?");
+    var room = {
+      name: 'encounterroom',
+      locked: false,
+      spawn: []
+    }
+    encounter.rooms[roomName] = room;
+  }
+
+  $scope.removeRoom = function(encounter, roomName){
+    console.log('Remove:', encounter, roomName)
+    delete encounter.rooms[roomName];
+  }
+
+  $scope.addEntity = function(encounter){
+    $scope.$emit('addEntity', encounter.entities);
   }
 
   $scope.removeEntity = function(encounter, name){
@@ -119,29 +379,77 @@ var EncounterCtrl = function($scope, $http){
     console.log(name);
   }
 
-  $scope.hasCompMeta = function(typ){
-    if ($scope.compMeta[typ]!==undefined){
-      return "true";
+  $scope.removeAction = function(action, index){
+    action.splice(index, 1);
+  }
+
+  $scope.newAction = function(encounter, action){
+    console.log('Add action to:', action)
+    $scope.$emit('addAction', encounter, action, -1);
+  }
+
+  $scope.editAction = function(encounter, action, index){
+    console.log('Edit action to:', encounter, action, index)
+    $scope.$emit('editAction', encounter, action, index);
+  }
+
+  $scope.addComponent = function(entity){
+    console.log('Add Component!!!')
+    $scope.$emit('addComponent', entity)
+  }
+
+  $scope.editComponent = function(encounter, entity, compName){
+    console.log('Edit Compponent!!')
+    $scope.$emit('editComponent', encounter, entity, compName);
+  }
+
+  $scope.createEncounter = function(){
+    var encounter = {
+      name : 'newencounter',
+      steps : 1,
+      description : 'A new encounter.',
+      rooms : {},
+      entities : {},
     }
-    return "false";
+    $scope.encounters.push(encounter);
+  }
+
+  
+
+  $scope.getDataType = function(action, index){
+    if (index==0){
+      return "actiontype"
+    } 
+    //console.log(action, index)
+    var typ = $scope.ActionMeta[action[0]][index-1].type;
+    
+    return typ;
+  }
+
+  $scope.getDataMeta = function(action, index){
+    if (index==0){
+      return "actiontype"
+    } 
+    var typ = $scope.ActionMeta[action[0]][index-1];
+    return typ;
   }
 
   $scope.encounters = [];
+  //*
   $http.get('/encounter/').success(function(data){
     $scope.encounters = data;
   });
+  //*/
 }
 
 var _updatePreview = function(scope){
     var frame = parseInt(scope.spriteFrame);
-    console.log('Update:', frame)
     scope.previewTop = Math.floor(frame/16)*-24;
     scope.previewLeft = left = (frame%16)*-24;
 }
 
 var ItemCtrl = function($scope, $http){
       $scope.log = [];
-      $scope.ActionMeta = ActionMeta;
 
       $scope.save = function(){
         $scope.items.forEach(function(item){
@@ -203,7 +511,7 @@ var ItemCtrl = function($scope, $http){
       }
 
       $scope.updateActionCallback = function(){
-        var meta = ActionMeta[$scope.newAction.action];
+        var meta = $scope.ActionMeta[$scope.newAction.action];
         $scope.newAction.args = meta.slice(0);
       }
 

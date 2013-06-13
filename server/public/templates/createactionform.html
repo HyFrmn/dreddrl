@@ -1,0 +1,21 @@
+<div class="drl-action-create-form hidden popup" ng-show"parentAction">
+    <ul>
+      <li>
+        <label>Action:</label>
+        <div ng-switch on="mode">
+          <select ng-switch-when="create" ng-model="actionType" ng-change="updateActionCallback()" ng-options="type as type for (type, action) in ActionMeta">
+            <option value="">-- chose action --</option>
+          </select>
+          <span ng-switch-default name="actionType">{{ actionType }}</span>
+        </div>
+      </li>
+      <li ng-repeat="arg in actionArgs">
+        <label>{{ arg.name }}:</label>
+        <input type="{{ arg.type }}" name="arg{{ $index }}" value="component.attr" ng-model="arg.value" />
+      </li>
+    </ul>
+    <div ng-switch on="mode">
+      <button ng-switch-when="create" ng-click="createAction()">Create Action</button>
+      <button ng-switch-default ng-click="updateAction()">Update Action</button>
+    </div>
+</div>

@@ -1,3 +1,17 @@
+.popup {
+	background: white;
+	width: 640px;
+	height: 480px;
+	padding: 2em;
+	margin: auto;
+	border-radius: 1em;
+	border: 1em solid skyblue;
+}
+
+.hidden {
+	display: none;
+}
+
 .tab-pane {
 	display: none;
 }
@@ -40,7 +54,7 @@
 
 }
 
-.drl-item-effect-list {
+.drl-item-effect-list, .drl-action-list {
 	list-style: none
 }
 
@@ -48,12 +62,23 @@
 	padding-left: 1em;
 }
 
-.drl-action-arg:first-child {
+
+.drl-action-list li {
+	padding: 0.25;
+}
+
+.drl-action-child-container {
+	padding-left: 1em;
+}
+
+.drl-action-type {
 	padding: 0.25em;
 	background: black;
 	color: white;
+	width: 16em;
 }
 
 .drl-action-arg {
 	padding: 0.25em;
 }
+

@@ -24,6 +24,7 @@ function   (sge, dreddrl) {
     console.log(sge,dreddrl, _, CAAT)
 
     dreddrl.config.itemDataUrl = '/item/';
+    dreddrl.config.encounterDataUrl = '/encounter/';
     dreddrl.DreddRLState.init();
 
 

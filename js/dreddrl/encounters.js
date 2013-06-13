@@ -1,4 +1,4 @@
-define(['sge', './item'], function(sge, Item){
+define(['sge', './item', './config'], function(sge, Item, config){
 	var Encounter = sge.Class.extend({
 		init: function(system, options){
 			this.system = system;
@@ -149,12 +149,7 @@ define(['sge', './item'], function(sge, Item){
 	})
 
 	var serialData = {};
-	sge.util.ajax('/assets/encounters/standard.json', function(rawText){
-				data = JSON.parse(rawText);
-				data.forEach(function(encounter){
-					serialData[encounter.name] = encounter;
-				})
-	}.bind(this));
+	
 
 	var EncounterSystem = sge.Class.extend({
 		init: function(state, level){
@@ -275,6 +270,15 @@ define(['sge', './item'], function(sge, Item){
 			this.state.info(this.active.description);
 		}
 	})
+
+	EncounterSystem.bootstrap = function(){
+	sge.util.ajax(config.encounterDataUrl, function(rawText){
+				data = JSON.parse(rawText);
+				data.forEach(function(encounter){
+					serialData[encounter.name] = encounter;
+				})
+	}.bind(this));
+}
 
 	return {
 		Encounter : Encounter,

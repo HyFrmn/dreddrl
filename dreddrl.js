@@ -34618,6 +34618,7 @@ define('dreddrl/config',[],function(){
 
 		itemDataUrl : '/assets/items/standard.json',
 		weaponDataUrl : '/assets/items/weapons.json',
+		encounterDataUrl : '/assets/encounter/standard.json',
 	}
 })
 ;
@@ -37865,7 +37866,7 @@ define('dreddrl/physics',['sge'], function(sge){
     return RPGPhysics;
 });
 
-define('dreddrl/encounters',['sge', './item'], function(sge, Item){
+define('dreddrl/encounters',['sge', './item', './config'], function(sge, Item, config){
 	var Encounter = sge.Class.extend({
 		init: function(system, options){
 			this.system = system;
@@ -38016,12 +38017,7 @@ define('dreddrl/encounters',['sge', './item'], function(sge, Item){
 	})
 
 	var serialData = {};
-	sge.util.ajax('/assets/encounters/standard.json', function(rawText){
-				data = JSON.parse(rawText);
-				data.forEach(function(encounter){
-					serialData[encounter.name] = encounter;
-				})
-	}.bind(this));
+	
 
 	var EncounterSystem = sge.Class.extend({
 		init: function(state, level){
@@ -38142,6 +38138,15 @@ define('dreddrl/encounters',['sge', './item'], function(sge, Item){
 			this.state.info(this.active.description);
 		}
 	})
+
+	EncounterSystem.bootstrap = function(){
+	sge.util.ajax(config.encounterDataUrl, function(rawText){
+				data = JSON.parse(rawText);
+				data.forEach(function(encounter){
+					serialData[encounter.name] = encounter;
+				})
+	}.bind(this));
+}
 
 	return {
 		Encounter : Encounter,
@@ -39294,6 +39299,7 @@ define('dreddrl/dreddrlstate',[
         DreddRLState.init = function(){
             Item.bootstrap();
             Weapon.bootstrap();
+            encounters.EncounterSystem.bootstrap();
         }
 
     	return DreddRLState;

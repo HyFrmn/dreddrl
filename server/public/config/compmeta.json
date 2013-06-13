@@ -1,0 +1,29 @@
+{
+  "meta" : {
+    "inherit" : { "type" : "string", "default" : "citizen"},
+    "spawn" : {"type" : "string"}
+  },
+  "interact" : {
+    "priority" : {"type" : "checkbox"}
+  },
+  "actions" : {
+    "*" : {"type" : "actionlist"}
+  },
+  "deaddrop" : {
+  	"items" : {"type" : "list"},
+  	"count" : {"type" : "number"},
+  	"always" : {"type" : "list"}
+  },
+  "enemyai" : {
+  	"speed" : {"type" : "number"},
+  	"xp" : {"type" : "number"}
+  },
+  "health" : {
+  	"life" : {"type" : "number"},
+  	"maxLife" : {"type" : "number"},
+  	"visible" : {"type" : "checkbox"}
+  },
+  "combat" : {
+  	"faction" : {"type": "string"}
+  }
+}
