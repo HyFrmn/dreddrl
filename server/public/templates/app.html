@@ -24,6 +24,24 @@
                 </li>
               </ul>
               
+              <h3>Items<button ng-click="addItem(encounter)">+</button></h3>
+              <li ng-repeat="item in encounter.items" class="drl-item-container">
+                <h3>{{item.name}}({{item.id}})</h3>
+                <div class="drl-item-preview-container">
+                  <img src="/assets/sprites/scifi_icons_1.png" class="drl-item-preview" ng-style="{left: item.previewLeft + 'px', top: item.previewTop + 'px', position: relative, display: block}"/>
+                </div>
+                <p>{{item.description}}</p>
+                <p>Immediate<input type="checkbox" ng-model="item.immediate"/></p>
+                <h4>Effects<button ng-click="newItemEffect(encounter, item)">+</button></h4>
+                <div class="drl-item-effect-container"> 
+                  <div ng-repeat="action in item.effect">
+                    <button ng-click="removeAction(encounter, item.effect, $index)">Remove</button>
+                    <button ng-click="editAction(encounter, item.effect, $index)">Edit</button>
+                    <div ng-include="'/templates/action.html'"/>
+                  </div>
+                </div>
+            </li>
+
               <h3>Rooms<a href="#" ng-click="addRoom(encounter)">+</a></h3>
               <ul>
                 <li ng-repeat="(name, room) in encounter.rooms">
@@ -77,6 +95,7 @@
           <createentityform />
           <createcompform />
           <editcompform class="hidden" ng-include="templateUrl"/>
+          <createitemform />
 
         </div>
       </pane>
@@ -92,6 +111,7 @@
                 <img src="/assets/sprites/scifi_icons_1.png" class="drl-item-preview" ng-style="{left: item.previewLeft + 'px', top: item.previewTop + 'px', position: relative, display: block}"/>
               </div>
               <p>{{item.description}}</p>
+              <p>Immediate<input type="checkbox" ng-model="item.immediate"/></p>
               <h4>Effects<button ng-click="addActionCallback(item)">+</button></h4>
               <div class="drl-item-effect-container"> 
                 <div ng-repeat="action in item.effect">

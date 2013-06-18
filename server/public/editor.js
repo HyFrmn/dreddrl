@@ -127,6 +127,48 @@ angular.module('editor', []).
 
     }
   }).
+  directive('createitemform', function(){
+    return {
+      restrict: 'E',
+      transclude: true,
+      templateUrl: 'templates/createitemform.html',
+      replace: true,
+      controller: function($scope, $element, $attrs){
+        $scope.item = {
+            name : "",
+            description : "",
+            spriteImage : "scifi_icons_1.png",
+            spriteFrame : 1,
+        };
+
+        $scope.$on('addItem', function(evt, parentObject){
+          $scope.parentObject = parentObject;
+          $($element).bPopup();
+        });
+
+        $scope.updateItemPreview = function(){
+          _updatePreview($scope.item)    
+        }
+
+        $scope.createItem = function(){
+          var item = {
+            name : $scope.item.name,
+            description : $scope.item.description,
+            spriteImage : $scope.item.spriteImage,
+            spriteFrame : $scope.item.spriteFrame,
+            id : $scope.item.name.replace(/ /, '-').toLowerCase()
+          }
+          console.log($scope.parentObject, item);
+          $scope.parentObject[item.id] = item;
+          $($element).bPopup().close();
+        }
+
+
+
+      },
+
+    }
+  }).
   directive('createcompform', function(){
     return {
       restrict: 'E',
@@ -222,6 +264,17 @@ angular.module('editor', []).
         $scope.addActionList = function(){
           var typ = prompt('What callback?');
           $scope.newCompData.push({name:typ, value:[]});
+        }
+
+        $scope.newAction = function(saveObject, action, index){
+          if (index!==undefined){
+            if (action[index]===null){
+              action[index] = [];
+            }
+            action = action[index];
+          }
+          console.log('Add action to:', action)
+          $scope.$emit('addAction', saveObject, action, -1);
         }
 
       },
@@ -350,9 +403,16 @@ var EncounterCtrl = function($scope, $http){
 
   $scope.saveItem = function(encounter){
     console.log('Saving:', encounter)
-    $http.put('/encounter/'+encounter.id, encounter).success(function(){
-      console.log('Saved:', encounter.name);
-    });
+    if (encounter.id!==undefined){
+      $http.put('/encounter/'+encounter.id, encounter).success(function(){
+        console.log('Saved:', encounter.name);
+      });
+    } else {
+      $http.post('/encounter/', encounter).success(function(data){
+        encounter.id = data.id;
+        console.log('Saved:', encounter.name);
+      });
+    }
   }
 
   $scope.addRoom = function(encounter){
@@ -367,7 +427,15 @@ var EncounterCtrl = function($scope, $http){
 
   $scope.removeRoom = function(encounter, roomName){
     console.log('Remove:', encounter, roomName)
+    
     delete encounter.rooms[roomName];
+  }
+
+  $scope.addItem = function(encounter){
+    if (encounter.items === undefined){
+      encounter.items = {};
+    }
+    $scope.$emit('addItem', encounter.items);
   }
 
   $scope.addEntity = function(encounter){
@@ -379,8 +447,15 @@ var EncounterCtrl = function($scope, $http){
     console.log(name);
   }
 
-  $scope.removeAction = function(action, index){
+  $scope.removeAction = function(encounter, action, index){
     action.splice(index, 1);
+  }
+
+  $scope.newItemEffect = function(encounter, item){
+    if (item.effect===undefined){
+      item.effect = [];
+    }
+    $scope.newAction(encounter, item.effect);
   }
 
   $scope.newAction = function(encounter, action){

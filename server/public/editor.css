@@ -1,4 +1,5 @@
 .popup {
+	overflow: scroll;
 	background: white;
 	width: 640px;
 	height: 480px;

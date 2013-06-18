@@ -1,7 +1,8 @@
 {
   "meta" : {
     "inherit" : { "type" : "string", "default" : "citizen"},
-    "spawn" : {"type" : "string"}
+    "spawn" : {"type" : "string"},
+    "use" : {"type":"string"}
   },
   "interact" : {
     "priority" : {"type" : "checkbox"}

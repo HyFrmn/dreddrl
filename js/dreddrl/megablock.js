@@ -323,6 +323,7 @@ function(sge, Factory, encounters, Map){
                         region: market,
                     }
                 })
+                citizen.tags.push('shopper');
             }
 
             var lawbreakers=8;
@@ -352,17 +353,14 @@ function(sge, Factory, encounters, Map){
             //Setup Encounter System
             //*
             this.encounterSystem = new encounters.EncounterSystem(this.state, this);
+            
+            this.encounterSystem.createAll();
+
+            /*
             this.encounterSystem.createSerial('rescueEncounter');
             this.encounterSystem.createSerial('crimeBoss');
-            this.encounterSystem.createSerial('lostItem', {
-                entities : {
-                    victim : {
-                        meta : {
-                            use : citizen
-                        }
-                    }
-                }
-            });
+            this.encounterSystem.createSerial('lostItem');
+            this.encounterSystem.createSerial('freeLunch');
             //*/
 
 

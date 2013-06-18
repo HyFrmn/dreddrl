@@ -83,8 +83,15 @@ define(['sge', './item', './config'], function(sge, Item, config){
 				var entity = null
 				if (def.meta.use){
 					//Entity
-					entity = def.meta.use;;
-
+					console.log('Use:', def.meta.use);
+					if (def.meta.use.match(/^@/)){
+						var tag = def.meta.use.match(/^@\(([a-z]*)\)/)[1];
+						var results = this.state.getEntitiesWithTag(tag)
+						console.log(tag, results);
+						entity = sge.random.item(results)
+					} else {
+						entity = def.meta.use;
+					}
 					//Update entity;
 					delete def.meta;
 					var keys = Object.keys(def);
@@ -163,6 +170,14 @@ define(['sge', './item', './config'], function(sge, Item, config){
 			//this.compassActor.setAlpha(1);
 			//this.state.map.canopy.setZOrder(this.compassActor, 0);
 		},
+
+		createAll : function(){
+			var keys = Object.keys(serialData);
+			keys.forEach(function(key){
+				this.createSerial(key);
+			}.bind(this));
+		},
+
 		create : function(klass, options){
 			var encounter = new klass(this, options);
 			this.encounters.push(encounter);
@@ -275,6 +290,7 @@ define(['sge', './item', './config'], function(sge, Item, config){
 	sge.util.ajax(config.encounterDataUrl, function(rawText){
 				data = JSON.parse(rawText);
 				data.forEach(function(encounter){
+					console.log('Encounter Loaded', encounter.name);
 					serialData[encounter.name] = encounter;
 				})
 	}.bind(this));
