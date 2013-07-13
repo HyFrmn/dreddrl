@@ -25,7 +25,8 @@ define([
     './actions/switch',
     './actions/event',
     './actions/list',
-    './actions/followpath'
+    './actions/followpath',
+    './actions/inventory'
 	], 
 	function(sge){
         var NPCSHEETS = [

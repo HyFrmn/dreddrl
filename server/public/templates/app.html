@@ -9,6 +9,7 @@
           <tabs>
             <pane title="{{encounter.name}}" ng-repeat="encounter in encounters" class="drl-encounter-container">
               <h3>{{encounter.name}}</h3>
+              <p>Enabled: <input type="checkbox" ng-model="encounter.enabled"/></p>
               <ul>
                 <li>
                   <label>Name:</label>
@@ -54,6 +55,10 @@
                     <li>
                       <label>Locked:</label>
                       <input type="checkbox" ng-model="room.locked" />
+                    </li>
+                    <li>
+                      <label>Key:</label>
+                      <input type="text" ng-list ng-model="room.key" />
                     </li>
                     <li>
                       <label>Spawn:</label>
@@ -115,8 +120,8 @@
               <h4>Effects<button ng-click="addActionCallback(item)">+</button></h4>
               <div class="drl-item-effect-container"> 
                 <div ng-repeat="action in item.effect">
-                  <button ng-click="removeAction(encounter, value, $index)">Remove</button>
-                  <button ng-click="editAction(encounter, value, $index)">Edit</button>
+                  <button ng-click="removeAction(encounter, item.effect, $index)">Remove</button>
+                  <button ng-click="editAction(encounter, item.effect, $index)">Edit</button>
                   <div ng-include="'/templates/action.html'"/>
                 </div>
               </div>

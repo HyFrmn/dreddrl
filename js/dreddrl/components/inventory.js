@@ -16,11 +16,14 @@ define(['sge', '../action'],function(sge, Action){
 			this.entity.fireEvent('state.log', 'Picked up ' + item.name);
 			if (item.immediate){
 				if (item.effect){
-					action = Action.Factory(this.entity, item.effect);
+					action = Action.Factory({
+						entity: this.entity,
+						item: entity
+					}, item.effect);
 					action.run();
 				}
 			} else {
-				this.data.items.push(item.id);
+				this.addItem(item);
 			}
 
 		},
@@ -28,6 +31,15 @@ define(['sge', '../action'],function(sge, Action){
 			value = value || 1;
 			value = this.get(prop) - value;
 			this.set(prop, value);
+		},
+		hasItem : function(item){
+			
+		},
+		addItem : function(item){
+			this.data.items.push(item.id);
+		},
+		removeItem : function(item){
+			this.data.items = this.dat
 		}
 	})
 	sge.Component.register('inventory', InventoryComponent);

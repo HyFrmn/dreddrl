@@ -8,6 +8,7 @@ define(['sge'], function(sge){
         init: function(entity, data){
             this._super(entity, data);
             this.room = data.room;
+            this.data.key = data.key || null;
             this.data.locked = data.locked || false;
             this.data.open = data.open===undefined ?  true : data.open;
             this.interact = this.interact.bind(this);
@@ -26,16 +27,26 @@ define(['sge'], function(sge){
         },
         interactSecondary: function(e){
             if (this.get('locked')){
-                if (e.get('inventory.keys')>0){
-                    e.set('inventory.keys', -1, 'add')
-                    this.entity.fireEvent('state.log','Unlocking the door.');
-                    this.set('locked', false);
+                if (this.get('key')){
+                    var keyName = this.get('key');
+                    if (keyName in e.get('inventory.items')){
+                        this.unlock();
+                    }
                 } else {
-                    this.entity.fireEvent('state.log', "Need a key to unlock the door.")
+                    if (e.get('inventory.keys')>0){
+                        e.set('inventory.keys', -1, 'add')
+                        this.unlock();
+                    } else {
+                        this.entity.fireEvent('state.log', "Need a key to unlock the door.")
+                    }
                 }
             } else {
                 this.entity.fireEvent('state.log', 'Door is already unlocked.');
             }
+        },
+        unlock: function(){
+            this.entity.fireEvent('state.log','Unlocking the door.');
+            this.set('locked', false);
         },
         createTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32);

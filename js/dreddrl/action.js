@@ -1,4 +1,4 @@
-define(['sge'], function(sge){
+define(['sge', './parser'], function(sge, parser){
 	var ContextWrapper = sge.Class.extend({
 		init: function(array){
 			this.array = array;
@@ -63,13 +63,34 @@ define(['sge'], function(sge){
 
 
 	var Action = sge.Class.extend({
-		init: function(entity, data){
+		init: function(ctx, data){
+
 			this.ctx = new Context();
-			this.ctx.addSubContext('entity', entity, true);
-			this.ctx.addSubContext('state', entity.state);
+			this.ctx.addSubContext('entity', ctx.entity, true);
+			this.ctx.addSubContext('state', ctx.state);
 			this.ctx.addSubContext('action', this);
-			this.entity = entity;
-			this.state = entity.state;
+			if (ctx!==undefined){
+				var keys = Object.keys(ctx);
+				keys.forEach(function(key){
+					if (key=='entity'||key=='state'){
+						return;
+					}
+					this.ctx.addSubContext(key, ctx[key]);
+				}.bind(this));
+			}
+			this.entity = ctx.entity;
+			this.state = ctx.state;
+			if (data.context!==undefined){
+				ctx = data.context;
+				var keys = Object.keys(ctx);
+				keys.forEach(function(key){
+					if (key=='entity'||key=='state'){
+						return;
+					}
+					this.ctx.addSubContext(key, ctx[key]);
+				}.bind(this));
+				delete data.context;
+			}
 			this.data = data;
 			this.async = false;
 			this._next = null;
@@ -154,6 +175,16 @@ define(['sge'], function(sge){
 	        }
 	        return _ctx.set(path, value, method);
 	    },
+	    getEntity : function(entityId){
+			if (entityId=='this'){
+            	var entity = this.ctx.get('entity');
+            } else if (entityId.match(/encounter\./)){
+            	var entity = this.ctx.get(entityId);
+            } else {
+				var entity = this.ctx.get('entity').state.getEntityWithTag(entityId);
+			}
+			return entity;
+	    },
 	    get : function(path){
 	    	console.log(path);
 	    	if (path.match(/data\./)){
@@ -178,6 +209,7 @@ define(['sge'], function(sge){
 	Action.Load = function(entity, data) {
 		var tmp = data.slice()
 		var type = tmp.shift();
+		console.log('Create Action Object', entity, type, data);
 	    var cls = Action._classHash[type];
 	    if(cls === undefined) {
 	        return null;
@@ -202,6 +234,11 @@ define(['sge'], function(sge){
 	Action.Factory = function(ctx, actionList){
 		var firstAction = null;
 		var lastAction = null;
+		var entity = null;
+		if (ctx.id!==undefined){
+			ctx = {entity: ctx};
+		}
+		ctx.state = ctx.entity.state;
         var actions = _.map(actionList, function(actionData){
         	var action = Action.Load(ctx, actionData);
         	if (lastAction){

@@ -11,7 +11,6 @@ define(['sge','../action'], function(sge, Action){
 	        this.pathPoints = this.state.map.getPath(tileX, tileY,endTileX,endTileY);
 		},
 		tick: function(delta){
-			console.log(this.pathPoints.length)
 			if (this.pathPoints.length<=0){
 				this.entity.set('xform.v', 0, 0);
         		this.end();

@@ -16,6 +16,7 @@ define(['sge', './config'], function(sge, config){
 			this.spriteImage = options.spriteImage || 'scifi_icons_1.png';
 			this.immediate = options.immediate || false;
 			this.effect = options.effect || [];
+			this.encounter = options.encounter || null;
 		},
 		get: function(path){
 			return this[path];

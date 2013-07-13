@@ -113,5 +113,25 @@
          "name":"targetY",
          "type":"number"
       }
+   ],
+   "inventory.add":[
+      {
+         "name":"entity",
+         "type":"entity"
+      },
+      {
+         "name":"item",
+         "type":"item"
+      }
+   ],
+   "inventory.remove":[
+      {
+         "name":"entity",
+         "type":"entity"
+      },
+      {
+         "name":"item",
+         "type":"item"
+      }
    ]
 }

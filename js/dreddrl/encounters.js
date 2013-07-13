@@ -72,6 +72,7 @@ define(['sge', './item', './config'], function(sge, Item, config){
 			var items = _.map(itemNames, function(name){
 				var def = options.items[name];
 				var item = Item.Factory(def.type, def);
+				item.encounter = this;
 				this.items[name] = item;
 			}.bind(this))
 
@@ -291,7 +292,9 @@ define(['sge', './item', './config'], function(sge, Item, config){
 				data = JSON.parse(rawText);
 				data.forEach(function(encounter){
 					console.log('Encounter Loaded', encounter.name);
-					serialData[encounter.name] = encounter;
+					if (encounter.enabled){
+						serialData[encounter.name] = encounter;
+					}
 				})
 	}.bind(this));
 }

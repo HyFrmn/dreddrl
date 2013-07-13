@@ -55,6 +55,9 @@ define(['sge', '../item'], function(sge, Item){
                     src: 'assets/sprites/' + item.spriteImage
                 }
             };
+            if (item.encounter){
+                def.encounter = {encounter: item.encounter}
+            }
             if (this.data.pickup){
                 def.actions = {
                     pickup: this.data.pickup
