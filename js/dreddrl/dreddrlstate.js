@@ -5,12 +5,11 @@ define([
         './physics',
         './factory',
         './map',
-        './encounters',
         './megablock',
         './weapon',
         './item'
     ],
-    function(sge, config, BlockLevelGenerator, Physics, Factory, Map, encounters, megablock, Weapon, Item){
+    function(sge, config, BlockLevelGenerator, Physics, Factory, Map, megablock, Weapon, Item){
 
         INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is your responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
@@ -279,7 +278,8 @@ define([
                 this.pc = pc;
 
                 this.input.addListener('keydown:Q', function(){
-                    this.level.encounterSystem.switch();
+                    //TODO: Switch Quest Toggle
+                    //this.level.encounterSystem.switch();
                 }.bind(this));
                 setTimeout(function() {
                         this.game.fsm.finishLoad();
@@ -553,8 +553,8 @@ define([
                 }
             },
 
-            startDialog: function(dialog){
-                this.game._states['dialog'].setDialog(dialog);
+            startDialog: function(dialog, context){
+                this.game._states['dialog'].setDialog(dialog, context);
                 this.game.fsm.startDialog();
             },
 
@@ -642,7 +642,6 @@ define([
         DreddRLState.init = function(){
             Item.bootstrap();
             Weapon.bootstrap();
-            encounters.EncounterSystem.bootstrap();
         }
 
     	return DreddRLState;

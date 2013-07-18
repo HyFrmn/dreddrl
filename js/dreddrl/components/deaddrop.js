@@ -4,7 +4,7 @@ define(['sge', '../item'], function(sge, Item){
             this._super(entity, data);
             this.data.items = data.items || [];
             this.data.count = data.count || 1;
-            this.data.always = data.always || [];
+            this.data.always = data.always || true;
             this.data.pickup = data.pickup;
             this.drop = this.drop.bind(this);
             this.entity.addListener('entity.kill', this.drop);

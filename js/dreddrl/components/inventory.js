@@ -1,4 +1,4 @@
-define(['sge', '../action'],function(sge, Action){
+define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Action){
 
 	var InventoryComponent = sge.Component.extend({
 		init: function(entity, data){
@@ -14,14 +14,12 @@ define(['sge', '../action'],function(sge, Action){
 			var item = freeitem.get('item');
 
 			this.entity.fireEvent('state.log', 'Picked up ' + item.name);
-			if (item.immediate){
-				if (item.effect){
-					action = Action.Factory({
-						entity: this.entity,
-						item: entity
-					}, item.effect);
-					action.run();
-				}
+			if (item.actions.pickup){
+					var expr = new Expr(item.actions.pickup);
+					expr.loadContext(item.getContext());
+					console.log('Expr:',expr);
+					expr.run();
+				
 			} else {
 				this.addItem(item);
 			}

@@ -9,6 +9,7 @@ define([
     './components/interaction',
     './components/door',
     './components/actions',
+    './components/dialog',
     './components/elevator',
     './components/quest',
     './components/encounter',
@@ -76,9 +77,6 @@ define([
                     combat: {faction: 'judge', weapon: 'lawgiver'},
                     stats: {},
                     emote: {},
-                    actions: {
-                        'region.enter' : [['event', 'this', 'state.info', 'Entering ${event.0.name}']]
-                    }
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     movement : {
@@ -93,9 +91,21 @@ define([
                 })},
             citizen : function(){return deepExtend(FACTORYDATA['npc'](), {
                     interact : {},
-                    actions: {
-                        interact : [['event', 'this', 'emote.msg', "I'm a citizen.", 1]],
-                        //interact : [['followpath']]
+                    dialog : {
+                        tree: [{
+                                pc:"Who are you?",
+                                npc: "I'm a registered citizen.",
+                                choices: [
+                                    {
+                                        pc:"Do you live in this block?",
+                                        npc:"Yes and I work here."
+                                    },
+                                    {
+                                        pc:"Do you need assistance?",
+                                        npc:"No. Everything is fine."
+                                    }
+                                ]
+                               }]
                     },
                     enemyai : {
                         
@@ -117,9 +127,6 @@ define([
                     health : {alignment:-10, life: 8},
                     enemyai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
                     deaddrop: {items:['key','gun','ramen','ramen','ramen']},
-                    actions: {
-                        'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
-                    },
                     combat: {faction : 'lawbreak'},
                 }
             )},
@@ -129,9 +136,6 @@ define([
                 },
                 health : {alignment:-10, life: 24},
                 deaddrop: {count: 2, always: ['key','key','key']},
-                actions: {
-                    'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]]
-                },
             })},
             spacer : function(){
                 var msgs = [
@@ -149,9 +153,6 @@ define([
                     health : {alignment:-10, life: 5},
                     enemyai : { tracking: 'pc', territory: 'spacer', xp: 1, faction: 'spacer'},
                     deaddrop: {items:['key','gun','ramen','ramen','ramen']},
-                    actions: {
-                        'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
-                    },
                     combat: {faction : 'spacer'},
                 }
             )},
@@ -212,10 +213,29 @@ define([
 		  return destination;
 		};
 
+        var DreddRLEntity = sge.Entity.extend({
+            init: function(data){
+                this._contexts = [];
+                this._super(data);
+            },
+            addContext: function(ctx){
+                this._contexts.push(ctx)
+            },
+            getContext: function(){
+                var ctx = {};
+                this._contexts.forEach(function(context){
+                    for (key in context){
+                        ctx[key] = context[key];
+                    }
+                })
+                return ctx;
+            }
+        });
+
 		var Factory = function(type, options){
 			options = options || {};
 			var data = deepExtend(FACTORYDATA[type](), options);
-			return new sge.Entity(data);
+			return new DreddRLEntity(data);
 		}
 
 		return Factory

@@ -9,18 +9,37 @@ define(['sge', './config'], function(sge, config){
 	var id=0;
 	var Item = sge.Class.extend({
 		init: function(options){
+			this._contexts = []
 			this.id = id++;
 			this.name = options.name || 'Simple Item';
 			this.description = options.description || 'A simple object.'
 			this.spriteFrame = options.spriteFrame || 1;
 			this.spriteImage = options.spriteImage || 'scifi_icons_1.png';
 			this.immediate = options.immediate || false;
-			this.effect = options.effect || [];
+			this.actions = options.actions || {};
 			this.encounter = options.encounter || null;
 		},
 		get: function(path){
 			return this[path];
-		}
+		},
+		set: function(path, value){
+			if (path.match(/^actions/)){
+				var evt = path.split('.')[1];
+				this.actions[evt] = value;
+			}
+		},
+		addContext: function(ctx){
+            this._contexts.push(ctx)
+        },
+        getContext: function(){
+            var ctx = {};
+            this._contexts.forEach(function(context){
+                for (key in context){
+                    ctx[key] = context[key];
+                }
+            })
+            return ctx;
+        }
 	});
 
 	function ajax(url, callback){

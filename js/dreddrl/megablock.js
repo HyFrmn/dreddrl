@@ -1,11 +1,11 @@
 define([
     'sge',
     './factory',
-    './encounters',
-    './map'
+    './map',
+    './quest'
 ],
-function(sge, Factory, encounters, Map){
-	var FLOORTILE =  { srcX : 0, srcY: 0, spriteSheet: 'future2'};
+function(sge, Factory, Map, Quest){
+    var FLOORTILE =  { srcX : 0, srcY: 0, spriteSheet: 'future2'};
     var FLOORTILE2 =  { srcX : 1, srcY: 1, spriteSheet: 'future2'};
     var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spriteSheet: 'future2'}
     var DOOROPENTILE1 = { srcX : 1, srcY: 36, spriteSheet: 'future2'}
@@ -303,7 +303,7 @@ function(sge, Factory, encounters, Map){
 
             //Populate market place.
             //*
-            var npcs=16;
+            var npcs=4;
             var citizen = null;
             while (npcs--){
                 var tx = sge.random.range(market.left, market.right);
@@ -326,7 +326,7 @@ function(sge, Factory, encounters, Map){
                 citizen.tags.push('shopper');
             }
 
-            var lawbreakers=8;
+            var lawbreakers=0;
             var lawbreaker = null;
             while (lawbreakers--){
                 var tx = sge.random.range(market.left, market.right);
@@ -348,20 +348,7 @@ function(sge, Factory, encounters, Map){
                 });
             }
 
-            //*/
-
-            //Setup Encounter System
-            //*
-            this.encounterSystem = new encounters.EncounterSystem(this.state, this);
-            
-            this.encounterSystem.createAll();
-
-            /*
-            this.encounterSystem.createSerial('rescueEncounter');
-            this.encounterSystem.createSerial('crimeBoss');
-            this.encounterSystem.createSerial('lostItem');
-            this.encounterSystem.createSerial('freeLunch');
-            //*/
+            Quest.Load(this);
 
 
             //Populate Rooms
@@ -449,7 +436,7 @@ function(sge, Factory, encounters, Map){
 
         },
         tick : function(delta){
-            this.encounterSystem.tick();
+            //this.encounterSystem.tick();
         },
         getRandomEncounterRoom : function(options){
             options = options || {};

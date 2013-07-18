@@ -1,7 +1,10 @@
-define(['sge', './config'], function(sge, config){
-	var DialogState = sge.GameState.extend({
-		initState: function(){
+define(['sge', './expr', './config'], function(sge, Expr, config){
+    var DialogState = sge.GameState.extend({
+        initState: function(){
             this._keepScene = true;
+            this._dialogList = [];
+            this._choosing = false;
+            this._choiceIndex = 0;
             var width = this.game.renderer.width;
             var height = this.game.renderer.height;
             this.container = new CAAT.ActorContainer().setBounds(0,0,width,height);
@@ -13,8 +16,12 @@ define(['sge', './config'], function(sge, config){
             this.interact = this.interact.bind(this);
             this.input.addListener('keydown:' + config.AButton, this.interact);
             this.input.addListener('keydown:' + config.BButton, this.interact);
+            this.input.addListener('keydown:up', this.up.bind(this));
+            this.input.addListener('keydown:down', this.down.bind(this));
         },
         startState : function(){
+            console.log('START!!', this._dialogList);
+            this.interact();
             var state = this.game._states['game'];
             state._uiContainer.setVisible(false);
             this.scene = state.scene;
@@ -25,19 +32,102 @@ define(['sge', './config'], function(sge, config){
             var state = this.game._states['game'];
             state._uiContainer.setVisible(true);
             this.scene.removeChild(this.container);
+            this._dialogList = [];
             this.scene = null;
             this._super();
         },
-        interact: function(){
-            this.game.fsm.endDialog();        	
+        up: function(){
+            this._choiceIndex-=1;
+            console.log(this._choiceIndex<0,this._choiceIndex);
+            if (this._choiceIndex<0){
+                this._choiceIndex = this._choices.length-1;
+            }
+            this.displayChoices();
         },
-		tick: function(){
-			this.game._states['game']._paused_tick();
-		},
-		setDialog: function(dialog){
-            this.dialog = dialog;
+        down: function(){
+            this._choiceIndex+=1;
+            if (this._choiceIndex>=this._choices.length){
+                this._choiceIndex = 0;
+            }
+            this.displayChoices();
+        },
+        interact: function(){
+            if (this._choosing){
+                this._choosing = false;
+                var choice = this._currentNode.choices[this._choiceIndex];
+                this.parseNode(choice);
+                this.interact();
+            } else {
+                if (this._dialogList.length<=0){
+                    var nodeList = this.nextNode();
+                    if (nodeList.length){
+                        if (nodeList.length==1){
+                            this.parseNode(nodeList[0]);
+                        } else {
+                            this._choices = nodeList
+                            this.displayChoices();
+                        }
+                    } else {
+                        this.game.fsm.endDialog();
+                        return
+                    }
+                } else {
+                    this.setDialogText(this._dialogList.shift());
+                }
+            }
+        },
+        parseNode: function(node){
+            this._currentNode = node;
+            if (typeof node === 'string'){
+                this._dialogList = [node];
+            } else {
+                var pcDialog = 'PC: ' + node.pc;
+                var npcDialog = 'NPC: ' + node.npc;
+                this._dialogList = [pcDialog, npcDialog];
+            }
+        },
+        tick: function(){
+            this.game._states['game']._paused_tick();
+        },
+        setDialog: function(node, ctx){
+            this._currentNode = node;
+            console.log(ctx);
+            this._ctx = ctx || {};
+            this.parseNode(node);
+        },
+        nextNode: function(){
+            var callback = this._currentNode.postAction;
+            if (callback){
+                var expr = new Expr(callback);
+                console.log('Expr', expr);
+                expr.loadContext(this._ctx);
+                expr.run();
+            }
+            return this._currentNode.choices || [];
+        },
+        _clearScreen: function(){
             this.dialogContainer.stopCacheAsBitmap();
             this.dialogContainer.emptyChildren();
+        },
+        displayChoices: function(){
+            var choices = this._choices;
+            this._clearScreen();
+            this._choosing = true;
+            for (var i = choices.length - 1; i >= 0; i--) {
+                var choice = choices[i].pc;
+                var actor = new CAAT.TextActor().setFont('24px sans-serif');
+                actor.setText(choice);
+                actor.setLocation(16, i*24);
+
+                if (i==this._choiceIndex){
+                    actor.setTextFillStyle('orange');
+                }
+                this.dialogContainer.addChild(actor);
+            };
+        },
+        setDialogText: function(dialog){
+            this.dialog = dialog;
+            this._clearScreen();
             var chunks = dialog.split(' ');
             var count = chunks.length;
             var start = 0;
@@ -65,7 +155,7 @@ define(['sge', './config'], function(sge, config){
             this.dialogContainer.addChild(actor);
             this.dialogContainer.setLocation(16, this.game.renderer.height - (y+96));
             this.dialogContainer.cacheAsBitmap();
-		}
-	});
-	return DialogState;
+        }
+    });
+    return DialogState;
 })

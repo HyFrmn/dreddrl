@@ -19,15 +19,14 @@ define(['sge', '../action'], function(sge, Action){
 
             this._addCallback(evt, actionData);
         },
-        _addCallback : function(evt, actionData){
+        _addCallback : function(evt, exprCode){
             if (this.data[evt]!==undefined){
                 this.entity.removeListener(evt, this.data[evt]);
             }
             var callback = function(){
-                var tmpActionData = actionData.slice(0);
-                var action = Action.Factory(this.entity, actionData);
-                action.ctx.addSubContext('event', Array.prototype.slice.call(arguments));
-                action.run(this.state);
+                var expr = new Expr(exprCode);
+                expr.loadContext(this.entity.getContext());
+                expr.run();
             }.bind(this);
             this.data[evt] = callback;
             this.entity.addListener(evt, callback);
