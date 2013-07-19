@@ -11,6 +11,7 @@ define(['sge', './item', './config'], function(sge, Item, config){
 			this._step = -1;
 			this._steps = {};
 			this._state = block.state;
+			this.reward = {}
 			setupFunc.apply(this, [block, block.state]);
 			this.startStep(0);
 		},
@@ -66,17 +67,22 @@ define(['sge', './item', './config'], function(sge, Item, config){
 			this.onComplete();
 		},
 		onComplete: function(){
-			console.log('Quest Complete!');
+			this._state.log('Complete: ' + this.name);
+			//TODO: Give Rewards.
 		},
 		createEntity: function(tag, options){
 			var entity = null;
-			if (tag.match(/@/)){
-				var tag = tag.match(/^@\(([a-z]*)\)/)[1];
-				var results = this._state.getEntitiesWithTag(tag)
-				entity = sge.random.item(results)
+			if (typeof tag === 'string'){
+				if (tag.match(/@/)){
+					var tag = tag.match(/^@\(([a-z]*)\)/)[1];
+					var results = this._state.getEntitiesWithTag(tag)
+					entity = sge.random.item(results)
+				} else {
+					entity = this._state.factory(tag, options);
+					this._state.addEntity(entity);
+				}
 			} else {
-				entity = this._state.factory(tag, options);
-				this._state.addEntity(entity);
+				entity = tag;
 			}
 			entity.addContext(this._context);
 			return entity;
@@ -101,10 +107,16 @@ define(['sge', './item', './config'], function(sge, Item, config){
 	    * * Return Item. Get Reward Quest Over
 	    *
 		*/
+		/*
 		var exampleQuest = new Quest(megablock, function(block, state){
 
 			//Set Reward
-
+			this.reward = {
+				xp: 100,
+				health: 1000,
+				ammo: 12,
+				keys: 3
+			}
 
 			//Create/Select Entities and Items.
 			var npc = this.createEntity('@(shopper)');
@@ -163,6 +175,94 @@ define(['sge', './item', './config'], function(sge, Item, config){
 				}]);
 				npc.set('dialog.tree', npcDialog);
 				npc.set('interact.priority', false);
+				this.complete();
+			})
+		})
+		*/
+		
+		/**
+		*
+	    * A basic quest with multiple steps.
+	    *
+	    * * NPC needs help.
+	    * * Locate Criminal with item.
+	    * * Kill Criminal. Locate dropped item.
+	    * * Pick Dropped Item. Locate NPC.
+	    * * Return Item. Get Reward Quest Over
+	    *
+		*/
+		var rescueQuest = new Quest(megablock, function(block, state){
+
+			//Set Reward
+			//Set Reward
+			this.reward = {
+				xp: 150,
+				health: 1000,
+				keys: 1
+			}
+
+			//Create/Select Entities and Items.
+			var room = block.getRandomRoom();
+			var father = this.createEntity('@(shopper)');
+			this.addContext('father', father);
+			var daughter = this.createEntity(room.spawn('woman.young',{}));
+			this.addContext('daughter', daughter);
+			
+			console.log(daughter);
+
+
+			//Step always called during setup.
+			this.addStep(0, function(){
+				npcDialog = this.createDialog([{
+					pc: 'Excuse me citizen. Do you need help?',
+					npc: "Yes, I can't find my daughter. If you see her, can you let her know where I am?",
+					choices: [{
+						pc:  "Of course",
+						npc: "Thank you so much.",
+						postAction: 'quest.nextStep();'
+					},{
+						pc: "Sorry. I can't help.",
+						npc: "The fuck you mean you can't help!"
+					}]
+				}]);
+				father.set('dialog.tree', npcDialog);
+				father.set('interact.priority', true);
+			});
+			this.addStep(10, function(){
+				npcDialog = this.createDialog([{
+					pc: "I still haven't found your missing watch.",
+					npc: "Well keep looking. Why the #!$^ do i pay my taxes."
+				}]);
+				father.set('dialog.tree', npcDialog);
+				father.set('interact.priority', false);
+				daughter.set('interact.priority', true);
+				daughter.set('dialog.tree', this.createDialog([{
+					pc: "Your father is looking for you.",
+					npc: "Thanks I'll go find him.",
+					postAction: "quest.nextStep(); "
+				},]))
+
+			});
+			this.addStep(20, function(){
+				npcDialog = this.createDialog([{
+					npc: "THANK YOU! Thank you for finding my daughter.",
+					postAction: 'quest.nextStep()'
+				}]);
+				daughterDialog = this.createDialog([{
+					npc: "Thank you for saving me.",
+					postAction: 'quest.nextStep()'
+				}]);
+				father.set('dialog.tree', npcDialog);
+				father.set('interact.priority', true);
+				daughter.set('interact.priority', false);
+
+			});
+			this.addStep(100, function(){
+				npcDialog = this.createDialog([{
+					npc: 'Thank you for finding my daughter.'
+				}]);
+				father.set('dialog.tree', npcDialog);
+				father.set('interact.priority', false);
 				this.complete();
 			})
 		})

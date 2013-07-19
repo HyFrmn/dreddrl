@@ -20,7 +20,6 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this.input.addListener('keydown:down', this.down.bind(this));
         },
         startState : function(){
-            console.log('START!!', this._dialogList);
             this.interact();
             var state = this.game._states['game'];
             state._uiContainer.setVisible(false);
@@ -55,7 +54,8 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             if (this._choosing){
                 this._choosing = false;
                 var choice = this._currentNode.choices[this._choiceIndex];
-                this.parseNode(choice);
+                this.parseNode(choice, true);
+                this._choiceIndex = 0;
                 this.interact();
             } else {
                 if (this._dialogList.length<=0){
@@ -76,14 +76,17 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
                 }
             }
         },
-        parseNode: function(node){
+        parseNode: function(node, skip){
             this._currentNode = node;
             if (typeof node === 'string'){
                 this._dialogList = [node];
             } else {
-                var pcDialog = 'PC: ' + node.pc;
-                var npcDialog = 'NPC: ' + node.npc;
-                this._dialogList = [pcDialog, npcDialog];
+                if (node.pc && !skip){
+                    this._dialogList.push('PC: ' + node.pc)
+                }
+                if (node.npc){
+                    this._dialogList.push('NPC: ' + node.npc);
+                }
             }
         },
         tick: function(){

@@ -7,6 +7,8 @@ define([
 	'./components/freeitem',
     './components/inventory',
     './components/interaction',
+    './components/chara',
+    './components/highlight',
     './components/door',
     './components/actions',
     './components/dialog',
@@ -63,6 +65,7 @@ define([
                 },
                 physics : {},
                 inventory : {},
+                chara: {}
             }},
 			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     'judge.controls' : {},
@@ -103,6 +106,9 @@ define([
                                     {
                                         pc:"Do you need assistance?",
                                         npc:"No. Everything is fine."
+                                    },
+                                    {
+                                        pc:"Goodbye"
                                     }
                                 ]
                                }]
@@ -170,6 +176,7 @@ define([
             }},
             door : function(){return {
                 xform: { container: '_entityContainer'},
+                highlight: {radius: 48},
                 interact : {},
                 door: {}
             }},
@@ -183,17 +190,17 @@ define([
                     src : 'assets/sprites/gang_' + sge.random.item([1,2,6]) +'.png',
                 },
             })},
-            'woman.old' : function(){return deepExtend(FACTORYDATA['npc'](), {
+            'woman.old' : function(){return deepExtend(FACTORYDATA['citizen'](), {
                 sprite : {
                     src : 'assets/sprites/women_' + sge.random.item([4,8]) +'.png',
                 },
             })},
-            'woman' : function(){return deepExtend(FACTORYDATA['npc'](), {
+            'woman' : function(){return deepExtend(FACTORYDATA['citizen'](), {
                 sprite : {
                     src : 'assets/sprites/women_' + sge.random.item([2,3,6,7]) +'.png',
                 },
             })},
-            'woman.young' : function(){return deepExtend(FACTORYDATA['npc'](), {
+            'woman.young' : function(){return deepExtend(FACTORYDATA['citizen'](), {
                 sprite : {
                     src : 'assets/sprites/women_' + sge.random.item([1,5]) +'.png',
                 },
@@ -216,6 +223,7 @@ define([
         var DreddRLEntity = sge.Entity.extend({
             init: function(data){
                 this._contexts = [];
+                this._regions = [];
                 this._super(data);
             },
             addContext: function(ctx){
@@ -234,7 +242,10 @@ define([
 
 		var Factory = function(type, options){
 			options = options || {};
-			var data = deepExtend(FACTORYDATA[type](), options);
+            var data = options;
+            if (type){
+    			data = deepExtend(FACTORYDATA[type](), options);
+            }
 			return new DreddRLEntity(data);
 		}
 

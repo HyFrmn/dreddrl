@@ -431,8 +431,10 @@ define([
                         return true;
                     } else {
                         this._regionEntityHash.remove(region, entity.id);
-                        //console.log('Leaving: ' + region.name);
+                        entity.fireEvent('region.exit', region);
                         region.entities = _.without(region.entities, entity);
+                        entity._regions = _.without(entity._regions, region);
+                        region.onRegionExit(entity);
                         return false;
                     }
                 }.bind(this));
@@ -441,9 +443,10 @@ define([
                     if (!_.contains(pruned, region)){
                         if ((tx>region.left&&tx<region.right)&&(ty>region.top&&ty<region.bottom)){
                             this._regionEntityHash.add(region, entity.id);
-                            //console.log('Enter: ' + region.name);
                             entity.fireEvent('region.enter', region);
                             region.entities.push(entity);
+                            entity._regions.push(region);
+                            region.onRegionEnter(entity);
                         }
                     }
                 }.bind(this));

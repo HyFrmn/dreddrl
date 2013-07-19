@@ -41,7 +41,7 @@ define(['sge', './config'], function(sge, config){
 			var tx = this.entity.get('xform.tx');
 			var ty = this.entity.get('xform.ty');
 			projectileData = sge.util.deepExtend({sourceEntity: this.entity}, Weapon.DATA.ammo[this._projectileType]);
-			var bullet = new sge.Entity({
+			var bullet = this.entity.state.factory(null, {
 				xform: {
 					tx: tx,
 					ty: ty,

@@ -18,6 +18,20 @@ define(['sge', '../config'], function(sge, config){
         _set_priority : function(priority){
             this.data.priority = this.__set_value('priority', Boolean(priority));
             this.signalActor.setVisible(this.data.priority);
+            var regions = this.entity._regions;
+            for (var i = regions.length - 1; i >= 0; i--) {
+                var region = regions[i];
+                console.log(region, region.name, region.highlight);
+                if (region.highlight){
+                    region.highlight(this.data.priority);
+                    break;
+                }
+            };
+            if (this.data.priority){
+                this.entity.fireEvent('highlight.on');
+            } else {
+                this.entity.fireEvent('highlight.off');
+            }
         },
         activate: function(coord){
             this.activeCoord = coord;

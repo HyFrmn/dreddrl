@@ -41,6 +41,12 @@ function(sge, Factory, Map, Quest){
         },
         test : function(tx, ty){
             return Boolean((tx>this.left)&&(tx<this.right)&&(ty>this.top)&&(ty<this.bottom));
+        },
+        onRegionEnter: function(){
+
+        },
+        onRegionExit: function(){
+
         }
     })
 
@@ -63,8 +69,8 @@ function(sge, Factory, Map, Quest){
             var realHeight = height * 32;
 
             //Region Interface;
-            this.top = (cy*32) - (realHeight/2) + 16;
-            this.bottom = (cy*32) + (realHeight/2) + 16;
+            this.top = (cy*32) - (realHeight/2) - 48;
+            this.bottom = (cy*32) + (realHeight/2) + 80;
             this.left = (cx*32)-(realWidth/2) + 16;
             this.right = (cx*32)+(realWidth/2) + 16;
             this.entities = [];
@@ -167,6 +173,34 @@ function(sge, Factory, Map, Quest){
                 }
             } else { 
                 this.cover.setVisible(true);
+            }
+        },
+        onRegionEnter: function(entity){
+            this._updateHighlight();
+        },
+        onRegionExit: function(entity){
+            this._updateHighlight();
+        },
+        highlight: function(highlight){
+            if (highlight){
+                this._highlight = true;
+            } else {
+                this._highlight = false;
+            }
+            this._updateHighlight();
+        },
+        _updateHighlight: function(){
+            var evt = null;
+            if (this._highlight){
+                console.log('Highlight: ', (this in this.level.state.pc._regions))
+                if (this.level.state.pc._regions.indexOf(this)>=0){
+                    evt = 'highlight.off';
+                } else {
+                    evt = 'highlight.on';
+                }
+            }
+            if (evt){
+                this.doors.forEach(function(d){d.fireEvent(evt)});
             }
         }
     })
@@ -438,7 +472,7 @@ function(sge, Factory, Map, Quest){
         tick : function(delta){
             //this.encounterSystem.tick();
         },
-        getRandomEncounterRoom : function(options){
+        getRandomRoom : function(options){
             options = options || {};
             var excludeList = options.exclude || [];
             var i = 0;
