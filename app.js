@@ -25,7 +25,7 @@ function   (sge, dreddrl) {
     var idealHeight = parseInt(getURLParameter('height') || 480);
     var idealFPS = parseInt(getURLParameter('fps') || 60);
     canvasElem = document.getElementById('game');
-    if (getURLParameter('fullscreen')){
+    if (true || getURLParameter('fullscreen')){
         idealWidth = window.innerWidth;
         idealHeight = window.innerHeight;
         canvasElem.className = "fullscreen";

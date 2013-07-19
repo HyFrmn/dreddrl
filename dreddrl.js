@@ -31058,6 +31058,7 @@ define('sge/entity',[
 			this.id = null;
 			this.components = {}
 			this.tags = [];
+			this.data = {};
 			this.active = true;
 			var keys = Object.keys(componentData);
 			keys.reverse();
@@ -34668,7 +34669,7 @@ define('dreddrl/weapon',['sge', './config'], function(sge, config){
 			var tx = this.entity.get('xform.tx');
 			var ty = this.entity.get('xform.ty');
 			projectileData = sge.util.deepExtend({sourceEntity: this.entity}, Weapon.DATA.ammo[this._projectileType]);
-			var bullet = new sge.Entity({
+			var bullet = this.entity.state.factory(null, {
 				xform: {
 					tx: tx,
 					ty: ty,
@@ -34902,18 +34903,37 @@ define('dreddrl/item',['sge', './config'], function(sge, config){
 	var id=0;
 	var Item = sge.Class.extend({
 		init: function(options){
+			this._contexts = []
 			this.id = id++;
 			this.name = options.name || 'Simple Item';
 			this.description = options.description || 'A simple object.'
 			this.spriteFrame = options.spriteFrame || 1;
 			this.spriteImage = options.spriteImage || 'scifi_icons_1.png';
 			this.immediate = options.immediate || false;
-			this.effect = options.effect || [];
+			this.actions = options.actions || {};
 			this.encounter = options.encounter || null;
 		},
 		get: function(path){
 			return this[path];
-		}
+		},
+		set: function(path, value){
+			if (path.match(/^actions/)){
+				var evt = path.split('.')[1];
+				this.actions[evt] = value;
+			}
+		},
+		addContext: function(ctx){
+            this._contexts.push(ctx)
+        },
+        getContext: function(){
+            var ctx = {};
+            this._contexts.forEach(function(context){
+                for (key in context){
+                    ctx[key] = context[key];
+                }
+            })
+            return ctx;
+        }
 	});
 
 	function ajax(url, callback){
@@ -34957,7 +34977,7 @@ define('dreddrl/components/deaddrop',['sge', '../item'], function(sge, Item){
             this._super(entity, data);
             this.data.items = data.items || [];
             this.data.count = data.count || 1;
-            this.data.always = data.always || [];
+            this.data.always = data.always || true;
             this.data.pickup = data.pickup;
             this.drop = this.drop.bind(this);
             this.entity.addListener('entity.kill', this.drop);
@@ -35060,6 +35080,80 @@ define('dreddrl/components/freeitem',['sge'], function(sge){
     return FreeItem
 })
 ;
+define('dreddrl/expr',['sge', './config'], function(sge, config){
+    // Creates a proxying function that will call the real object.
+    function createProxyFunction(functionName) {
+        return function() {
+            // 'this' in here is the proxy object.
+            var realObject = this.__realObject__,
+                realFunction = realObject[functionName];
+ 
+            // Call the real function on the real object, passing any arguments we received.
+            return realFunction.apply(realObject, arguments);
+        };
+    };
+ 
+    // createProxyClass creates a function that will create Proxy objects.
+    //   publicFunctions: an object of public functions for the proxy.
+    var ProxyClass = sge.Class.extend({
+        init: function(realObject) {
+            // This is this Proxy object constructor.
+            // Choose a reasonably obscure name for the real object property.
+            // It should avoid any conflict with the public function names.
+            // Also any code being naughty by using this property is quickly spotted!
+            this.__realObject__ = realObject;
+            
+     
+            // Create a proxy function for each of the public functions.
+            for (functionName in publicFunctions) {
+                func = publicFunctions[functionName];
+                // We only want functions that are defined directly on the publicFunctions object.
+                if (publicFunctions.hasOwnProperty(functionName)){
+                    if (typeof func === "function") {
+                        this[functionName] = this.__realObject__[functionName].bind(this.__realObject__);
+                    } else {
+                        this.__defineGetter__(functionName, function(){
+                            return this.__realObject__[functionName];
+                        });
+                    }
+                }
+            }
+        }
+    });
+            
+
+
+    var Expr = sge.Class.extend({
+        init: function(sourceCode){
+            this._sourceCode = sourceCode;
+            this._ctx = {};
+        },
+        addContext: function(key, value){
+            this._ctx[key] = new ProxyObject(value);
+        },
+        loadContext: function(ctx){
+            var vars = Object.keys(ctx);
+            for (var i = vars.length - 1; i >= 0; i--) {
+                this._ctx[vars[i]] = ctx[vars[i]];
+            }
+        },
+        run: function(){
+            var sourceCode = ""
+            var vars = Object.keys(this._ctx);
+            for (var i = vars.length - 1; i >= 0; i--) {
+                var v = vars[i];
+                sourceCode += ('var ' + v + ' = ctx["' + v + '"];\n'); 
+            };
+            sourceCode += this._sourceCode;
+
+            var func = new Function('ctx', sourceCode);
+            console.log('SOURCE-CODE:',sourceCode);
+            func(this._ctx);
+        }
+    })
+
+    return Expr;
+});
 /*
  Based on ndef.parser, by Raphael Graf(r@undefined.ch)
  http://www.undefined.ch/mparser/index.html
@@ -36246,7 +36340,7 @@ define('dreddrl/action',['sge', './parser'], function(sge, parser){
 	return Action;
 });
 
-define('dreddrl/components/inventory',['sge', '../action'],function(sge, Action){
+define('dreddrl/components/inventory',['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Action){
 
 	var InventoryComponent = sge.Component.extend({
 		init: function(entity, data){
@@ -36262,14 +36356,12 @@ define('dreddrl/components/inventory',['sge', '../action'],function(sge, Action)
 			var item = freeitem.get('item');
 
 			this.entity.fireEvent('state.log', 'Picked up ' + item.name);
-			if (item.immediate){
-				if (item.effect){
-					action = Action.Factory({
-						entity: this.entity,
-						item: entity
-					}, item.effect);
-					action.run();
-				}
+			if (item.actions.pickup){
+					var expr = new Expr(item.actions.pickup);
+					expr.loadContext(item.getContext());
+					console.log('Expr:',expr);
+					expr.run();
+				
 			} else {
 				this.addItem(item);
 			}
@@ -36314,6 +36406,20 @@ define('dreddrl/components/interaction',['sge', '../config'], function(sge, conf
         _set_priority : function(priority){
             this.data.priority = this.__set_value('priority', Boolean(priority));
             this.signalActor.setVisible(this.data.priority);
+            var regions = this.entity._regions;
+            for (var i = regions.length - 1; i >= 0; i--) {
+                var region = regions[i];
+                console.log(region, region.name, region.highlight);
+                if (region.highlight){
+                    region.highlight(this.data.priority);
+                    break;
+                }
+            };
+            if (this.data.priority){
+                this.entity.fireEvent('highlight.on');
+            } else {
+                this.entity.fireEvent('highlight.off');
+            }
         },
         activate: function(coord){
             this.activeCoord = coord;
@@ -36351,6 +36457,82 @@ define('dreddrl/components/interaction',['sge', '../config'], function(sge, conf
     });
     sge.Component.register('interact', Interact);
     return Interact
+})
+;
+define('dreddrl/components/chara',['sge', '../config'], function(sge, config){
+    var Chara = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.data.fillStyle = 'orange';
+            this.data.strokeStyle = 'black';
+            this.data.radius = 32;
+            this.entity.addListener('highlight.on', this.onHighlightOn.bind(this));
+            this.entity.addListener('highlight.off', this.onHighlightOff.bind(this));
+        },
+        onHighlightOff: function(){
+            this._hightlight_actor.setVisible(false);
+        },
+        onHighlightOn: function(){
+            this._hightlight_actor.setVisible(true);
+        },
+        register: function(state){
+            this._super(state);
+            this._hightlight_actor = new CAAT.ShapeActor().
+                                        setFillStyle(this.get('fillStyle')).
+                                        setStrokeStyle(this.get('strokeStyle')).
+                                        setShape(CAAT.ShapeActor.SHAPE_CIRCLE).
+                                        setSize(24,24).
+                                        setVisible(false).
+                                        setPosition(4,4);
+            this.entity.get('xform').container.addChild(this._hightlight_actor);
+        },
+        deregister: function(state){
+            if (this.get('priority')){
+                this.entity.get('xform').container.removeChild(this._hightlight_actor);
+            }
+            this._super(state);
+        }
+    });
+    sge.Component.register('chara', Chara);
+    return Chara
+})
+;
+define('dreddrl/components/highlight',['sge', '../config'], function(sge, config){
+    var Highlight = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.data.fillStyle = data.fillStyle || 'orange';
+            this.data.strokeStyle = data.fillStyle || 'black';
+            this.data.radius = data.radius || 32;
+            this.entity.addListener('highlight.on', this.onHighlightOn.bind(this));
+            this.entity.addListener('highlight.off', this.onHighlightOff.bind(this));
+        },
+        onHighlightOff: function(){
+            this._hightlight_actor.setVisible(false);
+        },
+        onHighlightOn: function(){
+            this._hightlight_actor.setVisible(true);
+        },
+        register: function(state){
+            this._super(state);
+            this._hightlight_actor = new CAAT.ShapeActor().
+                                        setFillStyle(this.get('fillStyle')).
+                                        setStrokeStyle(this.get('strokeStyle')).
+                                        setShape(CAAT.ShapeActor.SHAPE_CIRCLE).
+                                        setSize(this.get('radius'),this.get('radius')).
+                                        setVisible(false).
+                                        setPosition((32-this.get('radius'))/2,(32-this.get('radius'))/2);
+            this.entity.get('xform').container.addChild(this._hightlight_actor);
+        },
+        deregister: function(state){
+            if (this.get('priority')){
+                this.entity.get('xform').container.removeChild(this._hightlight_actor);
+            }
+            this._super(state);
+        }
+    });
+    sge.Component.register('highlight', Highlight);
+    return Highlight
 })
 ;
 var DOOROPENTILE1 = { srcX : 2, srcY: 36}
@@ -36483,15 +36665,14 @@ define('dreddrl/components/actions',['sge', '../action'], function(sge, Action){
 
             this._addCallback(evt, actionData);
         },
-        _addCallback : function(evt, actionData){
+        _addCallback : function(evt, exprCode){
             if (this.data[evt]!==undefined){
                 this.entity.removeListener(evt, this.data[evt]);
             }
             var callback = function(){
-                var tmpActionData = actionData.slice(0);
-                var action = Action.Factory(this.entity, actionData);
-                action.ctx.addSubContext('event', Array.prototype.slice.call(arguments));
-                action.run(this.state);
+                var expr = new Expr(exprCode);
+                expr.loadContext(this.entity.getContext());
+                expr.run();
             }.bind(this);
             this.data[evt] = callback;
             this.entity.addListener(evt, callback);
@@ -36509,6 +36690,67 @@ define('dreddrl/components/actions',['sge', '../action'], function(sge, Action){
     return ActionComponent
 })
 ;
+define('dreddrl/components/dialog',['sge'], function(sge){
+    var Dialog = sge.Component.extend({
+        init: function(entity, data){
+            this._super(entity, data);
+            this.data.tree = data.tree || [];
+            this.data.context = {
+                self: entity
+            };
+            this.entity.addListener('interact', function(msg, length){
+                this.startDialog();
+            }.bind(this))
+        },
+        _set_tree: function(dialogTree){
+            this.data.context = {
+                self: this.entity
+            }
+            if (Object.prototype.toString.call( dialogTree ) === '[object Array]'){
+                this.data.tree = dialogTree;
+            } else {
+                this.data.tree = dialogTree.tree;
+                var keys = Object.keys(dialogTree.context);
+                for (var i = keys.length - 1; i >= 0; i--) {
+                    this.data.context[keys[i]] = dialogTree.context[keys[i]];
+                }
+            }
+            return this.data.tree;
+        },
+        startDialog: function(){
+            var tree = this.get('tree');
+            console.log(tree[0]);
+            this.state.startDialog(tree[0], this.data.context);
+        },
+        register: function(state){
+            this._super(state);
+            this.scene = this.state.scene;
+            this.container = new CAAT.ActorContainer().setLocation(32,-24);
+            this.bg = new CAAT.Actor().setSize(32,16).setFillStyle('black');
+            this.container.addChild(this.bg);
+            this.text = new CAAT.TextActor().setLocation(2,2).setFont(this.fontSize + 'px sans-serif');
+            this.container.addChild(this.text);
+            this.container.setVisible(false);
+            this.entity.get('xform').container.addChild(this.container);
+        },
+        deregister: function(state){
+            this.entity.get('xform').container.removeChild(this.container);
+            this._super(state);
+        },
+        _set_text: function(text){
+            this.data.text = text;
+            this.text.setText(text);
+            this.text.calcTextSize(this.state.game.renderer);
+            this.bg.setSize(this.text.textWidth+4, this.fontSize + 8);
+            return text;
+        }
+    });
+
+    sge.Component.register('dialog', Dialog);
+
+    return Dialog;
+});
+
 define('dreddrl/components/elevator',['sge'], function(sge){
     var Elevator = sge.Component.extend({
         init: function(entity, data){
@@ -37403,8 +37645,11 @@ define('dreddrl/factory',[
 	'./components/freeitem',
     './components/inventory',
     './components/interaction',
+    './components/chara',
+    './components/highlight',
     './components/door',
     './components/actions',
+    './components/dialog',
     './components/elevator',
     './components/quest',
     './components/encounter',
@@ -37458,6 +37703,7 @@ define('dreddrl/factory',[
                 },
                 physics : {},
                 inventory : {},
+                chara: {}
             }},
 			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     'judge.controls' : {},
@@ -37472,9 +37718,6 @@ define('dreddrl/factory',[
                     combat: {faction: 'judge', weapon: 'lawgiver'},
                     stats: {},
                     emote: {},
-                    actions: {
-                        'region.enter' : [['event', 'this', 'state.info', 'Entering ${event.0.name}']]
-                    }
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     movement : {
@@ -37489,9 +37732,24 @@ define('dreddrl/factory',[
                 })},
             citizen : function(){return deepExtend(FACTORYDATA['npc'](), {
                     interact : {},
-                    actions: {
-                        interact : [['event', 'this', 'emote.msg', "I'm a citizen.", 1]],
-                        //interact : [['followpath']]
+                    dialog : {
+                        tree: [{
+                                pc:"Who are you?",
+                                npc: "I'm a registered citizen.",
+                                choices: [
+                                    {
+                                        pc:"Do you live in this block?",
+                                        npc:"Yes and I work here."
+                                    },
+                                    {
+                                        pc:"Do you need assistance?",
+                                        npc:"No. Everything is fine."
+                                    },
+                                    {
+                                        pc:"Goodbye"
+                                    }
+                                ]
+                               }]
                     },
                     enemyai : {
                         
@@ -37513,9 +37771,6 @@ define('dreddrl/factory',[
                     health : {alignment:-10, life: 8},
                     enemyai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
                     deaddrop: {items:['key','gun','ramen','ramen','ramen']},
-                    actions: {
-                        'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
-                    },
                     combat: {faction : 'lawbreak'},
                 }
             )},
@@ -37525,9 +37780,6 @@ define('dreddrl/factory',[
                 },
                 health : {alignment:-10, life: 24},
                 deaddrop: {count: 2, always: ['key','key','key']},
-                actions: {
-                    'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', 'Goodbye Albert.', 5]]]]
-                },
             })},
             spacer : function(){
                 var msgs = [
@@ -37545,9 +37797,6 @@ define('dreddrl/factory',[
                     health : {alignment:-10, life: 5},
                     enemyai : { tracking: 'pc', territory: 'spacer', xp: 1, faction: 'spacer'},
                     deaddrop: {items:['key','gun','ramen','ramen','ramen']},
-                    actions: {
-                        'entity.kill' : [['switch', 0, [['set','@(pc).stats.xp', '${enemyai.xp}', 'add'],['event', 'pc', 'emote.msg', sge.random.item(msgs), 3]]]]
-                    },
                     combat: {faction : 'spacer'},
                 }
             )},
@@ -37565,6 +37814,7 @@ define('dreddrl/factory',[
             }},
             door : function(){return {
                 xform: { container: '_entityContainer'},
+                highlight: {radius: 48},
                 interact : {},
                 door: {}
             }},
@@ -37578,17 +37828,17 @@ define('dreddrl/factory',[
                     src : 'assets/sprites/gang_' + sge.random.item([1,2,6]) +'.png',
                 },
             })},
-            'woman.old' : function(){return deepExtend(FACTORYDATA['npc'](), {
+            'woman.old' : function(){return deepExtend(FACTORYDATA['citizen'](), {
                 sprite : {
                     src : 'assets/sprites/women_' + sge.random.item([4,8]) +'.png',
                 },
             })},
-            'woman' : function(){return deepExtend(FACTORYDATA['npc'](), {
+            'woman' : function(){return deepExtend(FACTORYDATA['citizen'](), {
                 sprite : {
                     src : 'assets/sprites/women_' + sge.random.item([2,3,6,7]) +'.png',
                 },
             })},
-            'woman.young' : function(){return deepExtend(FACTORYDATA['npc'](), {
+            'woman.young' : function(){return deepExtend(FACTORYDATA['citizen'](), {
                 sprite : {
                     src : 'assets/sprites/women_' + sge.random.item([1,5]) +'.png',
                 },
@@ -37608,10 +37858,33 @@ define('dreddrl/factory',[
 		  return destination;
 		};
 
+        var DreddRLEntity = sge.Entity.extend({
+            init: function(data){
+                this._contexts = [];
+                this._regions = [];
+                this._super(data);
+            },
+            addContext: function(ctx){
+                this._contexts.push(ctx)
+            },
+            getContext: function(){
+                var ctx = {};
+                this._contexts.forEach(function(context){
+                    for (key in context){
+                        ctx[key] = context[key];
+                    }
+                })
+                return ctx;
+            }
+        });
+
 		var Factory = function(type, options){
 			options = options || {};
-			var data = deepExtend(FACTORYDATA[type](), options);
-			return new sge.Entity(data);
+            var data = options;
+            if (type){
+    			data = deepExtend(FACTORYDATA[type](), options);
+            }
+			return new DreddRLEntity(data);
 		}
 
 		return Factory
@@ -38160,7 +38433,7 @@ define('dreddrl/map',['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/co
         }
     };
 
-
+    console.log('Map:', Map);
 
     return Map;
 });
@@ -38888,322 +39161,288 @@ define('dreddrl/physics',['sge'], function(sge){
     return RPGPhysics;
 });
 
-define('dreddrl/encounters',['sge', './item', './config'], function(sge, Item, config){
-	var Encounter = sge.Class.extend({
-		init: function(system, options){
-			this.system = system;
-			this.block = system.level;
-			this.state = system.state;
-			this.factory = this.state.factory;
-			this.status = 0;
-			this.total = 1;
-			this.targetEntity = null;
-			this.entities = {};
-			this.items = {};
-			this.rooms = {};
-			this.start(options);
-		},
-		isFinished: function(){
-			return (this.status>=this.total);
-		},
-		start: function(){
-
-		},
-		finish: function(){
-			this.system.complete(this);
-		},
-		tick: function(){
-		},
-		getPC : function(){
-			return this.state.getEntityWithTag('pc');
-		},
-		update: function(status){
-			if (this.isFinished()){
-				this.finish();
+define('dreddrl/quest',['sge', './item', './config'], function(sge, Item, config){
+	/**
+	* Represents a node in a dialog tree.
+	*
+	*/
+	var Quest = sge.Class.extend({
+		init: function(block, setupFunc){
+			this._context = {
+				quest: this
 			};
+			this._step = -1;
+			this._steps = {};
+			this._state = block.state;
+			this.reward = {}
+			setupFunc.apply(this, [block, block.state]);
+			this.startStep(0);
 		},
-		add : function(comp){
-			var entity = comp.entity;
-			entity.addListener('target.set', function(){
-				this.targetEntity = entity;
-			}.bind(this));
-			entity.addListener('target.remove', function(){
-				this.targetEntity = null;
-			}.bind(this));
-			return this;
+		addContext: function(key, value){
+			this._context[key] = value;
+		},
+		createDialog: function(tree){
+			var dialog;
+			if (Object.prototype.toString.call( tree ) === '[object Array]'){
+				dialog = {
+					tree: tree,
+				}
+			} else {
+				dialog = tree;
+			}
+			if (dialog.context===undefined){
+				dialog.context={}
+			}
+			var keys = Object.keys(this._context);
+			for (var i = keys.length - 1; i >= 0; i--) {
+				dialog.context[keys[i]] = this._context[keys[i]];
+			};
+			return dialog;
+		},
+		get: function(key){
+			return this._context[key];
+		},
+		addStep: function(step, func){
+			this._steps[step] = func;
+		},
+		startStep: function(step){
+			this._step = step;
+			console.log('Start:',this._step);
+			var func = this._steps[step];
+			func.apply(this);
+		},
+		nextStep: function(){
+			if (this._step<0){
+				return;
+			}
+			var stepNumbers = Object.keys(this._steps).map(parseFloat);
+			var index = stepNumbers.indexOf(this._step);
+			console.log('Step:', index, stepNumbers, this._step);
+			if (index>=stepNumbers.length-1){
+				this.onComplete();
+			} else {
+				var nextStep = stepNumbers[index+1];
+				this.startStep(nextStep);
+			}
+		},
+		complete: function(){
+			this._step = -1;
+			this.onComplete();
+		},
+		onComplete: function(){
+			this._state.log('Complete: ' + this.name);
+			//TODO: Give Rewards.
+		},
+		createEntity: function(tag, options){
+			var entity = null;
+			if (typeof tag === 'string'){
+				if (tag.match(/@/)){
+					var tag = tag.match(/^@\(([a-z]*)\)/)[1];
+					var results = this._state.getEntitiesWithTag(tag)
+					entity = sge.random.item(results)
+				} else {
+					entity = this._state.factory(tag, options);
+					this._state.addEntity(entity);
+				}
+			} else {
+				entity = tag;
+			}
+			entity.addContext(this._context);
+			return entity;
+		},
+		createItem : function(type, options){
+			var item = null;
+			item = Item.Factory(type, options || {});
+			item.addContext(this._context);
+			return item;
 		}
 	});
 
+	Quest.Load = function(megablock){
+		/**
+		*
+	    * A basic quest with multiple steps.
+	    *
+	    * * NPC needs help.
+	    * * Locate Criminal with item.
+	    * * Kill Criminal. Locate dropped item.
+	    * * Pick Dropped Item. Locate NPC.
+	    * * Return Item. Get Reward Quest Over
+	    *
+		*/
+		/*
+		var exampleQuest = new Quest(megablock, function(block, state){
 
-	var SerialEncounter = Encounter.extend({
-		start: function(options){
-			var active = null;
-			this.total = options.steps || 1;
-			this.description = options.description || "";
-			var roomNames = _.keys(options.rooms || {});
-			var rooms = _.map(roomNames, function(name){
-				var def = options.rooms[name];
-				room = this.block.getRandomEncounterRoom();
-				room._populated = true;
-				if (def.locked){
-					_.each(room.doors, function(door){
-						door.set('door.locked', true);
-					});
-				}
-				if (def.spawn){
-					_.each(def.spawn, function(type){
-						room.spawn(type);
-					});
-				}
-				this.rooms[name] = room;
-			}.bind(this))
+			//Set Reward
+			this.reward = {
+				xp: 100,
+				health: 1000,
+				ammo: 12,
+				keys: 3
+			}
 
-			var itemNames = _.keys(options.items || {});
-			var items = _.map(itemNames, function(name){
-				var def = options.items[name];
-				var item = Item.Factory(def.type, def);
-				item.encounter = this;
-				this.items[name] = item;
-			}.bind(this))
+			//Create/Select Entities and Items.
+			var npc = this.createEntity('@(shopper)');
+			var lostItem = this.createItem('watch');
+			this.addContext('victim', npc);
+			this.addContext('lostItem', lostItem);
+			
+			
 
-			var entityNames = _.keys(options.entities || {});
-			var entities = _.map(entityNames, function(name){
-				var def = options.entities[name];
-				def.meta = def.meta || {spawn: null};
-				def.encounter = {encounter: this};
-				var entity = null
-				if (def.meta.use){
-					//Entity
-					console.log('Use:', def.meta.use);
-					if (def.meta.use.match(/^@/)){
-						var tag = def.meta.use.match(/^@\(([a-z]*)\)/)[1];
-						var results = this.state.getEntitiesWithTag(tag)
-						console.log(tag, results);
-						entity = sge.random.item(results)
-					} else {
-						entity = def.meta.use;
+
+			//Step always called during setup.
+			this.addStep(0, function(){
+				npcDialog = this.createDialog([{
+					pc: 'Excuse me citizen. Do you need help?',
+					npc: 'Yes. Someone stole my watch. Can you find it?',
+					choices: [{
+						pc:  "Yes. I'll find your watch.",
+						npc: "Thanks",
+						postAction: 'quest.nextStep();'
+					},{
+						pc: "Sorry. I can't help.",
+						npc: "No good judge."
+					}]
+				}]);
+				npc.set('dialog.tree', npcDialog);
+				npc.set('interact.priority', true);
+			});
+			this.addStep(10, function(){
+				npcDialog = this.createDialog([{
+					pc: "I still haven't found your missing watch.",
+					npc: "Well keep looking. Why the #!$^ do i pay my taxes."
+				}]);
+				npc.set('dialog.tree', npcDialog);
+				npc.set('interact.priority', false);
+				var thief = this.createEntity('lawbreaker',{
+					deaddrop: {
+						items: [lostItem]
 					}
-					//Update entity;
-					delete def.meta;
-					var keys = Object.keys(def);
-					keys.reverse();
-					for (var j = keys.length - 1; j >= 0; j--) {
-						var key = keys[j];
-						var comp = entity.get(key);
-						if (comp){
-							_.each(def[key], function(value, path){
-								comp.set(path, value);
-							});
-						} else {
-							comp = sge.Component.Factory(key, entity, def[key]);
-							entity.components[key] = comp;
-							comp.register(entity.state);
-						}
-					};
+				});
+				thief.set('xform.t', block.width*16,block.height*16);
+				lostItem.set('actions.pickup', 'quest.nextStep()');
+			});
+			this.addStep(20, function(){
+				npcDialog = this.createDialog([{
+					pc: "Is this your watch citizen?",
+					npc: "Yes! THANK YOU!",
+					postAction: 'quest.nextStep()'
+				}]);
+				npc.set('dialog.tree', npcDialog);
+				npc.set('interact.priority', true);
+			});
+			this.addStep(100, function(){
+				npcDialog = this.createDialog([{
+					pc: 'Excuse me citizen. Do you need help?',
+					npc: 'No. I got my watch back.'
+				}]);
+				npc.set('dialog.tree', npcDialog);
+				npc.set('interact.priority', false);
+				this.complete();
+			})
+		})
+		*/
+		
+		/**
+		*
+	    * A basic quest with multiple steps.
+	    *
+	    * * NPC needs help.
+	    * * Locate Criminal with item.
+	    * * Kill Criminal. Locate dropped item.
+	    * * Pick Dropped Item. Locate NPC.
+	    * * Return Item. Get Reward Quest Over
+	    *
+		*/
+		var rescueQuest = new Quest(megablock, function(block, state){
 
-				} else {
-					var base = def.meta.inherit || 'citizen';
-					
-					spawnType = def.meta.spawn.policy || def.meta.spawn || 'room.random';
-					spawnData = def.meta.spawn || {};
-					
-					subdata = spawnType.split('.');
-					var handler = subdata.shift();
-					this['_spawn_' + handler].apply(this, [spawnData, subdata, def]);
-					
-					//Update entity;
-					delete def.meta;
-					entity = this.factory(base, def);
-					this.state.addEntity(entity);
-				}
-				entity.tags.push(name);
-				this.entities[name] = entity;
-				return entity;
-			}.bind(this));
-			if (active==null){
-				active = entities[0];
-			};
-			this.targetEntity = active;
-		},
-		_spawn_random: function(spawnData, method, def){
-			var radius = spawnData.radius || 64;
-			var theta = Math.PI * 2 * sge.random.unit();
-			var tx = this.entities[spawnData.target].get('xform.tx');
-			var ty = this.entities[spawnData.target].get('xform.ty');
-			def.xform = def.xform || {};
-			def.xform.tx = tx + Math.sin(theta) * radius;
-			def.xform.ty = ty + Math.sin(theta) * radius;
-			return def
-		},
-		_spawn_room: function(spawnData, method, def){
-			var room = this.block.getRandomEncounterRoom();
-			if (method!='random'){
-				room = this.rooms[method];
+			//Set Reward
+			//Set Reward
+			this.reward = {
+				xp: 150,
+				health: 1000,
+				keys: 1
 			}
-			def.xform = def.xform || {};
-			def.xform.tx = room.cx * 32;
-			def.xform.ty = room.cy * 32;
-		}
-	})
 
-	var serialData = {};
-	
+			//Create/Select Entities and Items.
+			var room = block.getRandomRoom();
+			var father = this.createEntity('@(shopper)');
+			this.addContext('father', father);
+			var daughter = this.createEntity(room.spawn('woman.young',{}));
+			this.addContext('daughter', daughter);
+			
+			console.log(daughter);
 
-	var EncounterSystem = sge.Class.extend({
-		init: function(state, level){
-			this.state = state;
-            this.level = level;
-			this.encounters = [];
-			this.active = null;
-			this._index = 0;
-			this.compassActor = new CAAT.ShapeActor().setShape(CAAT.ShapeActor.SHAPE_CIRCLE).setFillStyle('yellow').setSize(32,32);
-			this.state.map.canopy.addChild(this.compassActor);
-			//this.compassActor.setAlpha(1);
-			//this.state.map.canopy.setZOrder(this.compassActor, 0);
-		},
 
-		createAll : function(){
-			var keys = Object.keys(serialData);
-			keys.forEach(function(key){
-				this.createSerial(key);
-			}.bind(this));
-		},
+			//Step always called during setup.
+			this.addStep(0, function(){
+				npcDialog = this.createDialog([{
+					pc: 'Excuse me citizen. Do you need help?',
+					npc: "Yes, I can't find my daughter. If you see her, can you let her know where I am?",
+					choices: [{
+						pc:  "Of course",
+						npc: "Thank you so much.",
+						postAction: 'quest.nextStep();'
+					},{
+						pc: "Sorry. I can't help.",
+						npc: "The fuck you mean you can't help!"
+					}]
+				}]);
+				father.set('dialog.tree', npcDialog);
+				father.set('interact.priority', true);
+			});
+			this.addStep(10, function(){
+				npcDialog = this.createDialog([{
+					pc: "I still haven't found your missing watch.",
+					npc: "Well keep looking. Why the #!$^ do i pay my taxes."
+				}]);
+				father.set('dialog.tree', npcDialog);
+				father.set('interact.priority', false);
+				daughter.set('interact.priority', true);
+				daughter.set('dialog.tree', this.createDialog([{
+					pc: "Your father is looking for you.",
+					npc: "Thanks I'll go find him.",
+					postAction: "quest.nextStep(); "
+				},]))
 
-		create : function(klass, options){
-			var encounter = new klass(this, options);
-			this.encounters.push(encounter);
-			if (!this.active){
-				this.active = encounter;
-			}
-			return encounter;
-		},
-		createSerial: function(template, options){
-			tmpl = sge.util.deepExtend({}, serialData[template]);
-			options = options || {};
-			var opts = sge.util.deepExtend(tmpl, options);
-			return this.create(SerialEncounter, opts);
-		},
-		getTargetEntity : function(){
-			var entity = null;
-			if (this.active){
-				entity = this.active.targetEntity;
-			}
-			return entity;
-		},
-		_compass_tick : function(delta){
-            var entity = this.getTargetEntity();
-            if (entity){
-            	var pc = this.state.pc;
-                coord = [entity.get('xform.tx'), entity.get('xform.ty')];
-                var dx = coord[0] - pc.get('xform.tx');
-                var dy = coord[1] - pc.get('xform.ty');
-                var dist = Math.sqrt((dx*dx)+(dy*dy));
-                var len = 640; //Math.min(dist, 640);
-                var x1 = Math.round(pc.get('xform.tx'));
-                var y1 = Math.round(pc.get('xform.ty')); 
-                var x2 = Math.round(entity.get('xform.tx'));
-                var y2 = Math.round(entity.get('xform.ty'));
-                var top = Math.round(64-this.state._gamePlayContainer.y);
-                var bottom = Math.round((this.state.game.renderer.height-64) - this.state._gamePlayContainer.y);
-                var left = Math.round(64-this.state._gamePlayContainer.x);
-                var right = Math.round((this.state.game.renderer.width-64) - this.state._gamePlayContainer.x);
-                var coords = [[left,top,right,top],[left,bottom,right,bottom],[left,top,left,bottom],[right,top,right,bottom]];
-                var intersection = false;
-                //*
-                for (var i = coords.length - 1; i >= 0; i--) {
-                    var coord = coords[i];
-                    if (this._debug_tick){
-                        var x3 = coord[0];
-                        var y3 = coord[1];
-                        var x4 = coord[2];
-                        var y4 = coord[3];
-                        var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
-                        var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
-                    }
-                    intersection = sge.collision.lineIntersect(x1,y1,x2,y2,coord[0],coord[1],coord[2],coord[3]);
-                    if (intersection){
-                        break;
-                    }
-                }
-                //*/ 
-                if (intersection){
-                    var tx = intersection[0];
-                    var ty = intersection[1];
-                    dx = tx - entity.get('xform.tx');
-                    dy = ty - entity.get('xform.ty');
-                    var maxDist = 1024;
-                    var foo = Math.min(maxDist, Math.sqrt((dx*dx)+(dy*dy)));
-                    var r = 6 + (24 * ((maxDist-foo)/maxDist));
-                    this.compassActor.setSize(r,r);
-                } else {
-                    tx =  entity.get('xform.tx');
-                    ty =  entity.get('xform.ty');
-                }
-                var view = {
-                    top : top,
-                    bottom : bottom,
-                    left : left,
-                    right : right
-                }
-                this.compassActor.setLocation(tx, ty);
-            }
-        },
-		tick: function(){
-			if (this.state.getEntitiesWithTag('pc').length<=0){
-                    this.state.game.fsm.gameOver();
-            }
+			});
+			this.addStep(20, function(){
+				npcDialog = this.createDialog([{
+					npc: "THANK YOU! Thank you for finding my daughter.",
+					postAction: 'quest.nextStep()'
+				}]);
+				daughterDialog = this.createDialog([{
+					npc: "Thank you for saving me.",
+					postAction: 'quest.nextStep()'
+				}]);
+				father.set('dialog.tree', npcDialog);
+				father.set('interact.priority', true);
+				daughter.set('interact.priority', false);
 
-            if (_.every(this.encounters, function(e){return e.isFinished()})){
-                this.state.game.fsm.gameWin();
-            }
-
-            this._compass_tick();
-		},
-		complete: function(encounter){
-			this._next = -1;
-			this.switch();
-		},
-		next: function(){
-			var activeEncounters = _.filter(this.encounters, function(e){return !e.isFinished()});
-			this._index++;
-			if (this._index>=activeEncounters.length){
-				this._index=0;
-			}
-			return activeEncounters[this._index];
-		},
-		switch: function(){
-			this.active = this.next();
-			this.state.info(this.active.description);
-		}
-	})
-
-	EncounterSystem.bootstrap = function(){
-	sge.util.ajax(config.encounterDataUrl, function(rawText){
-				data = JSON.parse(rawText);
-				data.forEach(function(encounter){
-					console.log('Encounter Loaded', encounter.name);
-					if (encounter.enabled){
-						serialData[encounter.name] = encounter;
-					}
-				})
-	}.bind(this));
-}
-
-	return {
-		Encounter : Encounter,
-		EncounterSystem : EncounterSystem,
-		SerialEncounter : SerialEncounter
+			});
+			this.addStep(100, function(){
+				npcDialog = this.createDialog([{
+					npc: 'Thank you for finding my daughter.'
+				}]);
+				father.set('dialog.tree', npcDialog);
+				father.set('interact.priority', false);
+				this.complete();
+			})
+		})
 	}
-})
-;
+
+
+	return Quest;
+});
+
 define('dreddrl/megablock',[
     'sge',
     './factory',
-    './encounters',
-    './map'
+    './map',
+    './quest'
 ],
-function(sge, Factory, encounters, Map){
-	var FLOORTILE =  { srcX : 0, srcY: 0, spriteSheet: 'future2'};
+function(sge, Factory, Map, Quest){
+    var FLOORTILE =  { srcX : 0, srcY: 0, spriteSheet: 'future2'};
     var FLOORTILE2 =  { srcX : 1, srcY: 1, spriteSheet: 'future2'};
     var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spriteSheet: 'future2'}
     var DOOROPENTILE1 = { srcX : 1, srcY: 36, spriteSheet: 'future2'}
@@ -39239,6 +39478,12 @@ function(sge, Factory, encounters, Map){
         },
         test : function(tx, ty){
             return Boolean((tx>this.left)&&(tx<this.right)&&(ty>this.top)&&(ty<this.bottom));
+        },
+        onRegionEnter: function(){
+
+        },
+        onRegionExit: function(){
+
         }
     })
 
@@ -39261,8 +39506,8 @@ function(sge, Factory, encounters, Map){
             var realHeight = height * 32;
 
             //Region Interface;
-            this.top = (cy*32) - (realHeight/2) + 16;
-            this.bottom = (cy*32) + (realHeight/2) + 16;
+            this.top = (cy*32) - (realHeight/2) - 48;
+            this.bottom = (cy*32) + (realHeight/2) + 80;
             this.left = (cx*32)-(realWidth/2) + 16;
             this.right = (cx*32)+(realWidth/2) + 16;
             this.entities = [];
@@ -39365,6 +39610,34 @@ function(sge, Factory, encounters, Map){
                 }
             } else { 
                 this.cover.setVisible(true);
+            }
+        },
+        onRegionEnter: function(entity){
+            this._updateHighlight();
+        },
+        onRegionExit: function(entity){
+            this._updateHighlight();
+        },
+        highlight: function(highlight){
+            if (highlight){
+                this._highlight = true;
+            } else {
+                this._highlight = false;
+            }
+            this._updateHighlight();
+        },
+        _updateHighlight: function(){
+            var evt = null;
+            if (this._highlight){
+                console.log('Highlight: ', (this in this.level.state.pc._regions))
+                if (this.level.state.pc._regions.indexOf(this)>=0){
+                    evt = 'highlight.off';
+                } else {
+                    evt = 'highlight.on';
+                }
+            }
+            if (evt){
+                this.doors.forEach(function(d){d.fireEvent(evt)});
             }
         }
     })
@@ -39501,7 +39774,7 @@ function(sge, Factory, encounters, Map){
 
             //Populate market place.
             //*
-            var npcs=16;
+            var npcs=4;
             var citizen = null;
             while (npcs--){
                 var tx = sge.random.range(market.left, market.right);
@@ -39524,7 +39797,7 @@ function(sge, Factory, encounters, Map){
                 citizen.tags.push('shopper');
             }
 
-            var lawbreakers=8;
+            var lawbreakers=0;
             var lawbreaker = null;
             while (lawbreakers--){
                 var tx = sge.random.range(market.left, market.right);
@@ -39546,20 +39819,7 @@ function(sge, Factory, encounters, Map){
                 });
             }
 
-            //*/
-
-            //Setup Encounter System
-            //*
-            this.encounterSystem = new encounters.EncounterSystem(this.state, this);
-            
-            this.encounterSystem.createAll();
-
-            /*
-            this.encounterSystem.createSerial('rescueEncounter');
-            this.encounterSystem.createSerial('crimeBoss');
-            this.encounterSystem.createSerial('lostItem');
-            this.encounterSystem.createSerial('freeLunch');
-            //*/
+            Quest.Load(this);
 
 
             //Populate Rooms
@@ -39647,9 +39907,9 @@ function(sge, Factory, encounters, Map){
 
         },
         tick : function(delta){
-            this.encounterSystem.tick();
+            //this.encounterSystem.tick();
         },
-        getRandomEncounterRoom : function(options){
+        getRandomRoom : function(options){
             options = options || {};
             var excludeList = options.exclude || [];
             var i = 0;
@@ -39701,12 +39961,11 @@ define('dreddrl/dreddrlstate',[
         './physics',
         './factory',
         './map',
-        './encounters',
         './megablock',
         './weapon',
         './item'
     ],
-    function(sge, config, BlockLevelGenerator, Physics, Factory, Map, encounters, megablock, Weapon, Item){
+    function(sge, config, BlockLevelGenerator, Physics, Factory, Map, megablock, Weapon, Item){
 
         INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is your responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
@@ -39975,7 +40234,8 @@ define('dreddrl/dreddrlstate',[
                 this.pc = pc;
 
                 this.input.addListener('keydown:Q', function(){
-                    this.level.encounterSystem.switch();
+                    //TODO: Switch Quest Toggle
+                    //this.level.encounterSystem.switch();
                 }.bind(this));
                 setTimeout(function() {
                         this.game.fsm.finishLoad();
@@ -40127,8 +40387,10 @@ define('dreddrl/dreddrlstate',[
                         return true;
                     } else {
                         this._regionEntityHash.remove(region, entity.id);
-                        //console.log('Leaving: ' + region.name);
+                        entity.fireEvent('region.exit', region);
                         region.entities = _.without(region.entities, entity);
+                        entity._regions = _.without(entity._regions, region);
+                        region.onRegionExit(entity);
                         return false;
                     }
                 }.bind(this));
@@ -40137,9 +40399,10 @@ define('dreddrl/dreddrlstate',[
                     if (!_.contains(pruned, region)){
                         if ((tx>region.left&&tx<region.right)&&(ty>region.top&&ty<region.bottom)){
                             this._regionEntityHash.add(region, entity.id);
-                            //console.log('Enter: ' + region.name);
                             entity.fireEvent('region.enter', region);
                             region.entities.push(entity);
+                            entity._regions.push(region);
+                            region.onRegionEnter(entity);
                         }
                     }
                 }.bind(this));
@@ -40249,8 +40512,8 @@ define('dreddrl/dreddrlstate',[
                 }
             },
 
-            startDialog: function(dialog){
-                this.game._states['dialog'].setDialog(dialog);
+            startDialog: function(dialog, context){
+                this.game._states['dialog'].setDialog(dialog, context);
                 this.game.fsm.startDialog();
             },
 
@@ -40338,17 +40601,19 @@ define('dreddrl/dreddrlstate',[
         DreddRLState.init = function(){
             Item.bootstrap();
             Weapon.bootstrap();
-            encounters.EncounterSystem.bootstrap();
         }
 
     	return DreddRLState;
     }
 )
 ;
-define('dreddrl/dialogstate',['sge', './config'], function(sge, config){
-	var DialogState = sge.GameState.extend({
-		initState: function(){
+define('dreddrl/dialogstate',['sge', './expr', './config'], function(sge, Expr, config){
+    var DialogState = sge.GameState.extend({
+        initState: function(){
             this._keepScene = true;
+            this._dialogList = [];
+            this._choosing = false;
+            this._choiceIndex = 0;
             var width = this.game.renderer.width;
             var height = this.game.renderer.height;
             this.container = new CAAT.ActorContainer().setBounds(0,0,width,height);
@@ -40360,8 +40625,11 @@ define('dreddrl/dialogstate',['sge', './config'], function(sge, config){
             this.interact = this.interact.bind(this);
             this.input.addListener('keydown:' + config.AButton, this.interact);
             this.input.addListener('keydown:' + config.BButton, this.interact);
+            this.input.addListener('keydown:up', this.up.bind(this));
+            this.input.addListener('keydown:down', this.down.bind(this));
         },
         startState : function(){
+            this.interact();
             var state = this.game._states['game'];
             state._uiContainer.setVisible(false);
             this.scene = state.scene;
@@ -40372,19 +40640,106 @@ define('dreddrl/dialogstate',['sge', './config'], function(sge, config){
             var state = this.game._states['game'];
             state._uiContainer.setVisible(true);
             this.scene.removeChild(this.container);
+            this._dialogList = [];
             this.scene = null;
             this._super();
         },
-        interact: function(){
-            this.game.fsm.endDialog();        	
+        up: function(){
+            this._choiceIndex-=1;
+            console.log(this._choiceIndex<0,this._choiceIndex);
+            if (this._choiceIndex<0){
+                this._choiceIndex = this._choices.length-1;
+            }
+            this.displayChoices();
         },
-		tick: function(){
-			this.game._states['game']._paused_tick();
-		},
-		setDialog: function(dialog){
-            this.dialog = dialog;
+        down: function(){
+            this._choiceIndex+=1;
+            if (this._choiceIndex>=this._choices.length){
+                this._choiceIndex = 0;
+            }
+            this.displayChoices();
+        },
+        interact: function(){
+            if (this._choosing){
+                this._choosing = false;
+                var choice = this._currentNode.choices[this._choiceIndex];
+                this.parseNode(choice, true);
+                this._choiceIndex = 0;
+                this.interact();
+            } else {
+                if (this._dialogList.length<=0){
+                    var nodeList = this.nextNode();
+                    if (nodeList.length){
+                        if (nodeList.length==1){
+                            this.parseNode(nodeList[0]);
+                        } else {
+                            this._choices = nodeList
+                            this.displayChoices();
+                        }
+                    } else {
+                        this.game.fsm.endDialog();
+                        return
+                    }
+                } else {
+                    this.setDialogText(this._dialogList.shift());
+                }
+            }
+        },
+        parseNode: function(node, skip){
+            this._currentNode = node;
+            if (typeof node === 'string'){
+                this._dialogList = [node];
+            } else {
+                if (node.pc && !skip){
+                    this._dialogList.push('PC: ' + node.pc)
+                }
+                if (node.npc){
+                    this._dialogList.push('NPC: ' + node.npc);
+                }
+            }
+        },
+        tick: function(){
+            this.game._states['game']._paused_tick();
+        },
+        setDialog: function(node, ctx){
+            this._currentNode = node;
+            console.log(ctx);
+            this._ctx = ctx || {};
+            this.parseNode(node);
+        },
+        nextNode: function(){
+            var callback = this._currentNode.postAction;
+            if (callback){
+                var expr = new Expr(callback);
+                console.log('Expr', expr);
+                expr.loadContext(this._ctx);
+                expr.run();
+            }
+            return this._currentNode.choices || [];
+        },
+        _clearScreen: function(){
             this.dialogContainer.stopCacheAsBitmap();
             this.dialogContainer.emptyChildren();
+        },
+        displayChoices: function(){
+            var choices = this._choices;
+            this._clearScreen();
+            this._choosing = true;
+            for (var i = choices.length - 1; i >= 0; i--) {
+                var choice = choices[i].pc;
+                var actor = new CAAT.TextActor().setFont('24px sans-serif');
+                actor.setText(choice);
+                actor.setLocation(16, i*24);
+
+                if (i==this._choiceIndex){
+                    actor.setTextFillStyle('orange');
+                }
+                this.dialogContainer.addChild(actor);
+            };
+        },
+        setDialogText: function(dialog){
+            this.dialog = dialog;
+            this._clearScreen();
             var chunks = dialog.split(' ');
             var count = chunks.length;
             var start = 0;
@@ -40412,9 +40767,9 @@ define('dreddrl/dialogstate',['sge', './config'], function(sge, config){
             this.dialogContainer.addChild(actor);
             this.dialogContainer.setLocation(16, this.game.renderer.height - (y+96));
             this.dialogContainer.cacheAsBitmap();
-		}
-	});
-	return DialogState;
+        }
+    });
+    return DialogState;
 })
 ;
 define('dreddrl/pausestate',['sge', './config'], function(sge, config){
