@@ -1,0 +1,26 @@
+<button class="btn btn-primary" ng-click="addDialogPostAction(data)" ng-show="data.postAction==undefined">Add Post Action</button>
+<button class="btn btn-primary" ng-click="removeDialogPostAction(data)" ng-show="data.postAction!=undefined">Remove Post Action</button>
+<button class="btn btn-primary" ng-click="addDialogChoice(data)">Add Choice</button>
+<button class="btn btn-primary" ng-click="removeDialogChoice(data)">Delete</button>
+<div class="control-group">
+	<label class="control-label" for="pc" >PC:</label>
+	<div class="controls">
+		<input type="text" id="pc" placeholder="PC Dialog" ng-model="data.pc">
+	</div>
+</div>
+<div class="control-group">
+	<label class="control-label" for="npc" >NPC:</label>
+	<div class="controls">
+		<input type="text" id="npc" placeholder="NPC Dialog" ng-model="data.npc">
+	</div>
+</div>
+<div class="control-group" ng-show="data.postAction!=undefined">
+	<label class="control-label" for="postAction" >Post Action:</label>
+	<div class="controls">
+		<textarea type="text" id="postAction" placeholder="postAction Dialog" ng-model="data.postAction"></textarea>
+	</div>
+</div>
+
+<ul>
+  <li ng-repeat="data in data.choices" ng-include="'templates/dialognode.html'"></li>
+</ul>

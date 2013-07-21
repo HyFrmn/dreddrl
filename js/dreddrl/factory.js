@@ -225,6 +225,7 @@ define([
                 this._contexts = [];
                 this._regions = [];
                 this._super(data);
+                this.meta = {};
             },
             addContext: function(ctx){
                 this._contexts.push(ctx)

@@ -540,7 +540,5 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
         }
     };
 
-    console.log('Map:', Map);
-
     return Map;
 });

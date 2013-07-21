@@ -21,7 +21,6 @@ define(['sge', '../config'], function(sge, config){
             var regions = this.entity._regions;
             for (var i = regions.length - 1; i >= 0; i--) {
                 var region = regions[i];
-                console.log(region, region.name, region.highlight);
                 if (region.highlight){
                     region.highlight(this.data.priority);
                     break;

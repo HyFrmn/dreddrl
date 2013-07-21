@@ -1,5 +1,5 @@
 /*---------------------
-	:: Encounter
+	:: Quest
 	-> model
 ---------------------*/
 module.exports = {

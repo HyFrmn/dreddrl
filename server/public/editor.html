@@ -1,19 +1,113 @@
-<!doctype html>
-<html ng-app="editor">
+  <!DOCTYPE html>
+<html>
   <head>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.js"></script>
-    <script src="/js/jquery.bpopup.min.js"/></script>
-    <script src="editor.js"></script>
-    <link rel="stylesheet" href="editor.css">
-    <link rel="stylesheet" href="css/avgrund.css">
+    <meta name="description" content="Editor Prototype for DreddRL"/>
+    <link href="http://twitter.github.io/bootstrap/assets/css/bootstrap.css" rel="stylesheet" type="text/css" />
+    <link href="http://twitter.github.io/bootstrap/assets/css/bootstrap-responsive.css" rel="stylesheet" type="text/css" />
+    <link href="css/codemirror.css" rel="stylesheet" type="text/css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
+    <script src="http://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.4.0.js"></script>
+    <script src="js/codemirror.js"></script>
+    <meta charset=utf-8/>
+    <title>JS Bin</title>
   </head>
-  <body ng-controller="AppCtrl" ng-show"ready">
-    <div ng-include="appUrl"/>
-
-    <!-- Generic Editor -->
-    
-
-
+  <body ng-app="editor"  ng-controller="QuestController">
+    <tabset>
+      <tab ng-repeat="quest in Package.quests" heading="{{ quest.name}}">
+        <div>
+          <div class="control-group">
+             <label class="control-label" for="questEnable">Enable</label>
+                  <div class="control">
+                    <input type="checkbox" ng-model="quest.enable" id="questEnable"/>
+                  </div>
+            <label class="control-label" for="questName" >Quest Name</label>
+            <div class="controls">
+              <input type="text" id="questName" placeholder="Quest Name" ng-model="quest.name">
+            </div>
+          </div>
+          <button ng-click="saveQuest(quest)">Save</button>
+         {{ quest }}
+          <tabset>
+            <tab heading="Rooms">
+              <button ng-click="createRoom(quest)">Add Room</button>
+              <div ng-repeat="room in quest.rooms">
+                <div class="control-group">
+                  <label class="control-label" for="roomName" >Room Name</label>
+                  <div class="controls">
+                    <input type="text" id="roomName" placeholder="Room Name" ng-model="room.name">
+                  </div>
+                  
+                </div>
+              <button ng-click="spawnEntity(room)">Spawn Entity</button>
+              <div>
+                <div ng-repeat="entity in room.entities">
+                  {{ entity }} <button ng-click="removeEntityFromRoom(room, entity)">Remove</button>
+                </div>
+              </div>
+              </div>
+            </tab>
+            <tab heading="Entities">
+              <button ng-click="createEntity(quest)">Create Entity</button>
+              <tabset>
+                <tab ng-repeat="entity in quest.entities" heading="{{ entity.name }}">
+                  <div class="control-group">
+                    <label class="control-label" for="entityName" >Entity Name</label>
+                    <button ng-click="createDialog(entity)">Create Dialog</button>
+                    <ul>
+                        <li ng-repeat="data in entity.dialog" ng-include="'templates/dialognode.html'"></li>
+                    </ul>
+                    <div class="controls">
+                      <input type="text" id="entityName" placeholder="Entity Name" ng-model="entity.name">
+                    </div>
+                    <label class="control-label" for="entityType" >Entity Type</label>
+                    <div class="controls">
+                      <select id="entityType" ng-model="entity.type" ng-options="typ for typ in ENTITYTYPE" ng-init="citizen">
+                      <option>** CUSTOM **</option>
+                      </select>
+                    </div>
+                    <label class="control-label" for="entityCustomType" >Custom Entity Type</label>
+                    <div class="controls">
+                      <input type="text" ng-model="entity.type">
+                    </div>
+                  </div>
+                </tab>
+              </tabset>
+            </tab>
+            <tab heading="Items">
+             ⁄⁄€ <button>Create Item</button>
+            </tab>
+            <tab heading="Steps">
+              <button ng-click="addStep(quest)">Add Step</button>
+              <tabset>
+                <tab ng-repeat="step in quest.steps" heading="Step {{step.number}}">
+                  <div class="control-group">
+                    <label class="control-label" for="entityName" >Number</label>
+                    <input type="number" ng-model="step.number" />
+                    
+                  <div>
+                  <button ng-click="addStepDialog(step)"/>Add Dialog</button>
+                  <ul>
+                        <li ng-repeat="data in step.dialog" ng-include="'templates/dialognode.html'"></li>
+                    </ul>
+                  <div class="control-group">
+                    <label class="control-label">Start Step:</label>
+                    <textarea ng-model="step.code" id="stepCode">
+                      
+                    </textarea>
+                  </div>
+                  <script type="text/javascript">
+                  //CodeMirror.fromTextArea(document.getElementById('stepCode'));
+                  </script>
+                </tab>
+              </tabset>
+            </tab>
+          </tabset>
+        </div>
+      </tab>
+      <tab ng-repeat="tab in tabs" heading="{{tab.title}}" active="tab.active" disabled="tab.disabled">
+        {{tab.content}}
+      </tab>
+    </tabset>
+    <script src="editor.js"></script>
   </body>
 </html>

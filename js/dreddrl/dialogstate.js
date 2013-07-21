@@ -94,7 +94,6 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         },
         setDialog: function(node, ctx){
             this._currentNode = node;
-            console.log(ctx);
             this._ctx = ctx || {};
             this.parseNode(node);
         },
@@ -102,7 +101,6 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             var callback = this._currentNode.postAction;
             if (callback){
                 var expr = new Expr(callback);
-                console.log('Expr', expr);
                 expr.loadContext(this._ctx);
                 expr.run();
             }

@@ -1,4 +1,4 @@
-define(['sge', './item', './config'], function(sge, Item, config){
+define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config){
 	/**
 	* Represents a node in a dialog tree.
 	*
@@ -44,7 +44,6 @@ define(['sge', './item', './config'], function(sge, Item, config){
 		},
 		startStep: function(step){
 			this._step = step;
-			console.log('Start:',this._step);
 			var func = this._steps[step];
 			func.apply(this);
 		},
@@ -54,7 +53,6 @@ define(['sge', './item', './config'], function(sge, Item, config){
 			}
 			var stepNumbers = Object.keys(this._steps).map(parseFloat);
 			var index = stepNumbers.indexOf(this._step);
-			console.log('Step:', index, stepNumbers, this._step);
 			if (index>=stepNumbers.length-1){
 				this.onComplete();
 			} else {
@@ -75,8 +73,12 @@ define(['sge', './item', './config'], function(sge, Item, config){
 			if (typeof tag === 'string'){
 				if (tag.match(/@/)){
 					var tag = tag.match(/^@\(([a-z]*)\)/)[1];
-					var results = this._state.getEntitiesWithTag(tag)
-					entity = sge.random.item(results)
+					var results = this._state.getEntitiesWithTag(tag);
+					entity = sge.random.item(results);
+					while (entity.meta.quest!==undefined){
+						entity = sge.random.item(results)
+					}
+					entity.meta.quest = this;
 				} else {
 					entity = this._state.factory(tag, options);
 					this._state.addEntity(entity);
@@ -95,6 +97,50 @@ define(['sge', './item', './config'], function(sge, Item, config){
 		}
 	});
 
+	
+	Quest.Factory = function(megablock, questData){
+		var quest = new Quest(megablock, function(block, state){
+			//Reward Data.
+			//console.log('Creating:', questData);
+
+			//Create Entities.
+			for (var i = questData.entities.length - 1; i >= 0; i--) {
+				var entityData = questData.entities[i];
+				var ctxName = entityData.name;
+				var entity = this.createEntity(entityData.type);
+				this.addContext(ctxName, entity);
+
+				if (entityData.dialog!==undefined){
+					entity.set('dialog.tree', this.createDialog(entityData.dialog));
+				}
+			}
+
+			this._stepData = {};
+			for (i = questData.steps.length - 1; i >= 0; i--) {
+				var number = parseInt(questData.steps[i].number,10);
+				this._stepData[number] = questData.steps[i]
+				this.addStep(number, function(){
+					var stepData = this._stepData[this._step];
+						if (stepData.dialog){
+							for (var j = stepData.dialog.length - 1; j >= 0; j--) {
+								var node = stepData.dialog[j];
+								var entityName = node.entity;
+								var entity=this._context[entityName];
+								var tree =  this.createDialog(node);
+								entity.set('dialog.tree', [tree]);
+							};
+						}
+
+						if (stepData.code!==undefined){
+							var expr = new Expr(stepData.code);
+							expr.loadContext(this._context);
+							expr.run()
+						}
+				})
+			};
+		});
+	};
+
 	Quest.Load = function(megablock){
 		/**
 		*
@@ -107,7 +153,7 @@ define(['sge', './item', './config'], function(sge, Item, config){
 	    * * Return Item. Get Reward Quest Over
 	    *
 		*/
-		/*
+		
 		var exampleQuest = new Quest(megablock, function(block, state){
 
 			//Set Reward
@@ -178,94 +224,16 @@ define(['sge', './item', './config'], function(sge, Item, config){
 				this.complete();
 			})
 		})
-		*/
-		
-		/**
-		*
-	    * A basic quest with multiple steps.
-	    *
-	    * * NPC needs help.
-	    * * Locate Criminal with item.
-	    * * Kill Criminal. Locate dropped item.
-	    * * Pick Dropped Item. Locate NPC.
-	    * * Return Item. Get Reward Quest Over
-	    *
-		*/
-		var rescueQuest = new Quest(megablock, function(block, state){
-
-			//Set Reward
-			//Set Reward
-			this.reward = {
-				xp: 150,
-				health: 1000,
-				keys: 1
-			}
-
-			//Create/Select Entities and Items.
-			var room = block.getRandomRoom();
-			var father = this.createEntity('@(shopper)');
-			this.addContext('father', father);
-			var daughter = this.createEntity(room.spawn('woman.young',{}));
-			this.addContext('daughter', daughter);
-			
-			console.log(daughter);
-
-
-			//Step always called during setup.
-			this.addStep(0, function(){
-				npcDialog = this.createDialog([{
-					pc: 'Excuse me citizen. Do you need help?',
-					npc: "Yes, I can't find my daughter. If you see her, can you let her know where I am?",
-					choices: [{
-						pc:  "Of course",
-						npc: "Thank you so much.",
-						postAction: 'quest.nextStep();'
-					},{
-						pc: "Sorry. I can't help.",
-						npc: "The fuck you mean you can't help!"
-					}]
-				}]);
-				father.set('dialog.tree', npcDialog);
-				father.set('interact.priority', true);
-			});
-			this.addStep(10, function(){
-				npcDialog = this.createDialog([{
-					pc: "I still haven't found your missing watch.",
-					npc: "Well keep looking. Why the #!$^ do i pay my taxes."
-				}]);
-				father.set('dialog.tree', npcDialog);
-				father.set('interact.priority', false);
-				daughter.set('interact.priority', true);
-				daughter.set('dialog.tree', this.createDialog([{
-					pc: "Your father is looking for you.",
-					npc: "Thanks I'll go find him.",
-					postAction: "quest.nextStep(); "
-				},]))
-
-			});
-			this.addStep(20, function(){
-				npcDialog = this.createDialog([{
-					npc: "THANK YOU! Thank you for finding my daughter.",
-					postAction: 'quest.nextStep()'
-				}]);
-				daughterDialog = this.createDialog([{
-					npc: "Thank you for saving me.",
-					postAction: 'quest.nextStep()'
-				}]);
-				father.set('dialog.tree', npcDialog);
-				father.set('interact.priority', true);
-				daughter.set('interact.priority', false);
-
-			});
-			this.addStep(100, function(){
-				npcDialog = this.createDialog([{
-					npc: 'Thank you for finding my daughter.'
-				}]);
-				father.set('dialog.tree', npcDialog);
-				father.set('interact.priority', false);
-				this.complete();
-			})
-		})
+		if (config.questDataUrl){
+			sge.util.ajax(config.questDataUrl, function(rawText){
+				data = JSON.parse(rawText);
+				data.forEach(function(quest){
+					if (quest.enable){
+						Quest.Factory(megablock, quest);
+					}
+				})
+			}.bind(this));
+		}
 	}
 
 
