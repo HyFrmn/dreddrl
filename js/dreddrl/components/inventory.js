@@ -7,7 +7,9 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
 			this.data.keys = data.keys || 3;
 			this.data.items = []
 			this.data.objects = {};
-			this.entity.addListener('pickup', this.pickup.bind(this));
+			this.entity.addListener('entity.kill', this.dropAllItems.bind(this));
+            this.entity.addListener('pickup', this.pickup.bind(this));
+			this.entity.addListener('inventory.add', this.addItem.bind(this));
 		},
 		pickup: function(entity){
 			var freeitem = entity.get('freeitem');
@@ -34,11 +36,63 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
 			
 		},
 		addItem : function(item){
-			this.data.items.push(item.id);
+			this.data.items.push(item);
 		},
 		removeItem : function(item){
-			this.data.items = this.dat
-		}
+            var index = this.data.items.indexOf(item);
+			if (index>=0){
+                this.data.items.splice(index,1);
+            }
+		},
+        dropAllItems : function(){
+            var cb = this.dropItem.bind(this);
+            this.data.items.forEach(cb);
+        },
+		dropItem: function(item){
+            var dropDir = null;
+            var tileX = Math.floor(this.entity.get('xform.tx')/32)
+            var tileY = Math.floor(this.entity.get('xform.ty')/32)
+            var allDirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            while (allDirs.length){
+                var dir = allDirs.shift()
+                var tile = this.state.map.getTile(tileX + dir[0], tileY + dir[1]);
+                if (tile.passable){
+                    dropDir = [32 * (tileX + dir[0] + 0.5), 32 * (tileY + dir[1] + 0.5)];
+                    break;
+                }
+            }
+            if (dropDir===null){
+                return;
+            }
+            console.log('DROP',item, dropDir[0], dropDir[1] )
+            this._createDropItem(item, dropDir[0], dropDir[1]);
+        },
+        _createDropItem: function(item, tx, ty){
+            var def = {
+                xform: {
+                    tx: tx,
+                    ty: ty,
+                },
+                freeitem : {
+                    item : item
+                },
+                sprite : {
+                    frame : item.spriteFrame,
+                    src: 'assets/sprites/' + item.spriteImage
+                }
+            };
+            if (item.encounter){
+                def.encounter = {encounter: item.encounter}
+            }
+            if (this.data.pickup){
+                def.actions = {
+                    pickup: this.data.pickup
+                }
+            }
+            var newItem = this.state.factory('freeitem', def);
+            this.state.addEntity(newItem);
+            return newItem;
+        }
 	})
 	sge.Component.register('inventory', InventoryComponent);
     return InventoryComponent;

@@ -1,0 +1,19 @@
+<div>
+  <div>
+    <div class="modal-header">
+        <h3>Select Entity</h3>
+    </div>
+    <div class="modal-body">
+      {{ quest.entities }}
+      <div>
+        <select ng-model="entity" ng-options="entity.name for entity in quest.entities" ng-init="entity=quest.entities[0]">
+          <option value="">PC</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" ng-click="select()">Select</button>
+        <button class="btn btn-warning cancel" ng-click="close()">Cancel</button>
+    </div>
+  </div>
+</div>

@@ -1,26 +1,34 @@
-<button class="btn btn-primary" ng-click="addDialogPostAction(data)" ng-show="data.postAction==undefined">Add Post Action</button>
-<button class="btn btn-primary" ng-click="removeDialogPostAction(data)" ng-show="data.postAction!=undefined">Remove Post Action</button>
-<button class="btn btn-primary" ng-click="addDialogChoice(data)">Add Choice</button>
-<button class="btn btn-primary" ng-click="removeDialogChoice(data)">Delete</button>
-<div class="control-group">
-	<label class="control-label" for="pc" >PC:</label>
-	<div class="controls">
-		<input type="text" id="pc" placeholder="PC Dialog" ng-model="data.pc">
-	</div>
-</div>
-<div class="control-group">
-	<label class="control-label" for="npc" >NPC:</label>
-	<div class="controls">
-		<input type="text" id="npc" placeholder="NPC Dialog" ng-model="data.npc">
-	</div>
-</div>
-<div class="control-group" ng-show="data.postAction!=undefined">
-	<label class="control-label" for="postAction" >Post Action:</label>
-	<div class="controls">
-		<textarea type="text" id="postAction" placeholder="postAction Dialog" ng-model="data.postAction"></textarea>
-	</div>
-</div>
+<div>
+    <div class="control-header dialog-header">
+        <h3 class="control-topic dialog-topic">{{ node.topic || '[auto]'}}</h3>
+        <div class="button-group">
+            <button class="btn btn-primary" ng-click="addDialogPostAction(node)" ng-show="node.postAction==undefined">Add Post Action</button>
+            <button class="btn btn-inverse" ng-click="removeDialogPostAction(node)" ng-show="node.postAction!=undefined">Remove Post Action</button>
+            <button class="btn btn-primary" ng-click="editDialogTopic(node)">Edit Topic</button>
+            <button class="btn btn-primary" ng-click="addDialog(quest, node)">Add Dialog</button>
+            <button class="btn btn-primary" ng-click="addDialogChoice(node)">Add Choice</button>
+            <button class="btn btn-danger" ng-click="removeChoice(parent, node)">Delete</button>
+        </div>
+    </div>
+    <div ng-repeat="dialog in node.dialog" class="dialog-group dialog-hover">
+        <label class="dialog-label" for="npc" >{{ dialog.entity }}</label>
+        <input type= "text" id="npc" class="dialog-input" placeholder="Dialog" ng-model="dialog.text">
+        <button class="btn btn-danger" ng-click="removeDialog(node, dialog)">Delete</button>
+    </div>
+    <div class="dialog-group dialog-hover" ng-show="node.postAction!=undefined">
+        <label class="control-label" for="postAction" >Post Action:</label>
+        <div class="controls">
+        <pre class="codeEditor" data-language="javascipt" ng-show="!showEditor" ng-click="showEditor=true">{{node.postAction}}</pre>
+            <div ng-show="showEditor">
+              <textarea ui-codemirror="codeMirrorOptions" ui-refresh="showEditor" ng-model="node.postAction" id="stepCode">
+                
+              </textarea>
+              <button class="btn btn-primary" ng-click="showEditor=false">Done</button>
+            </div>
+        </div>
+    </div>
 
-<ul>
-  <li ng-repeat="data in data.choices" ng-include="'templates/dialognode.html'"></li>
-</ul>
+    <ul ng-controller="DialogController" ng-init="init(node.choices)" class="dialog-tree">
+      <li ng-repeat="node in node.choices" ng-include="'templates/dialognode.html'" class="dialog-node"></li>
+    </ul>
+</div>

@@ -11,6 +11,7 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 			this._step = -1;
 			this._steps = {};
 			this._state = block.state;
+			this.name = "Quest";
 			this.reward = {}
 			setupFunc.apply(this, [block, block.state]);
 			this.startStep(0);
@@ -65,7 +66,7 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 			this.onComplete();
 		},
 		onComplete: function(){
-			this._state.log('Complete: ' + this.name);
+			this._state.log('Quest Completed: ' + this.name);
 			//TODO: Give Rewards.
 		},
 		createEntity: function(tag, options){
@@ -81,7 +82,7 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 					entity.meta.quest = this;
 				} else {
 					entity = this._state.factory(tag, options);
-					this._state.addEntity(entity);
+					//this._state.addEntity(entity);
 				}
 			} else {
 				entity = tag;
@@ -102,17 +103,47 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 		var quest = new Quest(megablock, function(block, state){
 			//Reward Data.
 			//console.log('Creating:', questData);
+			this.name = questData.name;
+			//Items 
+			for (var i = questData.items.length - 1; i >= 0; i--) {
+			var itemData = questData.items[i];
+				var item = this.createItem(itemData.type, itemData);
+				this.addContext(itemData.name, item);
+			};
 
 			//Create Entities.
 			for (var i = questData.entities.length - 1; i >= 0; i--) {
 				var entityData = questData.entities[i];
 				var ctxName = entityData.name;
 				var entity = this.createEntity(entityData.type);
+				if (entityData.inventory){
+					for (var j = entityData.inventory.length - 1; j >= 0; j--) {
+						var item = this.get(entityData.inventory[j]);
+						entity.fireEvent('inventory.add', item);
+					};
+				}
+
 				this.addContext(ctxName, entity);
 
 				if (entityData.dialog!==undefined){
 					entity.set('dialog.tree', this.createDialog(entityData.dialog));
 				}
+			}
+
+			
+
+			//Rooms
+			for (var i = questData.rooms.length - 1; i >= 0; i--) {
+				var roomData = questData.rooms[i];
+				var room = block.getRandomRoom();
+				for (var j = roomData.entities.length - 1; j >= 0; j--) {
+					var entity = this.get(roomData.entities[j]);
+					room.spawn(entity);
+				}
+				if (roomData.closed){
+					room.closeDoors();
+				}
+				this.addContext(roomData.name, room);
 			}
 
 			this._stepData = {};
@@ -122,12 +153,12 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 				this.addStep(number, function(){
 					var stepData = this._stepData[this._step];
 						if (stepData.dialog){
-							for (var j = stepData.dialog.length - 1; j >= 0; j--) {
+							for (var j = 0; j<stepData.dialog.length;j++) {
 								var node = stepData.dialog[j];
-								var entityName = node.entity;
+								var entityName = node.entity.name;
 								var entity=this._context[entityName];
 								var tree =  this.createDialog(node);
-								entity.set('dialog.tree', [tree]);
+								entity.set('dialog.tree', this.createDialog([tree]));
 							};
 						}
 
@@ -142,88 +173,6 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 	};
 
 	Quest.Load = function(megablock){
-		/**
-		*
-	    * A basic quest with multiple steps.
-	    *
-	    * * NPC needs help.
-	    * * Locate Criminal with item.
-	    * * Kill Criminal. Locate dropped item.
-	    * * Pick Dropped Item. Locate NPC.
-	    * * Return Item. Get Reward Quest Over
-	    *
-		*/
-		
-		var exampleQuest = new Quest(megablock, function(block, state){
-
-			//Set Reward
-			this.reward = {
-				xp: 100,
-				health: 1000,
-				ammo: 12,
-				keys: 3
-			}
-
-			//Create/Select Entities and Items.
-			var npc = this.createEntity('@(shopper)');
-			var lostItem = this.createItem('watch');
-			this.addContext('victim', npc);
-			this.addContext('lostItem', lostItem);
-			
-			
-
-
-			//Step always called during setup.
-			this.addStep(0, function(){
-				npcDialog = this.createDialog([{
-					pc: 'Excuse me citizen. Do you need help?',
-					npc: 'Yes. Someone stole my watch. Can you find it?',
-					choices: [{
-						pc:  "Yes. I'll find your watch.",
-						npc: "Thanks",
-						postAction: 'quest.nextStep();'
-					},{
-						pc: "Sorry. I can't help.",
-						npc: "No good judge."
-					}]
-				}]);
-				npc.set('dialog.tree', npcDialog);
-				npc.set('interact.priority', true);
-			});
-			this.addStep(10, function(){
-				npcDialog = this.createDialog([{
-					pc: "I still haven't found your missing watch.",
-					npc: "Well keep looking. Why the #!$^ do i pay my taxes."
-				}]);
-				npc.set('dialog.tree', npcDialog);
-				npc.set('interact.priority', false);
-				var thief = this.createEntity('lawbreaker',{
-					deaddrop: {
-						items: [lostItem]
-					}
-				});
-				thief.set('xform.t', block.width*16,block.height*16);
-				lostItem.set('actions.pickup', 'quest.nextStep()');
-			});
-			this.addStep(20, function(){
-				npcDialog = this.createDialog([{
-					pc: "Is this your watch citizen?",
-					npc: "Yes! THANK YOU!",
-					postAction: 'quest.nextStep()'
-				}]);
-				npc.set('dialog.tree', npcDialog);
-				npc.set('interact.priority', true);
-			});
-			this.addStep(100, function(){
-				npcDialog = this.createDialog([{
-					pc: 'Excuse me citizen. Do you need help?',
-					npc: 'No. I got my watch back.'
-				}]);
-				npc.set('dialog.tree', npcDialog);
-				npc.set('interact.priority', false);
-				this.complete();
-			})
-		})
 		if (config.questDataUrl){
 			sge.util.ajax(config.questDataUrl, function(rawText){
 				data = JSON.parse(rawText);
@@ -233,6 +182,88 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 					}
 				})
 			}.bind(this));
+		} else {
+			/**
+			*
+		    * A basic quest with multiple steps.
+		    *
+		    * * NPC needs help.
+		    * * Locate Criminal with item.
+		    * * Kill Criminal. Locate dropped item.
+		    * * Pick Dropped Item. Locate NPC.
+		    * * Return Item. Get Reward Quest Over
+		    *
+			*/
+			
+			var exampleQuest = new Quest(megablock, function(block, state){
+
+				//Set Reward
+				this.reward = {
+					xp: 100,
+					health: 1000,
+					ammo: 12,
+					keys: 3
+				}
+
+				//Create/Select Entities and Items.
+				var npc = this.createEntity('@(shopper)');
+				var lostItem = this.createItem('watch');
+				this.addContext('victim', npc);
+				this.addContext('lostItem', lostItem);
+				
+				
+
+
+				//Step always called during setup.
+				this.addStep(0, function(){
+					npcDialog = this.createDialog([{
+						topic: 'Excuse me citizen. Do you need help?',
+						dialog: [{entity:'npc', text: 'Yes. Someone stole my watch. Can you find it?'}],
+						choices: [{
+							topic:  "Yes. I'll find your watch.",
+							dialog: [{entity:'npc', text: 'Thanks'}],
+							postAction: 'quest.nextStep();'
+						},{
+							topic: "Sorry. I can't help.",
+							dialog: [{entity:'npc', text: 'What! You can\'t help? Why the hell are you even here?'}],
+						}]
+					}]);
+					npc.set('dialog.tree', npcDialog);
+					npc.set('interact.priority', true);
+				});
+				this.addStep(10, function(){
+					npcDialog = this.createDialog([{
+						topic: "I still haven't found your missing watch.",
+						dialog: [{entity:'npc', text: "Well keep looking. Why the #!$^ do i pay my taxes." }],
+					}]);
+					npc.set('dialog.tree', npcDialog);
+					npc.set('interact.priority', false);
+					var thief = this.createEntity('lawbreaker',{
+					});
+					thief.set('xform.t', block.width*16,block.height*16);
+					thief.fireEvent('inventory.add', lostItem);
+					block.state.addEntity(thief);
+					lostItem.set('actions.pickup', 'quest.nextStep()');
+				});
+				this.addStep(20, function(){
+					npcDialog = this.createDialog([{
+						topic: "Is this your watch citizen?",
+						dialog: [{entity:'npc', text: "YES!! Thank YOU!! Hooray!!." }],
+						postAction: 'quest.nextStep()'
+					}]);
+					npc.set('dialog.tree', npcDialog);
+					npc.set('interact.priority', true);
+				});
+				this.addStep(100, function(){
+					npcDialog = this.createDialog([{
+						topic: 'Excuse me citizen. Do you need help?',
+						dialog: [{entity:'npc', text: "Thank you for finding my watch." }],
+					}]);
+					npc.set('dialog.tree', npcDialog);
+					npc.set('interact.priority', false);
+					this.complete();
+				})
+			})
 		}
 	}
 

@@ -34892,159 +34892,6 @@ define('dreddrl/components/judgemovement',['sge'], function(sge){
     return JudgeMovementComponent;
 })
 ;
-define('dreddrl/item',['sge', './config'], function(sge, config){
-	/*
-	*
-	* Abstract Item Class
-	* 
-	* 
-	*
-	*/
-	var id=0;
-	var Item = sge.Class.extend({
-		init: function(options){
-			this._contexts = []
-			this.id = id++;
-			this.name = options.name || 'Simple Item';
-			this.description = options.description || 'A simple object.'
-			this.spriteFrame = options.spriteFrame || 1;
-			this.spriteImage = options.spriteImage || 'scifi_icons_1.png';
-			this.immediate = options.immediate || false;
-			this.actions = options.actions || {};
-			this.encounter = options.encounter || null;
-		},
-		get: function(path){
-			return this[path];
-		},
-		set: function(path, value){
-			if (path.match(/^actions/)){
-				var evt = path.split('.')[1];
-				this.actions[evt] = value;
-			}
-		},
-		addContext: function(ctx){
-            this._contexts.push(ctx)
-        },
-        getContext: function(){
-            var ctx = {};
-            this._contexts.forEach(function(context){
-                for (key in context){
-                    ctx[key] = context[key];
-                }
-            })
-            return ctx;
-        }
-	});
-
-	function ajax(url, callback){
-		var xmlHttp = new XMLHttpRequest();
-		xmlHttp.open('get', url, true);
-		xmlHttp.send(null);
-		xmlHttp.onreadystatechange = function() {
-			if (xmlHttp.readyState === 4) {
-		  	    if (xmlHttp.status === 200) {
-			        callback(xmlHttp.responseText, xmlHttp);
-			    } else {
-			        console.error('Error: ' + xmlHttp.responseText);
-			    }
-			} else {
-			  //still loading
-			}
-		};
-	}
-	var library = {};
-	Item.bootstrap = function(){
-		ajax(config.itemDataUrl, function(rawtext){
-			var data = JSON.parse(rawtext);
-			data.forEach(function(item){
-				library[item.id]=item;
-			})
-		});
-	}
-
-	Item.Factory = function(name, options){
-		options = options || {};
-		var def = sge.util.deepExtend({}, library[name]);
-		var item = new Item(sge.util.deepExtend(def, options));
-		return item;
-	}
-
-	return Item;
-});
-define('dreddrl/components/deaddrop',['sge', '../item'], function(sge, Item){
-    var DeadDrop = sge.Component.extend({
-        init: function(entity, data){
-            this._super(entity, data);
-            this.data.items = data.items || [];
-            this.data.count = data.count || 1;
-            this.data.always = data.always || true;
-            this.data.pickup = data.pickup;
-            this.drop = this.drop.bind(this);
-            this.entity.addListener('entity.kill', this.drop);
-        },
-        drop: function(){
-            var dropDir = null;
-            var tileX = Math.floor(this.entity.get('xform.tx')/32)
-            var tileY = Math.floor(this.entity.get('xform.ty')/32)
-            var allDirs = [[1,0],[-1,0],[0,1],[0,-1]];
-            while (allDirs.length){
-                var dir = allDirs.shift()
-                var tile = this.state.map.getTile(tileX + dir[0], tileY + dir[1]);
-                if (tile.passable){
-                    dropDir = [32 * (tileX + dir[0] + 0.5), 32 * (tileY + dir[1] + 0.5)];
-                    break;
-                }
-            }
-            if (dropDir===null){
-                return;
-                }
-            for (var i=0;i<this.get('count');i++){
-                var item = sge.random.item(this.get('items'));
-                if (typeof item == 'string'){
-                    if (item.match(/^@/)){
-                        name = item.replace('@(','').replace(')','');
-                        item = this.entity.get(name);
-                    } else {
-                        item = Item.Factory(item);
-                    }
-                }
-                this.dropItem(item, dropDir[0], dropDir[1])
-            }
-            _.each(this.get('always'), function(i){
-                this.dropItem(i, tx, ty);
-            }.bind(this));
-        },
-        dropItem: function(item, tx, ty){
-            var def = {
-                xform: {
-                    tx: tx,
-                    ty: ty,
-                },
-                freeitem : {
-                    item : item
-                },
-                sprite : {
-                    frame : item.spriteFrame,
-                    src: 'assets/sprites/' + item.spriteImage
-                }
-            };
-            if (item.encounter){
-                def.encounter = {encounter: item.encounter}
-            }
-            if (this.data.pickup){
-                def.actions = {
-                    pickup: this.data.pickup
-                }
-            }
-            var newItem = this.state.factory('freeitem', def);
-            this.state.addEntity(newItem);
-            return newItem;
-        }
-    });
-    sge.Component.register('deaddrop', DeadDrop);
-    return DeadDrop
-})
-;
 define('dreddrl/components/freeitem',['sge'], function(sge){
     var FreeItem = sge.Component.extend({
         init: function(entity, data){
@@ -35147,12 +34994,90 @@ define('dreddrl/expr',['sge', './config'], function(sge, config){
             sourceCode += this._sourceCode;
 
             var func = new Function('ctx', sourceCode);
-            console.log('SOURCE-CODE:',sourceCode);
             func(this._ctx);
         }
     })
 
     return Expr;
+});
+define('dreddrl/item',['sge', './config'], function(sge, config){
+	/*
+	*
+	* Abstract Item Class
+	* 
+	* 
+	*
+	*/
+	var id=0;
+	var Item = sge.Class.extend({
+		init: function(options){
+			this._contexts = []
+			this.id = id++;
+			this.name = options.name || 'Simple Item';
+			this.description = options.description || 'A simple object.'
+			this.spriteFrame = options.spriteFrame || 1;
+			this.spriteImage = options.spriteImage || 'scifi_icons_1.png';
+			this.immediate = options.immediate || false;
+			this.actions = options.actions || {};
+			this.encounter = options.encounter || null;
+		},
+		get: function(path){
+			return this[path];
+		},
+		set: function(path, value){
+			if (path.match(/^actions/)){
+				var evt = path.split('.')[1];
+				this.actions[evt] = value;
+			}
+		},
+		addContext: function(ctx){
+            this._contexts.push(ctx)
+        },
+        getContext: function(){
+            var ctx = {};
+            this._contexts.forEach(function(context){
+                for (key in context){
+                    ctx[key] = context[key];
+                }
+            })
+            return ctx;
+        }
+	});
+
+	function ajax(url, callback){
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.open('get', url, true);
+		xmlHttp.send(null);
+		xmlHttp.onreadystatechange = function() {
+			if (xmlHttp.readyState === 4) {
+		  	    if (xmlHttp.status === 200) {
+			        callback(xmlHttp.responseText, xmlHttp);
+			    } else {
+			        console.error('Error: ' + xmlHttp.responseText);
+			    }
+			} else {
+			  //still loading
+			}
+		};
+	}
+	var library = {};
+	Item.bootstrap = function(){
+		ajax(config.itemDataUrl, function(rawtext){
+			var data = JSON.parse(rawtext);
+			data.forEach(function(item){
+				library[item.id]=item;
+			})
+		});
+	}
+
+	Item.Factory = function(name, options){
+		options = options || {};
+		var def = sge.util.deepExtend({}, library[name]);
+		var item = new Item(sge.util.deepExtend(def, options));
+		return item;
+	}
+
+	return Item;
 });
 /*
  Based on ndef.parser, by Raphael Graf(r@undefined.ch)
@@ -36349,7 +36274,9 @@ define('dreddrl/components/inventory',['sge', '../expr', '../item','../action'],
 			this.data.keys = data.keys || 3;
 			this.data.items = []
 			this.data.objects = {};
-			this.entity.addListener('pickup', this.pickup.bind(this));
+			this.entity.addListener('entity.kill', this.dropAllItems.bind(this));
+            this.entity.addListener('pickup', this.pickup.bind(this));
+			this.entity.addListener('inventory.add', this.addItem.bind(this));
 		},
 		pickup: function(entity){
 			var freeitem = entity.get('freeitem');
@@ -36376,11 +36303,63 @@ define('dreddrl/components/inventory',['sge', '../expr', '../item','../action'],
 			
 		},
 		addItem : function(item){
-			this.data.items.push(item.id);
+			this.data.items.push(item);
 		},
 		removeItem : function(item){
-			this.data.items = this.dat
-		}
+            var index = this.data.items.indexOf(item);
+			if (index>=0){
+                this.data.items.splice(index,1);
+            }
+		},
+        dropAllItems : function(){
+            var cb = this.dropItem.bind(this);
+            this.data.items.forEach(cb);
+        },
+		dropItem: function(item){
+            var dropDir = null;
+            var tileX = Math.floor(this.entity.get('xform.tx')/32)
+            var tileY = Math.floor(this.entity.get('xform.ty')/32)
+            var allDirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            while (allDirs.length){
+                var dir = allDirs.shift()
+                var tile = this.state.map.getTile(tileX + dir[0], tileY + dir[1]);
+                if (tile.passable){
+                    dropDir = [32 * (tileX + dir[0] + 0.5), 32 * (tileY + dir[1] + 0.5)];
+                    break;
+                }
+            }
+            if (dropDir===null){
+                return;
+            }
+            console.log('DROP',item, dropDir[0], dropDir[1] )
+            this._createDropItem(item, dropDir[0], dropDir[1]);
+        },
+        _createDropItem: function(item, tx, ty){
+            var def = {
+                xform: {
+                    tx: tx,
+                    ty: ty,
+                },
+                freeitem : {
+                    item : item
+                },
+                sprite : {
+                    frame : item.spriteFrame,
+                    src: 'assets/sprites/' + item.spriteImage
+                }
+            };
+            if (item.encounter){
+                def.encounter = {encounter: item.encounter}
+            }
+            if (this.data.pickup){
+                def.actions = {
+                    pickup: this.data.pickup
+                }
+            }
+            var newItem = this.state.factory('freeitem', def);
+            this.state.addEntity(newItem);
+            return newItem;
+        }
 	})
 	sge.Component.register('inventory', InventoryComponent);
     return InventoryComponent;
@@ -36471,7 +36450,14 @@ define('dreddrl/components/chara',['sge', '../config'], function(sge, config){
         onHighlightOff: function(){
             this._hightlight_actor.setVisible(false);
         },
-        onHighlightOn: function(){
+        onHighlightOn: function(type){
+            if (type){
+                switch (type){
+                    case 'kill':
+                        this.set('fillStyle', 'red');
+                }
+            }
+            this._hightlight_actor.setFillStyle(this.get('fillStyle')).setStrokeStyle(this.get('strokeStyle'));
             this._hightlight_actor.setVisible(true);
         },
         register: function(state){
@@ -36718,7 +36704,6 @@ define('dreddrl/components/dialog',['sge'], function(sge){
         },
         startDialog: function(){
             var tree = this.get('tree');
-            console.log(tree[0]);
             this.state.startDialog(tree[0], this.data.context);
         },
         register: function(state){
@@ -37164,7 +37149,6 @@ define('dreddrl/components/enemyai',['sge', '../actions/followpath'], function(s
         },
         onKill: function(){
             factionSystem.update(this.entity.get('combat.faction'), -this.get('xp'));
-            console.log('Faction:', factionSystem.get(this.entity.get('combat.faction')));
         },
         // FSM Callbacks
         onFlee: function(){
@@ -37183,7 +37167,6 @@ define('dreddrl/components/enemyai',['sge', '../actions/followpath'], function(s
                 }
                 if (entity.get('enemyai')){
                     if (entity.get('enemyai.faction')==this.entity.get('combat.faction')){
-                        console.log('Signal Comrad');
                         entity.fireEvent('ai.investigate', this._tracking_tx, this._tracking_ty);
                     }
                 }
@@ -37220,7 +37203,6 @@ define('dreddrl/components/enemyai',['sge', '../actions/followpath'], function(s
             }
         },
         onInvestigateLocation : function(tx, ty){
-            console.log('SIGNAL', this.fsm.current);
             if (this.fsm.current=='idle'){
                 this.entity.fireEvent('emote.msg', 'What was what?');
                 this.fsm.investigateHit(tx, ty);
@@ -37299,7 +37281,6 @@ define('dreddrl/components/enemyai',['sge', '../actions/followpath'], function(s
 
         tick_investigate : function(delta){
             if (this.canSeePlayer()){
-                console.log('I see london')
                 if (this.isThreat(this.state.pc)){
                     this.entity.fireEvent('emote.msg', 'Found you.', 1);
 
@@ -37399,7 +37380,6 @@ define('dreddrl/components/enemyai',['sge', '../actions/followpath'], function(s
                 }
                 if (entity.get('combat') && entity.get('enemyai')){
                     if (entity.get('combat.faction')==this.entity.get('combat.faction')){
-                        console.log('Signal Comrad');
                         entity.fireEvent('ai.investigate', tx, ty);
                     }
                 }
@@ -37640,7 +37620,6 @@ define('dreddrl/factory',[
 	'./components/weapons',
 	'./components/physics',
 	'./components/judgemovement',
-	'./components/deaddrop',
 	'./components/freeitem',
     './components/inventory',
     './components/interaction',
@@ -37769,7 +37748,7 @@ define('dreddrl/factory',[
                     emote: {},
                     health : {alignment:-10, life: 8},
                     enemyai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
-                    deaddrop: {items:['key','gun','ramen','ramen','ramen']},
+                    //deaddrop: {items:['key','gun','ramen','ramen','ramen']},
                     combat: {faction : 'lawbreak'},
                 }
             )},
@@ -37778,7 +37757,7 @@ define('dreddrl/factory',[
                     src : 'assets/sprites/albertbrownhair.png',
                 },
                 health : {alignment:-10, life: 24},
-                deaddrop: {count: 2, always: ['key','key','key']},
+                //deaddrop: {count: 2, always: ['key','key','key']},
             })},
             spacer : function(){
                 var msgs = [
@@ -37795,7 +37774,7 @@ define('dreddrl/factory',[
                     emote: {},
                     health : {alignment:-10, life: 5},
                     enemyai : { tracking: 'pc', territory: 'spacer', xp: 1, faction: 'spacer'},
-                    deaddrop: {items:['key','gun','ramen','ramen','ramen']},
+                    //deaddrop: {items:['key','gun','ramen','ramen','ramen']},
                     combat: {faction : 'spacer'},
                 }
             )},
@@ -39172,6 +39151,7 @@ define('dreddrl/quest',['sge', './expr', './item', './config'], function(sge, Ex
 			this._step = -1;
 			this._steps = {};
 			this._state = block.state;
+			this.name = "Quest";
 			this.reward = {}
 			setupFunc.apply(this, [block, block.state]);
 			this.startStep(0);
@@ -39226,7 +39206,7 @@ define('dreddrl/quest',['sge', './expr', './item', './config'], function(sge, Ex
 			this.onComplete();
 		},
 		onComplete: function(){
-			this._state.log('Complete: ' + this.name);
+			this._state.log('Quest Completed: ' + this.name);
 			//TODO: Give Rewards.
 		},
 		createEntity: function(tag, options){
@@ -39242,7 +39222,7 @@ define('dreddrl/quest',['sge', './expr', './item', './config'], function(sge, Ex
 					entity.meta.quest = this;
 				} else {
 					entity = this._state.factory(tag, options);
-					this._state.addEntity(entity);
+					//this._state.addEntity(entity);
 				}
 			} else {
 				entity = tag;
@@ -39263,17 +39243,47 @@ define('dreddrl/quest',['sge', './expr', './item', './config'], function(sge, Ex
 		var quest = new Quest(megablock, function(block, state){
 			//Reward Data.
 			//console.log('Creating:', questData);
+			this.name = questData.name;
+			//Items 
+			for (var i = questData.items.length - 1; i >= 0; i--) {
+			var itemData = questData.items[i];
+				var item = this.createItem(itemData.type, itemData);
+				this.addContext(itemData.name, item);
+			};
 
 			//Create Entities.
 			for (var i = questData.entities.length - 1; i >= 0; i--) {
 				var entityData = questData.entities[i];
 				var ctxName = entityData.name;
 				var entity = this.createEntity(entityData.type);
+				if (entityData.inventory){
+					for (var j = entityData.inventory.length - 1; j >= 0; j--) {
+						var item = this.get(entityData.inventory[j]);
+						entity.fireEvent('inventory.add', item);
+					};
+				}
+
 				this.addContext(ctxName, entity);
 
 				if (entityData.dialog!==undefined){
 					entity.set('dialog.tree', this.createDialog(entityData.dialog));
 				}
+			}
+
+			
+
+			//Rooms
+			for (var i = questData.rooms.length - 1; i >= 0; i--) {
+				var roomData = questData.rooms[i];
+				var room = block.getRandomRoom();
+				for (var j = roomData.entities.length - 1; j >= 0; j--) {
+					var entity = this.get(roomData.entities[j]);
+					room.spawn(entity);
+				}
+				if (roomData.closed){
+					room.closeDoors();
+				}
+				this.addContext(roomData.name, room);
 			}
 
 			this._stepData = {};
@@ -39283,12 +39293,12 @@ define('dreddrl/quest',['sge', './expr', './item', './config'], function(sge, Ex
 				this.addStep(number, function(){
 					var stepData = this._stepData[this._step];
 						if (stepData.dialog){
-							for (var j = stepData.dialog.length - 1; j >= 0; j--) {
+							for (var j = 0; j<stepData.dialog.length;j++) {
 								var node = stepData.dialog[j];
-								var entityName = node.entity;
+								var entityName = node.entity.name;
 								var entity=this._context[entityName];
 								var tree =  this.createDialog(node);
-								entity.set('dialog.tree', [tree]);
+								entity.set('dialog.tree', this.createDialog([tree]));
 							};
 						}
 
@@ -39303,88 +39313,6 @@ define('dreddrl/quest',['sge', './expr', './item', './config'], function(sge, Ex
 	};
 
 	Quest.Load = function(megablock){
-		/**
-		*
-	    * A basic quest with multiple steps.
-	    *
-	    * * NPC needs help.
-	    * * Locate Criminal with item.
-	    * * Kill Criminal. Locate dropped item.
-	    * * Pick Dropped Item. Locate NPC.
-	    * * Return Item. Get Reward Quest Over
-	    *
-		*/
-		
-		var exampleQuest = new Quest(megablock, function(block, state){
-
-			//Set Reward
-			this.reward = {
-				xp: 100,
-				health: 1000,
-				ammo: 12,
-				keys: 3
-			}
-
-			//Create/Select Entities and Items.
-			var npc = this.createEntity('@(shopper)');
-			var lostItem = this.createItem('watch');
-			this.addContext('victim', npc);
-			this.addContext('lostItem', lostItem);
-			
-			
-
-
-			//Step always called during setup.
-			this.addStep(0, function(){
-				npcDialog = this.createDialog([{
-					pc: 'Excuse me citizen. Do you need help?',
-					npc: 'Yes. Someone stole my watch. Can you find it?',
-					choices: [{
-						pc:  "Yes. I'll find your watch.",
-						npc: "Thanks",
-						postAction: 'quest.nextStep();'
-					},{
-						pc: "Sorry. I can't help.",
-						npc: "No good judge."
-					}]
-				}]);
-				npc.set('dialog.tree', npcDialog);
-				npc.set('interact.priority', true);
-			});
-			this.addStep(10, function(){
-				npcDialog = this.createDialog([{
-					pc: "I still haven't found your missing watch.",
-					npc: "Well keep looking. Why the #!$^ do i pay my taxes."
-				}]);
-				npc.set('dialog.tree', npcDialog);
-				npc.set('interact.priority', false);
-				var thief = this.createEntity('lawbreaker',{
-					deaddrop: {
-						items: [lostItem]
-					}
-				});
-				thief.set('xform.t', block.width*16,block.height*16);
-				lostItem.set('actions.pickup', 'quest.nextStep()');
-			});
-			this.addStep(20, function(){
-				npcDialog = this.createDialog([{
-					pc: "Is this your watch citizen?",
-					npc: "Yes! THANK YOU!",
-					postAction: 'quest.nextStep()'
-				}]);
-				npc.set('dialog.tree', npcDialog);
-				npc.set('interact.priority', true);
-			});
-			this.addStep(100, function(){
-				npcDialog = this.createDialog([{
-					pc: 'Excuse me citizen. Do you need help?',
-					npc: 'No. I got my watch back.'
-				}]);
-				npc.set('dialog.tree', npcDialog);
-				npc.set('interact.priority', false);
-				this.complete();
-			})
-		})
 		if (config.questDataUrl){
 			sge.util.ajax(config.questDataUrl, function(rawText){
 				data = JSON.parse(rawText);
@@ -39394,6 +39322,88 @@ define('dreddrl/quest',['sge', './expr', './item', './config'], function(sge, Ex
 					}
 				})
 			}.bind(this));
+		} else {
+			/**
+			*
+		    * A basic quest with multiple steps.
+		    *
+		    * * NPC needs help.
+		    * * Locate Criminal with item.
+		    * * Kill Criminal. Locate dropped item.
+		    * * Pick Dropped Item. Locate NPC.
+		    * * Return Item. Get Reward Quest Over
+		    *
+			*/
+			
+			var exampleQuest = new Quest(megablock, function(block, state){
+
+				//Set Reward
+				this.reward = {
+					xp: 100,
+					health: 1000,
+					ammo: 12,
+					keys: 3
+				}
+
+				//Create/Select Entities and Items.
+				var npc = this.createEntity('@(shopper)');
+				var lostItem = this.createItem('watch');
+				this.addContext('victim', npc);
+				this.addContext('lostItem', lostItem);
+				
+				
+
+
+				//Step always called during setup.
+				this.addStep(0, function(){
+					npcDialog = this.createDialog([{
+						topic: 'Excuse me citizen. Do you need help?',
+						dialog: [{entity:'npc', text: 'Yes. Someone stole my watch. Can you find it?'}],
+						choices: [{
+							topic:  "Yes. I'll find your watch.",
+							dialog: [{entity:'npc', text: 'Thanks'}],
+							postAction: 'quest.nextStep();'
+						},{
+							topic: "Sorry. I can't help.",
+							dialog: [{entity:'npc', text: 'What! You can\'t help? Why the hell are you even here?'}],
+						}]
+					}]);
+					npc.set('dialog.tree', npcDialog);
+					npc.set('interact.priority', true);
+				});
+				this.addStep(10, function(){
+					npcDialog = this.createDialog([{
+						topic: "I still haven't found your missing watch.",
+						dialog: [{entity:'npc', text: "Well keep looking. Why the #!$^ do i pay my taxes." }],
+					}]);
+					npc.set('dialog.tree', npcDialog);
+					npc.set('interact.priority', false);
+					var thief = this.createEntity('lawbreaker',{
+					});
+					thief.set('xform.t', block.width*16,block.height*16);
+					thief.fireEvent('inventory.add', lostItem);
+					block.state.addEntity(thief);
+					lostItem.set('actions.pickup', 'quest.nextStep()');
+				});
+				this.addStep(20, function(){
+					npcDialog = this.createDialog([{
+						topic: "Is this your watch citizen?",
+						dialog: [{entity:'npc', text: "YES!! Thank YOU!! Hooray!!." }],
+						postAction: 'quest.nextStep()'
+					}]);
+					npc.set('dialog.tree', npcDialog);
+					npc.set('interact.priority', true);
+				});
+				this.addStep(100, function(){
+					npcDialog = this.createDialog([{
+						topic: 'Excuse me citizen. Do you need help?',
+						dialog: [{entity:'npc', text: "Thank you for finding my watch." }],
+					}]);
+					npc.set('dialog.tree', npcDialog);
+					npc.set('interact.priority', false);
+					this.complete();
+				})
+			})
 		}
 	}
 
@@ -39486,6 +39496,20 @@ function(sge, Factory, Map, Quest){
             });
             return locked;
         },
+        openDoors : function(){
+            _.each(this.doors, function(door){
+                door.set('door.open', true);
+                door.get('door').updateTiles();
+            });
+            this.update();
+        },
+        closeDoors : function(){
+            _.each(this.doors, function(door){
+                door.set('door.open', false);
+                door.get('door').updateTiles();
+            });
+            this.update();
+        },
         plot : function(){
             var halfX = Math.floor((this.width-1)/2);
             var halfY = Math.floor((this.height-1)/2);
@@ -39520,6 +39544,7 @@ function(sge, Factory, Map, Quest){
                 tile.passable = false;
                 tile.transparent = false;
             }
+            this.options.open=true;
             
             if ((this.options.doors=='bottom')||(this.options.doors=='both')){
                 this.createDoor(this.cx, this.cy+halfY+3, this.options.open);
@@ -39547,22 +39572,31 @@ function(sge, Factory, Map, Quest){
             return this.level.map.getTiles(boxcoords(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width-1, this.height-1));
         },
         spawn : function(name, data){
-            data = data || {};
+            var tx, ty, entity;
             var tile = sge.random.item(this.getTiles());
             if (tile){
                 while (tile.data.spawn!==undefined){
-
                     tile = sge.random.item(this.getTiles());
                 };
-                data['xform'] = {tx: tile.x * 32 + 16, ty: tile.y * 32 + 16};
+                tx = tile.x * 32 + 16;
+                ty = tile.y * 32 + 16;
                 tile.spawn = true;
-                var entity = this.level.addEntity(name, data);
-                return entity;
+            }
+            if (typeof name==='string'){
+
+                data = data || {};
+                data['xform'] = {tx: tx, ty: ty};
+                entity = this.level.addEntity(name, data);
+            } else {
+                entity = name;
+                entity.set('xform.t', tx, ty);
+                if (!entity.id){
+                    this.level.state.addEntity(entity);
+                }
             }
         },
         update: function(){
             if (this.doors.length){
-                //console.log('Update',this.doors[0].get('door.open'));
                 if (this.doors[0].get('door.open')){
                     this.cover.setVisible(false);
                     _.each(this.entities, function(e){
@@ -39595,7 +39629,6 @@ function(sge, Factory, Map, Quest){
         _updateHighlight: function(){
             var evt = null;
             if (this._highlight){
-                console.log('Highlight: ', (this in this.level.state.pc._regions))
                 if (this.level.state.pc._regions.indexOf(this)>=0){
                     evt = 'highlight.off';
                 } else {
@@ -39789,7 +39822,7 @@ function(sge, Factory, Map, Quest){
 
 
             //Populate Rooms
-            //*
+            /*
             _.each(this.rooms, function(room){
                 if (!room._populated){
                     room._populated = true;
@@ -39902,6 +39935,7 @@ function(sge, Factory, Map, Quest){
                 var goodRoom = room;
                 break;
             }
+            goodRoom._populated = true;
             return goodRoom;
         },
 	});
@@ -40652,15 +40686,21 @@ define('dreddrl/dialogstate',['sge', './expr', './config'], function(sge, Expr, 
             }
         },
         parseNode: function(node, skip){
+            skip = skip===undefined ? false : skip;
             this._currentNode = node;
             if (typeof node === 'string'){
                 this._dialogList = [node];
             } else {
-                if (node.pc && !skip){
-                    this._dialogList.push('PC: ' + node.pc)
+                if (!skip){
+                    if (node.topic){
+                        this._dialogList.push('pc:' + node.topic);
+                    }
                 }
-                if (node.npc){
-                    this._dialogList.push('NPC: ' + node.npc);
+                if (node.dialog){
+                    for (var i = 0; i < node.dialog.length; i++) {
+                        var dialog = node.dialog[i];
+                        this._dialogList.push(dialog.entity+': '+dialog.text);
+                    }
                 }
             }
         },
@@ -40690,7 +40730,7 @@ define('dreddrl/dialogstate',['sge', './expr', './config'], function(sge, Expr, 
             this._clearScreen();
             this._choosing = true;
             for (var i = choices.length - 1; i >= 0; i--) {
-                var choice = choices[i].pc;
+                var choice = choices[i].topic;
                 var actor = new CAAT.TextActor().setFont('24px sans-serif');
                 actor.setText(choice);
                 actor.setLocation(16, i*24);

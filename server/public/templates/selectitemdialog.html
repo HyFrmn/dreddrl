@@ -1,0 +1,18 @@
+<div>
+  <div>
+    <div class="modal-header">
+        <h3>Select Items</h3>
+    </div>
+    <div class="modal-body">
+      {{ quest.items }}
+      <div>
+        <select ng-model="item" ng-options="item.name for item in quest.items" ng-init="item=quest.items[0]">
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" ng-click="select()">Select</button>
+        <button class="btn btn-warning cancel" ng-click="close()">Cancel</button>
+    </div>
+  </div>
+</div>

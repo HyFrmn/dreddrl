@@ -65,7 +65,6 @@ define(['sge', './config'], function(sge, config){
             sourceCode += this._sourceCode;
 
             var func = new Function('ctx', sourceCode);
-            console.log('SOURCE-CODE:',sourceCode);
             func(this._ctx);
         }
     })

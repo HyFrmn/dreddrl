@@ -77,15 +77,21 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             }
         },
         parseNode: function(node, skip){
+            skip = skip===undefined ? false : skip;
             this._currentNode = node;
             if (typeof node === 'string'){
                 this._dialogList = [node];
             } else {
-                if (node.pc && !skip){
-                    this._dialogList.push('PC: ' + node.pc)
+                if (!skip){
+                    if (node.topic){
+                        this._dialogList.push('pc:' + node.topic);
+                    }
                 }
-                if (node.npc){
-                    this._dialogList.push('NPC: ' + node.npc);
+                if (node.dialog){
+                    for (var i = 0; i < node.dialog.length; i++) {
+                        var dialog = node.dialog[i];
+                        this._dialogList.push(dialog.entity+': '+dialog.text);
+                    }
                 }
             }
         },
@@ -115,7 +121,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this._clearScreen();
             this._choosing = true;
             for (var i = choices.length - 1; i >= 0; i--) {
-                var choice = choices[i].pc;
+                var choice = choices[i].topic;
                 var actor = new CAAT.TextActor().setFont('24px sans-serif');
                 actor.setText(choice);
                 actor.setLocation(16, i*24);

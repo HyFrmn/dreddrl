@@ -27,7 +27,6 @@ define(['sge'], function(sge){
         },
         startDialog: function(){
             var tree = this.get('tree');
-            console.log(tree[0]);
             this.state.startDialog(tree[0], this.data.context);
         },
         register: function(state){

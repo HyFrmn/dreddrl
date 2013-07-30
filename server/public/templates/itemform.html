@@ -1,0 +1,26 @@
+<button ng-click="createItem(quest)">Create Item</button>
+<div ng-show="quest.items.length>0">
+  <tabset>
+    <tab ng-repeat="item in quest.items" heading="{{ item.name }}">
+      <div class="control-group">
+        <label class="control-label" for="item.type" >Type:</label>
+        <div class="controls">
+          <input type="text" placeholder="type" ng-model="item.type" ng-required>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="item.name" >Name:</label>
+        <div class="controls">
+          <input type="text" placeholder="Name" ng-model="item.name"  ng-required>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="item.description" >Description</label>
+        <div class="controls">
+          <input type="text" placeholder="Name" ng-model="item.description">
+        </div>
+      </div>
+      <button ng-click="deleteItem(quest, item)">Delete</button>
+    </tab>
+  </tabset>
+</div>

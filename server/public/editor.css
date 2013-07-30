@@ -1,85 +1,61 @@
-.popup {
-	overflow: scroll;
-	background: white;
-	width: 640px;
-	height: 480px;
-	padding: 2em;
-	margin: auto;
-	border-radius: 1em;
-	border: 1em solid skyblue;
+.dialog-node {
+    display: block;
+    margin:16px;
+    padding:0px;
+    background:white;
+}
+.dialog-tree {
+    display:block;
 }
 
-.hidden {
-	display: none;
+.dialog-hover:hover{
+	background: #7BA7BB;
 }
 
-.tab-pane {
-	display: none;
+.dialog-node .dialog-group .dialog-label {
+    display: inline-block;
+    float: left;
+    width: 3.5em;
+    padding: 0.25em;
 }
 
-.tab-pane.active {
-	display: block;
+.dialog-node .dialog-group .dialog-input {
+    width: 90%;
+    margin-bottom:0px;
+    display: inline-block:
+    margin-left: 4em;
+    -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+	-moz-box-sizing: border-box;    /* Firefox, other Gecko */
+	box-sizing: border-box;         /* Opera/IE 8+ */
 }
 
-.drl-item-list ul {
-	padding: 0px;
+.dialog-group {
+    margin: 8px;
+    border-radius: 4px;
+    background: #cccccc;
+    padding: 8px;
 }
 
-.drl-item-container {
-	border: 1px solid black;
-	width: 320px;
-	padding: 0.5em;
-	list-style: none;
+.control-header {
+    border: 1px solid #555555;
+    padding: 4px;
+    margin: 4px;
+    border-radius: 4px;
 }
 
-.drl-item-container h3 {
-	padding: 0px;
-	margin: 0px
+.control-topic, .dialog-topic, .dialog-header h3 {
+    display: inline-block;
 }
 
-.drl-item-container .drl-item-preview-container {
-	float: right;
+.button-group {
+    float:right;
+    clear:right;
+    margin:15px;
+    display: inline-block;
 }
 
-.drl-item-preview-container {
-	width: 23px;
-	height: 23px;
-	overflow: hidden;
+.codeEditor {
+    width: 100%;
+    display: block;
+    min-height: 2em;
 }
-
-.drl-item-preview {
-	top: 0px;
-	left: 0px;
-	position: relative;
-	display: block;
-
-}
-
-.drl-item-effect-list, .drl-action-list {
-	list-style: none
-}
-
-.drl-item-effect-container {
-	padding-left: 1em;
-}
-
-
-.drl-action-list li {
-	padding: 0.25;
-}
-
-.drl-action-child-container {
-	padding-left: 1em;
-}
-
-.drl-action-type {
-	padding: 0.25em;
-	background: black;
-	color: white;
-	width: 16em;
-}
-
-.drl-action-arg {
-	padding: 0.25em;
-}
-

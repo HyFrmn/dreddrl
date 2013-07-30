@@ -83,6 +83,20 @@ function(sge, Factory, Map, Quest){
             });
             return locked;
         },
+        openDoors : function(){
+            _.each(this.doors, function(door){
+                door.set('door.open', true);
+                door.get('door').updateTiles();
+            });
+            this.update();
+        },
+        closeDoors : function(){
+            _.each(this.doors, function(door){
+                door.set('door.open', false);
+                door.get('door').updateTiles();
+            });
+            this.update();
+        },
         plot : function(){
             var halfX = Math.floor((this.width-1)/2);
             var halfY = Math.floor((this.height-1)/2);
@@ -117,6 +131,7 @@ function(sge, Factory, Map, Quest){
                 tile.passable = false;
                 tile.transparent = false;
             }
+            this.options.open=true;
             
             if ((this.options.doors=='bottom')||(this.options.doors=='both')){
                 this.createDoor(this.cx, this.cy+halfY+3, this.options.open);
@@ -144,22 +159,31 @@ function(sge, Factory, Map, Quest){
             return this.level.map.getTiles(boxcoords(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width-1, this.height-1));
         },
         spawn : function(name, data){
-            data = data || {};
+            var tx, ty, entity;
             var tile = sge.random.item(this.getTiles());
             if (tile){
                 while (tile.data.spawn!==undefined){
-
                     tile = sge.random.item(this.getTiles());
                 };
-                data['xform'] = {tx: tile.x * 32 + 16, ty: tile.y * 32 + 16};
+                tx = tile.x * 32 + 16;
+                ty = tile.y * 32 + 16;
                 tile.spawn = true;
-                var entity = this.level.addEntity(name, data);
-                return entity;
+            }
+            if (typeof name==='string'){
+
+                data = data || {};
+                data['xform'] = {tx: tx, ty: ty};
+                entity = this.level.addEntity(name, data);
+            } else {
+                entity = name;
+                entity.set('xform.t', tx, ty);
+                if (!entity.id){
+                    this.level.state.addEntity(entity);
+                }
             }
         },
         update: function(){
             if (this.doors.length){
-                //console.log('Update',this.doors[0].get('door.open'));
                 if (this.doors[0].get('door.open')){
                     this.cover.setVisible(false);
                     _.each(this.entities, function(e){
@@ -192,7 +216,6 @@ function(sge, Factory, Map, Quest){
         _updateHighlight: function(){
             var evt = null;
             if (this._highlight){
-                console.log('Highlight: ', (this in this.level.state.pc._regions))
                 if (this.level.state.pc._regions.indexOf(this)>=0){
                     evt = 'highlight.off';
                 } else {
@@ -386,7 +409,7 @@ function(sge, Factory, Map, Quest){
 
 
             //Populate Rooms
-            //*
+            /*
             _.each(this.rooms, function(room){
                 if (!room._populated){
                     room._populated = true;
@@ -499,6 +522,7 @@ function(sge, Factory, Map, Quest){
                 var goodRoom = room;
                 break;
             }
+            goodRoom._populated = true;
             return goodRoom;
         },
 	});

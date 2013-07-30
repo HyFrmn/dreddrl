@@ -3,7 +3,6 @@ define([
 	'./components/weapons',
 	'./components/physics',
 	'./components/judgemovement',
-	'./components/deaddrop',
 	'./components/freeitem',
     './components/inventory',
     './components/interaction',
@@ -132,7 +131,7 @@ define([
                     emote: {},
                     health : {alignment:-10, life: 8},
                     enemyai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
-                    deaddrop: {items:['key','gun','ramen','ramen','ramen']},
+                    //deaddrop: {items:['key','gun','ramen','ramen','ramen']},
                     combat: {faction : 'lawbreak'},
                 }
             )},
@@ -141,7 +140,7 @@ define([
                     src : 'assets/sprites/albertbrownhair.png',
                 },
                 health : {alignment:-10, life: 24},
-                deaddrop: {count: 2, always: ['key','key','key']},
+                //deaddrop: {count: 2, always: ['key','key','key']},
             })},
             spacer : function(){
                 var msgs = [
@@ -158,7 +157,7 @@ define([
                     emote: {},
                     health : {alignment:-10, life: 5},
                     enemyai : { tracking: 'pc', territory: 'spacer', xp: 1, faction: 'spacer'},
-                    deaddrop: {items:['key','gun','ramen','ramen','ramen']},
+                    //deaddrop: {items:['key','gun','ramen','ramen','ramen']},
                     combat: {faction : 'spacer'},
                 }
             )},

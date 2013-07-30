@@ -11,7 +11,14 @@ define(['sge', '../config'], function(sge, config){
         onHighlightOff: function(){
             this._hightlight_actor.setVisible(false);
         },
-        onHighlightOn: function(){
+        onHighlightOn: function(type){
+            if (type){
+                switch (type){
+                    case 'kill':
+                        this.set('fillStyle', 'red');
+                }
+            }
+            this._hightlight_actor.setFillStyle(this.get('fillStyle')).setStrokeStyle(this.get('strokeStyle'));
             this._hightlight_actor.setVisible(true);
         },
         register: function(state){

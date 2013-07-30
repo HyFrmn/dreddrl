@@ -60,7 +60,6 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
         },
         onKill: function(){
             factionSystem.update(this.entity.get('combat.faction'), -this.get('xp'));
-            console.log('Faction:', factionSystem.get(this.entity.get('combat.faction')));
         },
         // FSM Callbacks
         onFlee: function(){
@@ -79,7 +78,6 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
                 }
                 if (entity.get('enemyai')){
                     if (entity.get('enemyai.faction')==this.entity.get('combat.faction')){
-                        console.log('Signal Comrad');
                         entity.fireEvent('ai.investigate', this._tracking_tx, this._tracking_ty);
                     }
                 }
@@ -116,7 +114,6 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
             }
         },
         onInvestigateLocation : function(tx, ty){
-            console.log('SIGNAL', this.fsm.current);
             if (this.fsm.current=='idle'){
                 this.entity.fireEvent('emote.msg', 'What was what?');
                 this.fsm.investigateHit(tx, ty);
@@ -195,7 +192,6 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
 
         tick_investigate : function(delta){
             if (this.canSeePlayer()){
-                console.log('I see london')
                 if (this.isThreat(this.state.pc)){
                     this.entity.fireEvent('emote.msg', 'Found you.', 1);
 
@@ -295,7 +291,6 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
                 }
                 if (entity.get('combat') && entity.get('enemyai')){
                     if (entity.get('combat.faction')==this.entity.get('combat.faction')){
-                        console.log('Signal Comrad');
                         entity.fireEvent('ai.investigate', tx, ty);
                     }
                 }
