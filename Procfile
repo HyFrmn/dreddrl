@@ -1,1 +1,1 @@
-web: node server/app.js lift
+web: cd server; node app.js lift
