@@ -1,34 +1,24 @@
 {
-  "name": "dreddrl",
+  "name": "DreddRL",
+  "private": true,
   "version": "0.0.1",
-  "description": "Dredd RL",
+  "description": "A Sails application",
   "dependencies": {
     "sails": "0.9.3",
     "grunt": "0.4.1",
     "sails-disk": "~0.9.0",
     "ejs": "0.8.4",
     "optimist": "0.3.4",
-    "sails-mongo": "~0.9.1"
+    "sails-mongo": "~0.9.1",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-requirejs": "~0.4.1"
   },
   "scripts": {
     "start": "node app.js",
     "debug": "node debug app.js"
   },
   "main": "app.js",
-  "devDependencies": {
-    "grunt-contrib-clean": "~0.4.0",
-    "grunt-contrib-requirejs": "~0.4.0",
-    "requirejs": "~2.1.5",
-    "grunt-contrib-concat": "~0.1.3"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/HyFrmn/dreddrl.git"
-  },
-  "keywords": [
-    "roguelike",
-    "game"
-  ],
-  "author": "Marshall Petersen",
-  "license": "BSD"
+  "repository": "",
+  "author": "",
+  "license": ""
 }

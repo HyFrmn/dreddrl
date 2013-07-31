@@ -1,1 +1,2 @@
-web: cd server; node app.js lift
+web: node app.js lift
+dev-db: mongod
