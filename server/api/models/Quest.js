@@ -1,20 +1,19 @@
-/*---------------------
-	:: Quest
-	-> model
----------------------*/
+/**
+ * Quest
+ *
+ * @module      :: Model
+ * @description :: A short summary of how this model works and what it represents.
+ *
+ */
+
 module.exports = {
 
-	attributes	: {
-
-		// Simple attribute:
-		// name: 'STRING',
-
-		// Or for more flexibility:
-		// phoneNumber: {
-		//	type: 'STRING',
-		//	defaultValue: '555-555-5555'
-		// }
-		
-	}
+  attributes: {
+  	
+  	/* e.g.
+  	nickname: 'string'
+  	*/
+    
+  }
 
 };
