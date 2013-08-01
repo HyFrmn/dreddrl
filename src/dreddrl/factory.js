@@ -20,6 +20,7 @@ define([
     './components/enemyai',
     './components/emote',
     './components/judgecontrols',
+    './components/navigate',
 
     './actions/dialog',
     './actions/if',
@@ -64,7 +65,8 @@ define([
                 },
                 physics : {},
                 inventory : {},
-                chara: {}
+                chara: {},
+                navigate: {}
             }},
 			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     'judge.controls' : {},
