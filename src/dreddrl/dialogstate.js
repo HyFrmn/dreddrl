@@ -82,6 +82,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             if (typeof node === 'string'){
                 this._dialogList = [node];
             } else {
+                console.log('Node:',node)
                 if (!skip){
                     if (node.topic){
                         this._dialogList.push('pc:' + node.topic);

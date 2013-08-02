@@ -97,19 +97,20 @@ define([
                     interact : {},
                     dialog : {
                         tree: [{
-                                pc:"Who are you?",
-                                npc: "I'm a registered citizen.",
+
+                                topic:"Who are you?",
+                                dialog:[{entity: 'npc',  text: "I'm a registered citizen."}],
                                 choices: [
                                     {
-                                        pc:"Do you live in this block?",
-                                        npc:"Yes and I work here."
+                                        topic:"Do you live in this block?",
+                                        dialog: [{entity: 'npc', text:"Yes and I work here."}]
                                     },
                                     {
-                                        pc:"Do you need assistance?",
-                                        npc:"No. Everything is fine."
+                                        topic:"Do you need assistance?",
+                                        dialog: [{entity: 'npc', text:"No. Everything is fine."}]
                                     },
                                     {
-                                        pc:"Goodbye"
+                                        topic:"Goodbye"
                                     }
                                 ]
                                }]
