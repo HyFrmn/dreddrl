@@ -144,23 +144,41 @@ function StepCtrl($scope){
   }
 }
 
-app.controller('QuestController', function($dialog, $scope, $http) {
+app.controller('QuestController', function($dialog, $scope, $http, $timeout) {
+
+  $scope.saveSuccess = true;
+
+  $scope._saveSuccessful = function(quest){
+    bootbox.alert('Quest Saved: ' + quest.name);
+  }
 
   $scope.saveQuest = function(quest){
     var url = '/quest/';
     if (quest.id!==undefined){
       url += quest.id
       $http.put(url, quest).success(function(data){
-        console.log(data);
+
+        $scope._saveSuccessful(quest);
       });
     } else {
       $http.post(url, quest).success(function(data){
         quest.id = data.id;
+        $scope._saveSuccessful(quest);
       });
-    }
-    
+    } 
   }
   
+  $scope.deleteQuest = function(Package, quest){
+    var index = Package.quests.indexOf(quest);
+    if (index>=0){
+      Package.quests.splice(index,1);
+      var url = '/quest/destroy/' + quest.id;
+      $http.get(url).success(function(){
+        bootbox.alert('Quest Deleted: '+ quest.name);
+      });
+    }
+  }
+
   $scope.createRoom = function(quest){
     var names = quest.rooms.map(function(r){return r.name});
     console.log('Names:', names);

@@ -15,8 +15,9 @@ define(['sge', './config'], function(sge, config){
 		fire: function(){
 			if (this.canFire()){
 				if (this.hasAmmo()){
-					this.consumeAmmo();
-					this.fireProjectile()
+					if (this.consumeAmmo()){
+						this.fireProjectile()
+					}
 				}
 			}
 		},
@@ -59,7 +60,13 @@ define(['sge', './config'], function(sge, config){
 			return true;
 		},
 		consumeAmmo: function(){
-
+			var ammo = this.entity.get('inventory.ammo');
+			var newammo = ammo - 1;
+			if (newammo>=0){
+				this.entity.set('inventory.ammo', newammo);
+				return true;
+			}
+			return false;
 		},
 		switchAmmo : function(){
 			this._ammoIndex++;

@@ -36,7 +36,9 @@
               <input type="text" id="questName" placeholder="Quest Name" ng-model="quest.name">
             </div>
           </div>
-          <button ng-click="saveQuest(quest)">Save</button>
+          <button class="btn btn-primary" ng-click="saveQuest(quest)">Save</button>
+          <button class="btn btn-danger" ng-click="deleteQuest(Package, quest)">Delete</button>
+          <alert type="success" close="true" ng-show="saveSuccess">Quest Saved: {{ quest.name }}</alert>
           <tabset>
             <tab heading="Rooms">
               <button ng-click="createRoom(quest)">Add Room</button>
