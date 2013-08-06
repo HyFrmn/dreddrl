@@ -97,6 +97,18 @@ function(sge, Factory, Map, Quest){
             });
             this.update();
         },
+        lockDoors : function(){
+            _.each(this.doors, function(door){
+                door.set('door.locked', true);
+            });
+            this.update();
+        },
+        unlockDoors : function(){
+            _.each(this.doors, function(door){
+                door.set('door.locked', false);
+            });
+            this.update();
+        },
         plot : function(){
             var halfX = Math.floor((this.width-1)/2);
             var halfY = Math.floor((this.height-1)/2);

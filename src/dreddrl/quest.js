@@ -143,6 +143,9 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 				if (roomData.closed){
 					room.closeDoors();
 				}
+				if (roomData.locked){
+					room.lockDoors();
+				}
 				this.addContext(roomData.name, room);
 			}
 
