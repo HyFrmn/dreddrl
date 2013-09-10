@@ -78,14 +78,17 @@ html, body {
 
 
 #game {
-    width: 640px;
-    height: 480px;
-    border: 1px solid black;
-    margin: 16px;
+    margin: 0px;
     position: relative;
     float: left;
     background: black;
     cursor:none;
+
+    image-rendering: optimizeSpeed;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: optimize-contrast;
+    -ms-interpolation-mode: nearest-neighbor;
 }
 
 #game.fullscreen {

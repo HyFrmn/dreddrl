@@ -2,6 +2,7 @@
 <tabset>
   <tab ng-repeat="entity in quest.entities" heading="{{ entity.name }}">
     <div class="control-group">
+
       <label class="control-label" for="entityName" >Entity Name</label>
       <button ng-click="createDialogTree(entity)">Create Dialog</button>
       <ul ng-controller="DialogController" ng-init="init(entity.dialog)" class="dialog-tree">
@@ -10,16 +11,20 @@
       <div class="controls">
         <input type="text" id="entityName" placeholder="Entity Name" ng-model="entity.name">
       </div>
+
       <label class="control-label" for="entityType" >Entity Type</label>
       <div class="controls">
         <select id="entityType" ng-model="entity.type" ng-options="typ for typ in ENTITYTYPE" ng-init="citizen">
-        <option>** CUSTOM **</option>
+        <option value="">** CUSTOM **</option>
         </select>
       </div>
+
       <label class="control-label" for="entityCustomType" >Custom Entity Type</label>
       <div class="controls">
         <input type="text" ng-model="entity.type">
       </div>
+
+
       <button ng-click="addInventoryItem(quest, entity)">Add Item</button>
       <ul>
         <li ng-repeat="item in entity.inventory">{{item}}<button ng-click="removeInventoryItem(entity, item)" class="btn btn-danger">Delete</button></li>
