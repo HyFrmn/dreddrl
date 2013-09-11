@@ -5,18 +5,48 @@
 		"description" : "A warm bowl of ramen noodles.",
 		"spriteFrame" : 123,
 		"spriteImage" : "scifi_icons_1.png",
-		"effect" : [["set", "health.life", "5", "add"]],
-		"immediate" : true
+		"actions" : {
+			"pickup" : "self.set('health.life', 5, 'add');"
+		},
+		"consumable" : true
 	},
+
+	{ 
+	 	"id" : "smack",
+ 		"name" : "Smack",
+		"description" : "A recreational injectable.",
+		"spriteFrame" : 26,
+		"spriteImage" : "scifi_icons_1.png",
+		"actions" : {
+			"pickup" : "self.set('health.life', -3, 'add');"
+		},
+		"consumable" : true
+	},
+	
+	{ 
+	 	"id" : "medkit",
+ 		"name" : "Med Kit",
+		"description" : "A basic medical kit. Better then nothing for field work.",
+		"spriteFrame" : 37,
+		"spriteImage" : "scifi_icons_1.png",
+		"actions" : {
+			"pickup" : "self.set('health.life', 35, 'add');"
+		},
+		"consumable" : true
+	},
+
 	{
 		"id" : "gun",
 		"name" : "Gun",
 		"description" : "A basic mag gun.",
 		"spriteFrame" : 1,
 		"spriteImage" : "scifi_icons_1.png",
-		"effect" : [["set", "inventory.ammo", "12", "add"]],
-		"immediate" : true
+		"actions" : {
+			"pickup" : "self.set('inventory.ammo', 10, 'add');"
+		},
+		"consumable" : true
 	},
+
 	{
 		"id" : "watch",
 		"name" : "Watch",
@@ -24,13 +54,70 @@
 		"spriteFrame" : 10,
 		"spriteImage" : "scifi_icons_1.png"
 	},
+	
 	{
 		"id" : "key",
 		"name" : "Key",
-		"description" : "A one time use key.",
+		"description" : "A one time use skeleton mag key.",
 		"spriteFrame" : 57,
 		"spriteImage" : "scifi_icons_1.png",
-		"immediate" : true,
-		"effect" : [["set", "inventory.keys", "1", "add"]]
+		"actions" : {
+			"pickup" : "self.set('inventory.keys', 1, 'add');"
+		},
+		"consumable" : true
+	},
+
+	{
+		"id" : "keycard.blue",
+		"name" : "Blue Key Card",
+		"description" : "A blue key card.",
+		"spriteFrame" : 42,
+		"spriteImage" : "scifi_icons_1.png",
+		"consumable" : true
+	},
+	
+	{
+		"id" : "ace.spades",
+		"name" : "Ace of Spades",
+		"description" : "The ace of spades.",
+		"spriteFrame" : 69,
+		"spriteImage" : "scifi_icons_1.png",
+		"consumable" : true
+	},
+	
+	{
+		"id" : "ace.diamonds",
+		"name" : "Ace of Diamonds",
+		"description" : "The ace of diamonds.",
+		"spriteFrame" : 70,
+		"spriteImage" : "scifi_icons_1.png",
+		"consumable" : true
+	},
+	
+	{
+		"id" : "ace.clubs",
+		"name" : "Ace of Clubs",
+		"description" : "The ace of clubs.",
+		"spriteFrame" : 71,
+		"spriteImage" : "scifi_icons_1.png",
+		"consumable" : true
+	},
+
+	{
+		"id" : "ace.hearts",
+		"name" : "Ace of Hearts",
+		"description" : "The ace of hearts.",
+		"spriteFrame" : 72,
+		"spriteImage" : "scifi_icons_1.png",
+		"consumable" : true
+	},
+
+	{
+		"id" : "phone",
+		"name" : "Cellphone",
+		"description" : "A clamshell burner phone.",
+		"spriteFrame" : 72,
+		"spriteImage" : "scifi_icons_1.png",
+		"consumable" : true
 	}
 ]

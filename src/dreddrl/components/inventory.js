@@ -5,7 +5,13 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
 			this._super(entity, data);
 			this.data.ammo = data.ammo || 100;
 			this.data.keys = data.keys || 3;
-			this.data.items = []
+			this.data.items = [];
+            if (data.items){
+                data.items.forEach(function(itemType){
+                    item = Item.Factory(itemType);
+                    this.addItem(item);
+                }.bind(this))
+            }
 			this.data.objects = {};
 			this.entity.addListener('entity.kill', this.dropAllItems.bind(this));
             this.entity.addListener('pickup', this.pickup.bind(this));
@@ -18,12 +24,11 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
 			this.entity.fireEvent('state.log', 'Picked up ' + item.name);
 			if (item.actions.pickup){
 					var expr = new Expr(item.actions.pickup);
+                    expr.addContext('self', this.entity);
 					expr.loadContext(item.getContext());
 					console.log('Expr:',expr);
 					expr.run();
 				
-			} else {
-				this.addItem(item);
 			}
 
 		},
@@ -52,7 +57,7 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
             var dropDir = null;
             var tileX = Math.floor(this.entity.get('xform.tx')/32)
             var tileY = Math.floor(this.entity.get('xform.ty')/32)
-            var allDirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            var allDirs = sge.random.shuffle([[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,-1],[-1,1]]);
             while (allDirs.length){
                 var dir = allDirs.shift()
                 var tile = this.state.map.getTile(tileX + dir[0], tileY + dir[1]);

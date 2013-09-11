@@ -28,11 +28,9 @@ function   (sge, dreddrl) {
         if ((innerWidth / innerHeight) < 1.7777){
             pixelWidth = innerWidth;
             pixelHeight = Math.round(innerWidth / 1.77777);
-            console.log('Tall', pixelWidth, pixelHeight);
         } else {
             pixelHeight = innerHeight;
             pixelWidth = Math.round(innerHeight * 1.7777);
-            console.log('Wide', pixelWidth, pixelHeight);
         }
         canvasElem.style.width = pixelWidth + 'px';
         canvasElem.style.height = pixelHeight + 'px';

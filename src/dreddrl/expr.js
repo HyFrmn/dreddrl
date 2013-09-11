@@ -47,7 +47,7 @@ define(['sge', './config'], function(sge, config){
             this._ctx = {};
         },
         addContext: function(key, value){
-            this._ctx[key] = new ProxyObject(value);
+            this._ctx[key] = value;
         },
         loadContext: function(ctx){
             var vars = Object.keys(ctx);

@@ -98,7 +98,7 @@ DialogController = function($scope, $http){
 
 function AppController($scope, $http){
   $scope.ENTITYTYPE = ['citizen','lawbreaker','spacer'];
-
+  $scope.Math = Math;
   $scope.codeMirrorOptions = {
     lineWrapping : true,
         lineNumbers: true,
@@ -243,7 +243,8 @@ app.controller('QuestController', function($dialog, $scope, $http, $timeout) {
       {
       "type" : "item",
       "name" : "New Item",
-      "description" : "Some sort of thing."
+      "description" : "Some sort of thing.",
+      "spriteFrame" : 0,
     }
     quest.items.push(item);
   }

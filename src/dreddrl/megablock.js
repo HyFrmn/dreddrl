@@ -27,6 +27,14 @@ function(sge, Factory, Map, Quest){
         return coords;
     };
 
+
+    var ITEMTYPE_P = [];
+    [['ramen',20],['gun',10],['key',5],['medkit',3],['smack',3],['cellphone',3],['ace.spades',1],['ace.hearts',1]].forEach(function(foo){
+        for (var i = foo[1] - 1; i >= 0; i--) {
+            ITEMTYPE_P.push(foo[0])
+        };
+    });
+
     var MegaBlockRegion = sge.Class.extend({
         init: function(level, left, right, top, bottom, options){
             this.level = level;
@@ -54,7 +62,7 @@ function(sge, Factory, Map, Quest){
         init: function(gen, cx, cy, width, height, options){
             this.level = gen;
             this._populated = false;
-            this.options = _.extend({doors:'bottom', open: true, locked: false}, options ||{})
+            this.options = _.extend({doors:'bottom', open: false, locked: false}, options ||{})
             this.cx = cx
             this.cy = cy
             this.width = width;
@@ -143,7 +151,7 @@ function(sge, Factory, Map, Quest){
                 tile.passable = false;
                 tile.transparent = false;
             }
-            this.options.open=true;
+            //this.options.open=true;
             
             if ((this.options.doors=='bottom')||(this.options.doors=='both')){
                 this.createDoor(this.cx, this.cy+halfY+3, this.options.open);
@@ -328,7 +336,7 @@ function(sge, Factory, Map, Quest){
                     var ty = 7+this.options.padding+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
-                        var open =  false;//(Math.random() > 0.5 ? true : false);
+                        var open =  false; //(Math.random() > 0.5 ? true : false);
                         if (!open){
                             locked = (Math.random() > 0.75 ? true : false)
                         }
@@ -372,7 +380,7 @@ function(sge, Factory, Map, Quest){
 
             //Populate market place.
             //*
-            var npcs=4;
+            var npcs=16;
             var citizen = null;
             while (npcs--){
                 var tx = sge.random.range(market.left, market.right);
@@ -419,34 +427,6 @@ function(sge, Factory, Map, Quest){
 
             Quest.Load(this);
 
-
-            //Populate Rooms
-            /*
-            _.each(this.rooms, function(room){
-                if (!room._populated){
-                    room._populated = true;
-                    var spawnType = sge.random.item(['citizen','lawbreaker','spacer']);
-                    room.spawn(spawnType, {
-                        enemyai: {
-                            region: room
-                        }
-                    });    
-                    room.spawn(spawnType, {
-                        enemyai: {
-                            region: room
-                        }
-                    });
-                    room.spawn(spawnType, {
-                        enemyai: {
-                            region: room
-                        }
-                    });
-                }
-            }.bind(this));
-
-
-            
-
             for (var y=0;y<this.map.height-2;y++){
                 var tile = this.map.getTile(0, y);
                 tile.layers = {
@@ -470,6 +450,45 @@ function(sge, Factory, Map, Quest){
             
 
             _.map(this.rooms, function(r){r.update()});
+        },
+        _getRandomItemType : function(){
+            var typ = sge.random.item(ITEMTYPE_P);
+            return typ;
+        },
+        populateRooms : function(){
+            //Populate Rooms
+            //*
+            _.each(this.rooms, function(room){
+                if (!room._populated){
+                    room._populated = true;
+                    var spawnType = sge.random.item(['citizen','lawbreaker','spacer']);
+                    room.spawn(spawnType, {
+                        enemyai: {
+                            region: room
+                        },
+                        inventory : {
+                            items: [this._getRandomItemType(),this._getRandomItemType()]
+                        }
+                    });    
+                    room.spawn(spawnType, {
+                        enemyai: {
+                            region: room
+                        },
+                        inventory : {
+                            items: [this._getRandomItemType(),this._getRandomItemType()]
+                        }
+                    });
+                    room.spawn(spawnType, {
+                        enemyai: {
+                            region: room
+                        },
+                        inventory : {
+                            items: [this._getRandomItemType(),this._getRandomItemType()]
+                        }
+                    });
+                    room.update();
+                }
+            }.bind(this));
         },
         buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){
@@ -500,7 +519,6 @@ function(sge, Factory, Map, Quest){
         updateState: function(){
             _.each(this._entities, function(entity){
                 //this.state.addEntity(entity);
-                //console.log('Add Entity', entity.id);
             }.bind(this));
 
         },

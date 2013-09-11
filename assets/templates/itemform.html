@@ -20,6 +20,15 @@
           <input type="text" placeholder="Name" ng-model="item.description">
         </div>
       </div>
+      <div class="control-group">
+        <label class="control-label" for="item.sprite" >Sprite</label>
+        <div class="controls">
+          <input type="number" ng-model="item.spriteFrame">
+          <div class="editor-icon-preview-container">
+            <img src="/assets/sprites/scifi_icons_1.png" ng-style="{'left':((item.spriteFrame%16)*-48) + 'px', 'top':(Math.floor(item.spriteFrame/16)*-48) + 'px'}"></img>
+          </div>
+        </div>
+      </div>
       <button ng-click="deleteItem(quest, item)">Delete</button>
     </tab>
   </tabset>

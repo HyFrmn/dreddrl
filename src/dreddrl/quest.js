@@ -179,11 +179,15 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 		if (config.questDataUrl){
 			sge.util.ajax(config.questDataUrl, function(rawText){
 				data = JSON.parse(rawText);
+				console.log(data);
 				data.forEach(function(quest){
 					if (quest.enable){
+						console.log('Load Quest:', quest.name);
 						Quest.Factory(megablock, quest);
+
 					}
 				})
+				megablock.populateRooms();
 			}.bind(this));
 		} else {
 			/**
@@ -267,6 +271,7 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 					this.complete();
 				})
 			})
+			megablock.populateRooms();
 		}
 	}
 
