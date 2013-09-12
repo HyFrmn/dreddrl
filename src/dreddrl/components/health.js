@@ -29,7 +29,7 @@ define(['sge'], function(sge){
                     this.set('life', -damageProfile.damage, 'add');
                     if (this.data.life <= 0){
                         this.data.life = 0;
-                        this.entity.fireEvent('entity.kill', 'Ran out of health.');
+                        this.entity.fireEvent('entity.kill', damageProfile.entity);
                     } else {
                         this.entity.fireEvent('sprite.tint', 'red', 0.25);
                     }

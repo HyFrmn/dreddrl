@@ -6,6 +6,7 @@ define(['sge', '../config', '../weapon'],function(sge, config, Weapon){
 			this.data.damage = data.damage || 0;
 			this.data.damageType = data.damageType || "BALLISTIC";
 			this.data.drawColor = data.drawColor || 'yellow';
+			this.data.firedBy = data.firedBy || null;
 		},
 		register: function(state){
 			this._super(state);
@@ -33,13 +34,14 @@ define(['sge', '../config', '../weapon'],function(sge, config, Weapon){
 			this.entity.fireEvent('entity.kill');
 		},
 		onContact : function(entity){
-			if (entity!=this.data.sourceEntity){
+			if (entity!=this.data.firedBy){
 				//TODO: Faction should not be part of ai. Maybe stats?
 				if (entity.get('health') && entity.get('combat')) {
-					if (entity.get('health.alignment')!=0 && entity.get('combat.faction')!=this.data.sourceEntity.get('combat.faction')){
+					if (entity.get('health.alignment')!=0 && entity.get('combat.faction')!=this.data.firedBy.get('combat.faction')){
 						damageProfile = {
 							damage : this.get('damage'),
 							damageType : this.get('damageType'),
+							entity: this.data.firedBy,
 							vx: this.entity.get('xform.vx'),
 							vy: this.entity.get('xform.vy'),
 							tx: this.entity.get('xform.tx'),

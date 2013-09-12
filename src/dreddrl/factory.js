@@ -249,7 +249,9 @@ define([
             if (type){
     			data = deepExtend(FACTORYDATA[type](), options);
             }
-			return new DreddRLEntity(data);
+            entity = new DreddRLEntity(data);
+            entity.name = type;
+			return entity;
 		}
 
 		return Factory

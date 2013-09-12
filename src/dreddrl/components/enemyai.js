@@ -58,8 +58,10 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
             this.entity.addListener('ai.investigate', this.onInvestigateLocation.bind(this));
             //this.entity.addListener('contact.tile', this.onContact.bind(this))
         },
-        onKill: function(){
+        onKill: function(entity){
             factionSystem.update(this.entity.get('combat.faction'), -this.get('xp'));
+            this.entity.fireEvent('state.log', this.entity.name + ' killed by ' + entity.name);
+            entity.set('stats.xp', this.get('xp'), 'add');
         },
         // FSM Callbacks
         onFlee: function(){
