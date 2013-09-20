@@ -276,7 +276,9 @@ define([
                 }
                 this.addEntity(pc);
                 this.pc = pc;
-
+                this.pc.addListener('entity.kill', function(){
+                    this.game.fsm.gameOver();
+                }.bind(this));
                 this.input.addListener('keydown:Q', function(){
                     //TODO: Switch Quest Toggle
                     //this.level.encounterSystem.switch();

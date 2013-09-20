@@ -1,5 +1,4 @@
 define(['sge'],function(sge){
-
 	var StatsComponent = sge.Component.extend({
 		init: function(entity, data){
 			this._super(entity, data);
@@ -20,8 +19,8 @@ define(['sge'],function(sge){
 		levelUp: function(){
 			this.set('level', 1, 'add');
 			level = this.data.level;
-			this.entity.set('health.maxLife', 7 + (33*level));
-			this.entity.set('health.life', 7 + (33*level));
+			this.entity.set('health.maxLife', 12 + (level*level));
+			this.entity.set('health.life', 12 + (level*level));
 			this.nextLevel += (level * 10);
 			this.entity.fireEvent('state.log','Level Up: ' + level);
 		},

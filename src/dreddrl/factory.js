@@ -94,8 +94,12 @@ define([
                     emote : {}
                 })},
             citizen : function(){return deepExtend(FACTORYDATA['npc'](), {
-                    interact : {},
-                    dialog : {
+                    enemyai : {
+                        
+                    },
+                })},
+            'citizen.boring' : function(){return deepExtend(FACTORYDATA['citizen'],{
+                dialog : {
                         tree: [{
 
                                 topic:"Who are you?",
@@ -114,9 +118,6 @@ define([
                                     }
                                 ]
                                }]
-                    },
-                    enemyai : {
-                        
                     },
                 })},
             lawbreaker : function(){

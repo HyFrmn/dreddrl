@@ -37,7 +37,6 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         },
         up: function(){
             this._choiceIndex-=1;
-            console.log(this._choiceIndex<0,this._choiceIndex);
             if (this._choiceIndex<0){
                 this._choiceIndex = this._choices.length-1;
             }
@@ -82,7 +81,6 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             if (typeof node === 'string'){
                 this._dialogList = [node];
             } else {
-                console.log('Node:',node)
                 if (!skip){
                     if (node.topic){
                         this._dialogList.push('pc:' + node.topic);
@@ -124,12 +122,13 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             for (var i = choices.length - 1; i >= 0; i--) {
                 var choice = choices[i].topic;
                 var actor = new CAAT.TextActor().setFont('24px sans-serif');
-                actor.setText(choice);
+                
                 actor.setLocation(16, i*24);
-
                 if (i==this._choiceIndex){
                     actor.setTextFillStyle('orange');
+                    choice = '> ' + choice;
                 }
+                actor.setText(choice);
                 this.dialogContainer.addChild(actor);
             };
         },

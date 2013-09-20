@@ -8,7 +8,7 @@ define(['sge'], function(sge){
             };
             this.entity.addListener('interact', function(msg, length){
                 this.startDialog();
-            }.bind(this))
+            }.bind(this));
         },
         _set_tree: function(dialogTree){
             this.data.context = {
@@ -28,7 +28,7 @@ define(['sge'], function(sge){
         startDialog: function(){
             var tree = this.get('tree');
             if (tree.length>0){
-                this.state.startDialog(tree[0], this.data.context);
+                this.entity.state.startDialog(tree[0], this.data.context);
             }      
         },
         register: function(state){

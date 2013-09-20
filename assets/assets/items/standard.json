@@ -72,8 +72,7 @@
 		"name" : "Blue Key Card",
 		"description" : "A blue key card.",
 		"spriteFrame" : 42,
-		"spriteImage" : "scifi_icons_1.png",
-		"consumable" : true
+		"spriteImage" : "scifi_icons_1.png"
 	},
 	
 	{
@@ -81,8 +80,7 @@
 		"name" : "Ace of Spades",
 		"description" : "The ace of spades.",
 		"spriteFrame" : 69,
-		"spriteImage" : "scifi_icons_1.png",
-		"consumable" : true
+		"spriteImage" : "scifi_icons_1.png"
 	},
 	
 	{
@@ -90,8 +88,7 @@
 		"name" : "Ace of Diamonds",
 		"description" : "The ace of diamonds.",
 		"spriteFrame" : 70,
-		"spriteImage" : "scifi_icons_1.png",
-		"consumable" : true
+		"spriteImage" : "scifi_icons_1.png"
 	},
 	
 	{
@@ -99,8 +96,7 @@
 		"name" : "Ace of Clubs",
 		"description" : "The ace of clubs.",
 		"spriteFrame" : 71,
-		"spriteImage" : "scifi_icons_1.png",
-		"consumable" : true
+		"spriteImage" : "scifi_icons_1.png"
 	},
 
 	{
@@ -108,8 +104,7 @@
 		"name" : "Ace of Hearts",
 		"description" : "The ace of hearts.",
 		"spriteFrame" : 72,
-		"spriteImage" : "scifi_icons_1.png",
-		"consumable" : true
+		"spriteImage" : "scifi_icons_1.png"
 	},
 
 	{
@@ -117,7 +112,6 @@
 		"name" : "Cellphone",
 		"description" : "A clamshell burner phone.",
 		"spriteFrame" : 72,
-		"spriteImage" : "scifi_icons_1.png",
-		"consumable" : true
+		"spriteImage" : "scifi_icons_1.png"
 	}
 ]

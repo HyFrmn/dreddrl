@@ -32,6 +32,7 @@ define([
 		addComponent: function(name, data){
 			var comp = Component.Factory(name, this, data);
 			this.components[name] = comp;
+			return comp;
 		},
 		componentCall: function(){
 			var args = Array.prototype.slice.call(arguments);

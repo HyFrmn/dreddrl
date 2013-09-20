@@ -69,7 +69,6 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
             if (dropDir===null){
                 return;
             }
-            console.log('DROP',item, dropDir[0], dropDir[1] )
             this._createDropItem(item, dropDir[0], dropDir[1]);
         },
         _createDropItem: function(item, tx, ty){

@@ -13,3 +13,4 @@ assets/sprites/pre
 assets/tiles/pre
 .tmp/
 .tmp.js
+update.sh

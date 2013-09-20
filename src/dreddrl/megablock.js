@@ -352,7 +352,7 @@ function(sge, Factory, Map, Quest){
                     ty = 7+this.options.padding+13+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
-                        var open = false;//(Math.random() > 0.5 ? true : false);
+                        var open = true;//(Math.random() > 0.5 ? true : false);
                         if (!open){
                             locked = (Math.random() > 0.75 ? true : false)
                         }

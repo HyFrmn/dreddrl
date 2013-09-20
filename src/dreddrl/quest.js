@@ -62,7 +62,7 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 			}
 		},
 		complete: function(){
-			this._step = -1;
+			//this._step = -1;
 			this.onComplete();
 		},
 		onComplete: function(){
@@ -161,6 +161,10 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 								var entityName = node.entity.name;
 								var entity=this._context[entityName];
 								var tree =  this.createDialog(node);
+								if (!entity.get('dialog')){
+									entity.addComponent('interact', {}).register(entity.state);
+									entity.addComponent('dialog',{}).register(entity.state);
+								}
 								entity.set('dialog.tree', this.createDialog([tree]));
 							};
 						}
