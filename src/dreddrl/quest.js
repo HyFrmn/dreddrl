@@ -53,6 +53,7 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 				return;
 			}
 			var stepNumbers = Object.keys(this._steps).map(parseFloat);
+			console.log('Steps:', this._step, stepNumbers);
 			var index = stepNumbers.indexOf(this._step);
 			if (index>=stepNumbers.length-1){
 				this.onComplete();
