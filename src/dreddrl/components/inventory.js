@@ -26,7 +26,6 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
 					var expr = new Expr(item.actions.pickup);
                     expr.addContext('self', this.entity);
 					expr.loadContext(item.getContext());
-					console.log('Expr:',expr);
 					expr.run();
 				
 			}
