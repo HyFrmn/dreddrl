@@ -87,6 +87,8 @@ define([
                         map: this.map,
                         speed: 16
                     },
+                    navigate: {},
+                    highlight: {},
                     health : {alignment:0, life: 8},
                     sprite : {
                         src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',

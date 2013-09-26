@@ -44,7 +44,7 @@
       var callbacks = cfg.callbacks || {};
       var map       = {};
 
-      var add = function(e) {
+      fsm.add = function(e) {
         var from = (e.from instanceof Array) ? e.from : (e.from ? [e.from] : [StateMachine.WILDCARD]); // allow 'wildcard' transition if 'from' is not specified
         map[e.name] = map[e.name] || {};
         for (var n = 0 ; n < from.length ; n++)
@@ -53,11 +53,11 @@
 
       if (initial) {
         initial.event = initial.event || 'startup';
-        add({ name: initial.event, from: 'none', to: initial.state });
+        fsm.add({ name: initial.event, from: 'none', to: initial.state });
       }
 
       for(var n = 0 ; n < events.length ; n++)
-        add(events[n]);
+        fsm.add(events[n]);
 
       for(var name in map) {
         if (map.hasOwnProperty(name))
@@ -67,6 +67,19 @@
       for(var name in callbacks) {
         if (callbacks.hasOwnProperty(name))
           fsm[name] = callbacks[name]
+      }
+
+      fsm.addEvent = function(e){
+        fsm.add(e);
+        for(var name in map) {
+          if (map.hasOwnProperty(name))
+            fsm[name] = StateMachine.buildEvent(name, map[name]);
+        }
+
+        for(var name in callbacks) {
+          if (callbacks.hasOwnProperty(name))
+            fsm[name] = callbacks[name]
+        }
       }
 
       fsm.current = 'none';

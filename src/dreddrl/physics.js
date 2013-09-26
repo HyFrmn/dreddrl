@@ -217,7 +217,7 @@ define(['sge'], function(sge){
             
         },
         
-        resolveCollisions : function(delta){
+        resolveCollisions : function(delta, activeList){
             var debugTime = Date.now();
             var entities = [];
             this._newContacts = [];
@@ -230,6 +230,13 @@ define(['sge'], function(sge){
                     entity.get('physics')._wait = false;
                     return true;
                 }
+                //If an active entity list is supplied check to see if entity is included
+                if (activeList){
+                    if (activeList.indexOf(entity)<0){
+                        return false; //Ignore objects not in activeList
+                    }
+                }
+
                 var vx = entity.get('xform.vx') * delta;
                 var vy = entity.get('xform.vy') * delta;
                 if (vx==0 && vy==0){

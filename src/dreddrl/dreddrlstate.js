@@ -280,8 +280,9 @@ define([
                     this.game.fsm.gameOver();
                 }.bind(this));
                 this.input.addListener('keydown:Q', function(){
-                    //TODO: Switch Quest Toggle
-                    //this.level.encounterSystem.switch();
+                    
+                //TODO: Switch Quest Toggle
+                //this.level.encounterSystem.switch();
                 }.bind(this));
                 setTimeout(function() {
                         this.game.fsm.finishLoad();
@@ -563,6 +564,10 @@ define([
                 this.game.fsm.startDialog();
             },
 
+            startCutscene: function(cutscene){
+                this.game.fsm.startCutscene();
+            },
+
             tick : function(delta){
                 this._debugCounter -= delta;
                 if (this._debugCounter <= 0 && this._debugEnable==true){
@@ -579,7 +584,8 @@ define([
 
                 if (!this.game.data._intro){
                     this.game.data._intro = true;
-                    this.startDialog(INTRO);
+                    //this.startDialog(INTRO);
+                    this.startCutscene();
                 }
                 
                 //Update Interaction System
@@ -636,6 +642,13 @@ define([
             },
             
             _paused_tick : function(delta){
+
+                //Track Player
+                var tx = this.pc.get('xform.tx');
+                var ty = this.pc.get('xform.ty');
+                this._gamePlayContainer.setLocation(-tx+(this.game.renderer.width/2),-ty+(this.game.renderer.height/2));
+
+
                 //this.game.renderer.track(this.pc);
                 _.each(this._entity_ids, function(id){
                     var entity = this.entities[id];

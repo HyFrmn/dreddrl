@@ -398,7 +398,7 @@ function(sge, Factory, Map, Quest){
 
             //Populate market place.
             //*
-            var npcs=16;
+            var npcs=4;
             var citizen = null;
             while (npcs--){
                 var tx = sge.random.range(market.left, market.right);

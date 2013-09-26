@@ -6,12 +6,13 @@ define(['sge'], function(sge){
             this.pathPoints = [];
 			this.entity.addListener('navigate.entity', this.navToEntity.bind(this));
 		},
-        navToEntity: function(entity){
+        navToEntity: function(entity, callback){
             var dx = entity.get('xform.tx');
             var dy = entity.get('xform.ty');
-            return this.navToPos(dx,dy);
+            return this.navToPos(dx,dy, callback);
         },
-        navToPos: function(destX ,destY){
+        navToPos: function(destX ,destY, callback){
+            this._callback = callback;
             var tx = this.entity.get('xform.tx');
             var ty = this.entity.get('xform.ty');
             var tileX = Math.floor(tx/32);
@@ -22,8 +23,15 @@ define(['sge'], function(sge){
         },
         stopNavigation: function(){
             this.entity.set('xform.v', 0, 0);
+            if (this._callback){
+                this._callback();
+                this._callback = undefined;
+            }
         },
         tick: function(delta){
+            this.updateNavigation(delta);
+        },
+        updateNavigation: function(delta){
             if (this.pathPoints.length<=0){
                 return;
             }

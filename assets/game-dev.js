@@ -32,7 +32,6 @@ function   (sge, dreddrl) {
     canvasElem = document.getElementById('game');
     
     //Full Screen Always
-    
     var resizeCallback = function(){
         var innerWidth = window.innerWidth;
         var innerHeight = window.innerHeight;
@@ -51,9 +50,10 @@ function   (sge, dreddrl) {
     }
     window.onresize = resizeCallback;
     resizeCallback();
+    
+    //Enable Caat Debug widget with url param.
     CAAT.DEBUG=Boolean(getURLParameter('caat-debug'));
-    game = new sge.Game({elem: document.getElementById('game'), pauseState: dreddrl.PauseState, mainMenuState: dreddrl.MainMenuState, width: idealWidth, height: idealHeight, fps:idealFPS});
-    var state = game.setGameState(dreddrl.DreddRLState);
-    game._states['dialog'] = new dreddrl.DialogState(game, 'Dialog');
+
+    game = dreddrl.CreateGame(sge.Game, idealWidth, idealHeight, idealFPS);
     game.start();
 });
