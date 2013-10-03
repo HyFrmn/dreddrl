@@ -26,6 +26,7 @@ define(['sge','../config'], function(sge, config){
             }
             var xaxis = 0;
             var yaxis = 0;
+            var strafe = false;
             if (this.input.isPressed('down')){
                 yaxis++;
             }
@@ -38,8 +39,18 @@ define(['sge','../config'], function(sge, config){
             if (this.input.isPressed('left')){
                 xaxis--;
             }
-            this.entity.set('xform.vx', xaxis * this.data.speed);
-            this.entity.set('xform.vy', yaxis * this.data.speed);
+            if (this.input.isPressed('z')){
+                strafe=true;
+            }
+            var vx = vy = 0
+            if (xaxis!=0||yaxis!=0){
+                dist = Math.sqrt(xaxis*xaxis+yaxis*yaxis);
+                vx = xaxis / dist;
+                vy = yaxis / dist;
+            }
+            this.entity.set('movement.vx', vx);
+            this.entity.set('movement.vy', vy);
+            this.entity.set('movement.strafe', strafe);
         }
     });
     sge.Component.register('judge.controls', ControlsComponent);

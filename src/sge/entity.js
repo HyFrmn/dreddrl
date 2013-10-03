@@ -31,6 +31,9 @@ define([
 		},
 		addComponent: function(name, data){
 			var comp = Component.Factory(name, this, data);
+			if (comp._alias){
+				name = comp._alias;
+			}
 			this.components[name] = comp;
 			return comp;
 		},
@@ -58,14 +61,16 @@ define([
 				return comp;
 			}
 		},
-		set : function(path, value, method){
+		set : function(path, value){
 			if (path=='active'){
 				return (this.active = Boolean(value));
 			}
 			var subpaths = path.split('.');
 			var compName = subpaths.shift();
 			var comp = this.components[compName];
-			return comp.set(subpaths.join('.'), value, method);
+			var args = Array.prototype.slice.call(arguments, 1);
+			args.splice(0,0,subpaths.join('.'))
+			return comp.set.apply(comp, args);
 		},
 		hasTag : function(tag){
 			return (this.tags.indexOf(tag)>=0);

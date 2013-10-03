@@ -16,7 +16,6 @@ define(['sge','../action'], function(sge, Action){
         		this.end();
         		return;
         	}
-			var speed = 64;
 			var tx = this.entity.get('xform.tx');
 	        var ty = this.entity.get('xform.ty');
 	        var goalX = this.pathPoints[0][0];
@@ -27,7 +26,7 @@ define(['sge','../action'], function(sge, Action){
 	        if (dist<6){
 	        	this.pathPoints.shift();
 	        }
-	        this.entity.set('xform.v', dx / dist * speed, dy / dist * speed);
+	        this.entity.set('xform.v', dx / dist, dy / dist);
 		}
 	});
 	Action.register('followpath', FollowPathAction);

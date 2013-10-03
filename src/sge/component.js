@@ -24,9 +24,9 @@ define(['sge/lib/class'], function(Class){
 		},
 		set : function(path, value, method){
 			var newValue = null;
-					
+			var args = Array.prototype.slice.call(arguments, 1);
 			if (this['_set_' + path] !== undefined){
-				newValue = this['_set_' + path](value, method);
+				newValue = this['_set_' + path].apply(this, args);
 			} else {
 				newValue = this.__set_value(path, value, method);
 			}

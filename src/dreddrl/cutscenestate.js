@@ -17,14 +17,18 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         moveAway: function(cutscene){
             cutscene.completeAction();
         },
-        highlight: function(cutscene, entity, on){
-            if (on){
-                entity.fireEvent('highlight.on');
-            } else {
-                entity.fireEvent('highlight.off');
-            }
+        event: function(cutscene, entity, evt, arg0, arg1, arg2){
+            entity.fireEvent(evt, arg0, arg1, arg2);
             cutscene.completeAction();
-        }
+        },
+        set: function(cutscene, entity, attr, value){
+            entity.set(attr, value);
+            cutscene.completeAction();
+        },
+        follow: function(cutscene, entity, target, options){
+            entity.set('ai.behaviour', 'follow', target, options);
+            cutscene.completeAction();
+        },
     }
 
     var Cutscene = sge.Class.extend({
@@ -136,17 +140,23 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         
         _testScene : function(){
             var pc = this.game._states['game'].pc;
+            
+
             var citizen = this.game._states['game'].getEntitiesWithTag('shopper')[0];
             citizen.set('highlight.color','lime');
+
+
             var testScene = new Cutscene(this);
-            testScene.addAction('entity.highlight', citizen, true);
             testScene.addAction('entity.navigate', citizen, pc); 
+            testScene.addAction('entity.event', citizen, 'highlight.on');
             testScene.addAction('entity.dialog', {
-                        topic: 'Excuse me citizen. Do you need help?',
-                        dialog: [{entity:'npc', text: "Thank you for finding my watch." }],
+                        topic: '',
+                        dialog: [{entity:'npc', text: "JUDGE! Judge! Come quick. The spacers broke into my appartment and are holding my daughter hostage. (Use the arrow keys to move around.)" }],
                     });
+            testScene.addAction('entity.event', citizen, 'highlight.off');
             testScene.addAction('entity.moveAway', citizen, pc, 64);
-            testScene.addAction('entity.highlight', citizen, false);
+            testScene.addAction('entity.follow', citizen, pc, { dist: 32, speed: 'match'});
+
             testScene.play()
         },
         startState : function(){

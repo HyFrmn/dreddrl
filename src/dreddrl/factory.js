@@ -2,7 +2,6 @@ define([
 	'sge',
 	'./components/weapons',
 	'./components/physics',
-	'./components/judgemovement',
 	'./components/freeitem',
     './components/inventory',
     './components/interaction',
@@ -16,7 +15,7 @@ define([
     './components/encounter',
     './components/stats',
     './components/health',
-    './components/simpleai',
+    './components/ai',
     './components/enemyai',
     './components/emote',
     './components/judgecontrols',
@@ -73,9 +72,9 @@ define([
                     sprite : {
                         src : 'assets/sprites/judge.png',
                     },
-                    'judge.movement' : {
+                    movement : {
                         map: this.map,
-                        speed: 64
+                        speed: 128
                     },
                     health : {alignment:5, life: 100},
                     combat: {faction: 'judge', weapon: 'lawgiver'},
@@ -85,7 +84,7 @@ define([
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     movement : {
                         map: this.map,
-                        speed: 16
+                        speed: 96
                     },
                     navigate: {},
                     highlight: {},
@@ -96,7 +95,7 @@ define([
                     emote : {}
                 })},
             citizen : function(){return deepExtend(FACTORYDATA['npc'](), {
-                    enemyai : {
+                    ai : {
                         
                     },
                 })},
