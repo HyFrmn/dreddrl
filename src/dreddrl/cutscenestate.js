@@ -2,96 +2,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
     var when = sge.vendor.when;
 
 
-    var EntityCutsceneActions = {
-        navigate : function(cutscene, entity, target){
-            cutscene.activateEntities(entity, target);
-            entity.get('navigate').navToEntity(target, function(){
-                cutscene.deactiveEntities(entity,target);
-                cutscene.completeAction();
-            }.bind(this));
-        },
-        dialog: function(cutscene, node){
-            console.log(node)
-            cutscene.startDialog(node);
-        },
-        moveAway: function(cutscene){
-            cutscene.completeAction();
-        },
-        event: function(cutscene, entity, evt, arg0, arg1, arg2){
-            entity.fireEvent(evt, arg0, arg1, arg2);
-            cutscene.completeAction();
-        },
-        set: function(cutscene, entity, attr, value){
-            entity.set(attr, value);
-            cutscene.completeAction();
-        },
-        follow: function(cutscene, entity, target, options){
-            entity.set('ai.behaviour', 'follow', target, options);
-            cutscene.completeAction();
-        },
-    }
-
-    var Cutscene = sge.Class.extend({
-        init: function(state){
-            this.state = state;
-            this._queue = [];
-            this.actions = {
-                entity: EntityCutsceneActions
-            }
-        },
-        activateEntities : function(args){
-            for (var i = arguments.length - 1; i >= 0; i--) {
-                this.state._activeEntities.push(arguments[i]);
-            };
-        },
-        deactiveEntities: function(args){
-            for (var i = arguments.length - 1; i >= 0; i--) {
-                var idx = this.state._activeEntities.indexOf(arguments[i]);
-                if (idx>=0){
-                    this.state._activeEntities.splice(idx,1);
-                }
-            };
-        },
-        play: function(){
-            this.next();
-        },
-        end: function(){
-            this.state.endScene();
-        },
-        startDialog : function(node, ctx){
-            this.state.setDialog(node, ctx, this.completeAction.bind(this));
-        },
-        next: function(){
-            if (this._queue.length<=0){
-                this.end();
-            }
-            var action = this._queue.shift();
-            console.log('Action:', action);
-            var args = action.args;
-            args.splice(0,0,this);
-            var lib = action.callback.split('.')[0];
-            var func = action.callback.split('.')[1];
-            var callback = this.actions[lib][func];
-            callback.apply(this, args)
-        },
-        completeAction: function(){
-            if (this._queue.length>0){
-                this.next();
-            } else {
-                this.end();
-            }
-        },
-        addAction: function(){
-            console.log(arguments);
-            var args = Array.prototype.slice.call(arguments);
-            var callback = args.shift();
-            var action = {
-                callback: callback,
-                args: args
-            }
-            this._queue.push(action);
-        }
-    })
+    
 
     var CutsceneState = sge.GameState.extend({
         initState: function(){
@@ -100,6 +11,8 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
 
             //A list of active entities.
             this._activeEntities = [];
+
+            this._tickCallbacks = [];
 
             //Setup choices
             this._dialogList = [];
@@ -145,7 +58,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             var citizen = this.game._states['game'].getEntitiesWithTag('shopper')[0];
             citizen.set('highlight.color','lime');
 
-
+            /*
             var testScene = new Cutscene(this);
             testScene.addAction('entity.navigate', citizen, pc); 
             testScene.addAction('entity.event', citizen, 'highlight.on');
@@ -158,6 +71,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             testScene.addAction('entity.follow', citizen, pc, { dist: 32, speed: 'match'});
 
             testScene.play()
+            */
         },
         startState : function(){
             //this.interact();
@@ -174,9 +88,10 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
 
             this._super();
 
-            this._testScene();
+            //this._testScene();
         },
         endDialog : function(){
+            this._clearScreen();
             if (this._dialogCallback){
                 this._dialogCallback();
                 this._dialogCallback = null;
@@ -197,18 +112,22 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this._super();
         },
         up: function(){
-            this._choiceIndex-=1;
-            if (this._choiceIndex<0){
-                this._choiceIndex = this._choices.length-1;
+            if (this._choosing){
+                this._choiceIndex-=1;
+                if (this._choiceIndex<0){
+                    this._choiceIndex = this._choices.length-1;
+                }
+                this.displayChoices();
             }
-            this.displayChoices();
         },
         down: function(){
-            this._choiceIndex+=1;
-            if (this._choiceIndex>=this._choices.length){
-                this._choiceIndex = 0;
+            if (this._choosing){
+                this._choiceIndex+=1;
+                if (this._choiceIndex>=this._choices.length){
+                    this._choiceIndex = 0;
+                }
+                this.displayChoices();
             }
-            this.displayChoices();
         },
         interact: function(){
             if (this._choosing){
@@ -262,6 +181,9 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this._activeEntities.forEach(function(entity){
                 entity.componentCall('updateNavigation');
             })
+            this._tickCallbacks.forEach(function(cb){
+                cb(delta);
+            });
             state.physics.resolveCollisions(delta, this._activeEntities);
             state.getEntities().forEach(function(entity){
                 entity.componentCall('render');
@@ -276,13 +198,16 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this._dialogCallback = callback;
         },
         nextNode: function(){
-            var callback = this._currentNode.postAction;
-            if (callback){
-                var expr = new Expr(callback);
-                expr.loadContext(this._ctx);
-                expr.run();
+            if (this._currentNode){
+                var callback = this._currentNode.postAction;
+                if (callback){
+                    var expr = new Expr(callback);
+                    expr.loadContext(this._ctx);
+                    expr.run();
+                }
+                return this._currentNode.choices || [];
             }
-            return this._currentNode.choices || [];
+            return [];
         },
         _clearScreen: function(){
             this.dialogContainer.stopCacheAsBitmap();
@@ -338,5 +263,6 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this.dialogContainer.cacheAsBitmap();
         }
     });
+
     return CutsceneState;
 })

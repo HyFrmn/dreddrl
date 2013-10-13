@@ -55,6 +55,14 @@ function(sge, Factory, Map, Quest){
         },
         onRegionExit: function(){
 
+        },
+        get: function(attr){
+            if (attr=='xform.tx'){
+                return this.left + (this.right-this.left)/2;
+            }
+            if (attr=='xform.ty'){
+                return this.top + (this.bottom-this.top)/2;
+            }
         }
     })
 
@@ -106,6 +114,7 @@ function(sge, Factory, Map, Quest){
             this.update();
         },
         lockDoors : function(){
+            this.closeDoors();
             _.each(this.doors, function(door){
                 door.set('door.locked', true);
             });
@@ -163,7 +172,13 @@ function(sge, Factory, Map, Quest){
                 this.createElevator(this.cx, this.cy+halfY+3);
             }
 
-            this.cover = new CAAT.Actor().setFillStyle('black').setSize(this.width*32,this.height*32).setLocation((this.cx-(this.width-1)/2)*32+16, (this.cy-(this.height-1)/2)*32+16);
+            this.cover = new CAAT.Actor().
+                                setFillStyle('black').
+                                setAlpha(0.65).
+                                setSize(this.width*32,
+                                        (2+this.height)*32).
+                                setLocation((this.cx-(this.width-1)/2)*32,
+                                            (this.cy-(this.height+3)/2)*32);
             this.level.map.canopy.addChild(this.cover);
         },
         createDoor : function(cx, cy, open){
@@ -172,7 +187,7 @@ function(sge, Factory, Map, Quest){
                 ty: ((cy + 0.5) * 32),
             }, door: {open: open, room: this, locked: this.options.locked},
             interact : {
-                targets: [[((cx + 0.5) * 32),((cy + 0.5) * 32)],[((cx + 0.5) * 32),((cy - 1.5) * 32)]]
+                targets: [[0,0],[0,-64]]
             }});
             this.doors.push(door);
             door.tags.push('door');
@@ -255,6 +270,8 @@ function(sge, Factory, Map, Quest){
                 } else {
                     evt = 'highlight.on';
                 }
+            } else {
+                evt = 'highlight.off';
             }
             if (evt){
                 this.doors.forEach(function(d){d.fireEvent(evt)});
@@ -304,13 +321,13 @@ function(sge, Factory, Map, Quest){
                 if ((t.x>(this.width/3)&&t.x<(this.width*2/3))&&(t.y>(this.height/3)&&t.y<(this.height*2/3))) {
                     t._mask=true;
                     t.layers = {
-                        'layer0' : FLOORTILE
-                }
+                        'layerBase' : FLOORTILE
+                    }
                 } else {
                     t._mask = false;
                     t.layers = {
-                        'layer0' : FLOORTILE
-                }
+                        'layerBase' : FLOORTILE
+                    }
                 }
                 t.fade = 0;
                 
@@ -388,7 +405,7 @@ function(sge, Factory, Map, Quest){
             _.each(this.map._tiles, function(t){
                 if ((t.x>=Math.floor(marketLeft/32)&&t.x<(marketRight/32))&&(t.y>=Math.floor(marketTop/32)&&t.y<(marketBottom/32))) {
                     t.layers = {
-                            'layer0' : FLOORTILE2
+                            'layerBase' : FLOORTILE2
                     }
                 }
             }.bind(this));

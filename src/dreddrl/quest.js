@@ -3,6 +3,179 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 	* Represents a node in a dialog tree.
 	*
 	*/
+
+	var when = sge.vendor.when;
+
+	var whenEntityEvent = function(entity, eventName){
+		var func = function(){
+			var deferred = when.defer();
+			var listener = function(){
+				entity.removeListener(eventName, this);
+				deferred.resolve();
+			}
+			entity.addListener(eventName, listener);
+			console.log('When!', entity, eventName)
+			return deferred.promise;
+		}
+		return func;
+	}
+
+	var EntityCutsceneActions = {
+        navigate : function(cutscene, entity, target){
+            cutscene.activateEntities(entity);
+            var cb = function(){
+                cutscene.deactiveEntities(entity);
+                cutscene.completeAction();
+            }.bind(this);
+            if (isArray(target)){
+            	entity.get('navigate').navToPoint(target[0],target[1], cb);
+            } else {
+	            entity.get('navigate').navToEntity(target, cb);
+	        }
+        },
+        dialog: function(cutscene, node){
+            cutscene.startDialog(node);
+        },
+        moveAway: function(cutscene){
+            cutscene.completeAction();
+        },
+        event: function(cutscene, entity, evt, arg0, arg1, arg2){
+            entity.fireEvent(evt, arg0, arg1, arg2);
+	        cutscene.completeAction();
+        },
+        set: function(cutscene, entity, attr, value){
+            entity.set(attr, value);
+            cutscene.completeAction();
+        },
+        behave: function(cutscene, entity, behaviour, options){
+            entity.set('ai.behaviour', behaviour, options);
+            cutscene.completeAction();
+        },
+    }
+
+    var RoomCutsceneActions = {
+    	close : function(cutscene, room){
+    		room.closeDoors();
+    		cutscene.completeAction();
+    	},
+    	open : function(cutscene, room){
+    		room.openDoors();
+    		cutscene.completeAction();
+    	},
+    	highlight : function(cutscene, room, highlight){
+    		room.highlight(highlight);
+    		cutscene.completeAction();
+    	}
+    }
+
+    var CameraCutsceneActions = {
+    	pan : function(cutscene, target, options){
+    		options = options || {};
+    		var cam_t = cutscene.gameState.getCameraLocation();
+    		var tx = target.get('xform.tx');
+    		var ty = target.get('xform.ty');
+    		var dx = (tx - cam_t[0]);
+    		var dy = (ty - cam_t[1]);
+    		var dist = Math.sqrt(dx*dx+dy*dy);
+    		var speed = options.speed || 196;
+    		dx = (dx/dist)*speed;
+    		dy = (dy/dist)*speed;
+    		var i = 0;
+    		var cb = function(delta){
+    			i+=1;
+    			cam_t = cutscene.gameState.getCameraLocation();
+    			cutscene.gameState.setCameraLocation(cam_t[0]+(dx*delta), cam_t[1]+(dy*delta));
+	    		if (Math.abs(cam_t[0]-tx)<(speed*delta*2)||Math.abs(cam_t[1]-ty)<(delta*2*speed)){
+		    		cutscene.removeTickFunc(cb);
+		    		cutscene.completeAction();
+		    	}
+
+    		}
+    		cutscene.addTickFunc(cb);
+    	},
+    	wait : function(cutscene, wait){
+    		setTimeout(function(){
+    			cutscene.completeAction();
+    		}, wait);
+    	}
+    }
+
+    var Cutscene = sge.Class.extend({
+        init: function(state){
+        	this.deferred = when.defer();
+            this.state = state;
+            this.gameState = state.game._states.game;
+            this._queue = [];
+            this.actions = {
+                entity: EntityCutsceneActions,
+                room: RoomCutsceneActions,
+                camera: CameraCutsceneActions
+            }
+        },
+        activateEntities : function(args){
+            for (var i = arguments.length - 1; i >= 0; i--) {
+                this.state._activeEntities.push(arguments[i]);
+            };
+        },
+        deactiveEntities: function(args){
+            for (var i = arguments.length - 1; i >= 0; i--) {
+                var idx = this.state._activeEntities.indexOf(arguments[i]);
+                if (idx>=0){
+                    this.state._activeEntities.splice(idx,1);
+                }
+            };
+        },
+        play: function(){
+        	this.state.game.fsm.startCutscene();
+            this.next();
+            return this.deferred.promise;
+        },
+        end: function(){
+            this.state.endScene();
+            this.deferred.resolve();
+        },
+        startDialog : function(node, ctx){
+            this.state.setDialog(node, ctx, this.completeAction.bind(this));
+        },
+        next: function(){
+            if (this._queue.length<=0){
+                this.end();
+            }
+            var action = this._queue.shift();
+            var args = action.args;
+            args.splice(0,0,this);
+            var lib = action.callback.split('.')[0];
+            var func = action.callback.split('.')[1];
+            var callback = this.actions[lib][func];
+            callback.apply(this, args)
+        },
+        completeAction: function(){
+            if (this._queue.length>0){
+                this.next();
+            } else {
+                this.end();
+            }
+        },
+        addAction: function(){
+            var args = Array.prototype.slice.call(arguments);
+            var callback = args.shift();
+            var action = {
+                callback: callback,
+                args: args
+            }
+            this._queue.push(action);
+        },
+        addTickFunc: function(func){
+        	this.state._tickCallbacks.push(func);
+        },
+        removeTickFunc: function(func){
+        	var idx = this.state._tickCallbacks.indexOf(func);
+        	if (idx>=0){
+        		this.state._tickCallbacks.splice(idx,1);
+        	}
+        }
+    })
+
 	var Quest = sge.Class.extend({
 		init: function(block, setupFunc){
 			this._context = {
@@ -180,7 +353,7 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 	};
 
 	Quest.Load = function(megablock){
-		if (config.questDataUrl){
+		if (config.questDataUrl&&false){
 			sge.util.ajax(config.questDataUrl, function(rawText){
 				data = JSON.parse(rawText);
 				console.log(data);
@@ -205,76 +378,59 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 		    * * Return Item. Get Reward Quest Over
 		    *
 			*/
+
+			//Get Quest Room
+			var room = megablock.getRandomRoom();
+			room.lockDoors();
 			
-			var exampleQuest = new Quest(megablock, function(block, state){
+			//Get citizen entity, initialize for interaction.
+			var citizen = megablock.state.getEntitiesWithTag('shopper')[0];
+			citizen.addComponent('interact',{}).register(megablock.state);
+			citizen.set('interact.priority', true);
+			
 
-				//Set Reward
-				this.reward = {
-					xp: 100,
-					health: 1000,
-					ammo: 12,
-					keys: 3
-				}
+			var introCutscene = function(){
+				var pc     = megablock.state.pc;
+				var cutscene = new Cutscene(megablock.state.game._states['cutscene']);
+				cutscene.addAction('entity.dialog',  {
+                        topic: '',
+                        dialog: [{entity:'npc', text: "Judge, can you escort me home. I just went shopping and am afraid I will be robbed.\ (Use the arrow keys to move around.)" }],
+                });
+                citizen.set('interact.priority', false);
+                cutscene.addAction('camera.pan', room.doors[0]);
+                cutscene.addAction('room.highlight', room, true);
+                cutscene.addAction('camera.wait', 1000);
+                cutscene.addAction('camera.pan', pc);
+                return cutscene.play();
+			}
 
-				//Create/Select Entities and Items.
-				var npc = this.createEntity('@(shopper)');
-				var lostItem = this.createItem('watch');
-				this.addContext('victim', npc);
-				this.addContext('lostItem', lostItem);
-				
-				
 
+			var startMission = function(){
+				var pc     = megablock.state.pc;
+				citizen.set('ai.behaviour', 'follow', pc);
+			}
 
-				//Step always called during setup.
-				this.addStep(0, function(){
-					npcDialog = this.createDialog([{
-						topic: 'Excuse me citizen. Do you need help?',
-						dialog: [{entity:'npc', text: 'Yes. Someone stole my watch. Can you find it?'}],
-						choices: [{
-							topic:  "Yes. I'll find your watch.",
-							dialog: [{entity:'npc', text: 'Thanks'}],
-							postAction: 'quest.nextStep();'
-						},{
-							topic: "Sorry. I can't help.",
-							dialog: [{entity:'npc', text: 'What! You can\'t help? Why the hell are you even here?'}],
-						}]
-					}]);
-					npc.set('dialog.tree', npcDialog);
-					npc.set('interact.priority', true);
-				});
-				this.addStep(10, function(){
-					npcDialog = this.createDialog([{
-						topic: "I still haven't found your missing watch.",
-						dialog: [{entity:'npc', text: "Well keep looking. Why the #!$^ do i pay my taxes." }],
-					}]);
-					npc.set('dialog.tree', npcDialog);
-					npc.set('interact.priority', false);
-					var thief = this.createEntity('lawbreaker',{
-					});
-					thief.set('xform.t', block.width*16,block.height*16);
-					thief.fireEvent('inventory.add', lostItem);
-					block.state.addEntity(thief);
-					lostItem.set('actions.pickup', 'quest.nextStep()');
-				});
-				this.addStep(20, function(){
-					npcDialog = this.createDialog([{
-						topic: "Is this your watch citizen?",
-						dialog: [{entity:'npc', text: "YES!! Thank YOU!! Hooray!!." }],
-						postAction: 'quest.nextStep()'
-					}]);
-					npc.set('dialog.tree', npcDialog);
-					npc.set('interact.priority', true);
-				});
-				this.addStep(100, function(){
-					npcDialog = this.createDialog([{
-						topic: 'Excuse me citizen. Do you need help?',
-						dialog: [{entity:'npc', text: "Thank you for finding my watch." }],
-					}]);
-					npc.set('dialog.tree', npcDialog);
-					npc.set('interact.priority', false);
-					this.complete();
-				})
-			})
+			var completeMission = function(){
+				var cutscene = new Cutscene(megablock.state.game._states['cutscene']);
+            	cutscene.addAction('entity.dialog',  {
+                    topic: '',
+                    dialog: [{entity:'npc', text: "Thanks for getting escorting me home." }],
+            	});
+            	cutscene.addAction('entity.navigate', citizen, room);
+            	cutscene.addAction('room.close', room);
+            	citizen.set('ai.behaviour', 'idle');
+            	room.highlight(false);
+            	room.openDoors();
+				return cutscene.play();
+			}
+
+			//First interaction.
+			var interaction = whenEntityEvent(citizen, 'interact')().
+								then(introCutscene).
+								then(startMission).
+								then(whenEntityEvent(room.doors[0],'unlock')).
+								then(completeMission);
+			
 			megablock.populateRooms();
 		}
 	}

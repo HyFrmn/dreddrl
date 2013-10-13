@@ -7,7 +7,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             this.hidden = false;
             this.transparent = true;
             this.layers = {
-                'layer0' : { srcX : 14, srcY: 8},
+                //'layer0' : { srcX : 14, srcY: 8},
             };
             this.actors = {
 
@@ -82,12 +82,25 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             this.tileSize = 32;
             this.container = new CAAT.ActorContainer();
             this.container.setBounds(0,0,width*32+16,height*32+16);
+            
+            this.baseContainer = new CAAT.ActorContainer();
+            this.baseContainer.setBounds(0,0,width*32+16,height*32+16);
+
+            this.highlightContainer = new CAAT.ActorContainer();
+            this.highlightContainer.setBounds(0,0,width*32+16,height*32+16);
+
+            this.objectContainer = new CAAT.ActorContainer();
+            this.objectContainer.setBounds(0,0,width*32+16,height*32+16);
+
             this.dynamicContainer = new CAAT.ActorContainer();
             this.dynamicContainer.setBounds(0,0,width*32+16,height*32+16);
+
             this.canopy = new CAAT.ActorContainer();
             this.canopy.setBounds(0,0,width*32+16,height*32+16);
+
+
             this._tiles = [];
-            this.layers = ['layer0','layer1'];
+            this.layers = ['layerBase','layer0','layer1'];
             this.layerContainers = {};
             _.each(this.layers, function(layerName){
                 this.layerContainers[layerName] = new CAAT.ActorContainer().setBounds(0,0,width*32,height*32);;
@@ -103,10 +116,15 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             for (var i=0; i<total; i++){
                 var tile = new Tile(x, y);
                 _.each(this.layers, function(layerName){
-                    tile.actors[layerName] = new CAAT.Actor().setLocation(x*32+16,y*32+16).setFillStyle('#FF0000').setSize(30,30);
-                    tile.actors[layerName].setBackgroundImage(Renderer.SPRITESHEETS['future2']).setSpriteIndex( 15 )//.setLocation(x*32+16,y*32+16);
-                    //this.container.addChild(tile.actors[layerName]);
-                    this.layerContainers[layerName].addChild(tile.actors[layerName]);
+                    tile.actors[layerName] = new CAAT.Actor().
+                                                    setLocation(x*this.tileSize,y*this.tileSize).
+                                                    setFillStyle('#FF0000').
+                                                    setSize(30,30);
+                    if (layerName=='layerBase'){
+                        this.baseContainer.addChild(tile.actors[layerName]);
+                    } else {
+                        this.layerContainers[layerName].addChild(tile.actors[layerName]);
+                    }
                 }.bind(this));
                 this._tiles.push(tile);
                 x++;
@@ -181,23 +199,15 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             }.bind(this));
         },
         render : function(renderer){
-            this.container.stopCacheAsBitmap();
+            this.baseContainer.stopCacheAsBitmap();
+            this.objectContainer.stopCacheAsBitmap();
             _.each(this._tiles, function(t){
                 this.renderTile(t);
             }.bind(this));
-            this.container.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
-        },
-        refreshCache: function(){
-            this.container.stopCacheAsBitmap();
-            var tx = this.scene.x;
-            var ty = this.scene.y;
-            this.scene.setLocation(0,0);
-            this.container.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
-            this.scene.setLocation(tx,ty);
+            this.objectContainer.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
+            this.baseContainer.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
         },
         loadCallback : function(){
-
-            
             if (this.onready){
                 this.onready();
             }

@@ -18,7 +18,11 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
         return new Behaviour._classMap[type](entity);
     }
 
-    var IdleBehaviour = Behaviour.Add('idle', {});
+    var IdleBehaviour = Behaviour.Add('idle', {
+        onStart: function(){
+            this.entity.set('movement.v',0,0);
+        }
+    });
 
     var FollowBehaviour = Behaviour.Add('follow', {
         onStart: function(target, options){
@@ -26,6 +30,7 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
             this.target = target;
             this.dist = options.dist || 64;
             this._matchSpeed = null;
+            options.speed = 'match';
             if (options.speed == 'match'){
                 this._matchSpeed = this.entity.get('movement.speed');
                 this.entity.set('movement.speed', target.get('movement.speed'))
@@ -92,7 +97,7 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
                 this.behaviour.onEnd();
             }
             this.behaviour = behaviour;
-            console.log(arg0, arg1, arg2)
+            //console.log(arg0, arg1, arg2)
             this.behaviour.onStart(arg0, arg1, arg2);
         },
         tick: function(delta){

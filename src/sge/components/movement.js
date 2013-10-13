@@ -2,7 +2,7 @@ define(['sge/component'], function(Component){
     var MovementComponent = Component.extend({
         init: function(entity, data){
             this._super(entity, data);
-            this.data.speed = 80;
+            this.data.speed = data.speed || 96;
             this.data.vx=0;
             this.data.vy=0;
             this.data.strafe=false;
@@ -22,8 +22,8 @@ define(['sge/component'], function(Component){
             this.entity.set('xform.vx', vx);
             this.entity.set('xform.vy', vy);
             if ((Math.abs(vx) > 0) || (Math.abs(vy) > 0)){
+                this.entity.set('anim.play', true)
                 if (!this.get('strafe')){
-                    this.entity.set('anim.play', true)
                     if (Math.abs(vx) > Math.abs(vy)){
                         if (vx > 0){
                             this.entity.set('anim.anim', 'walk_right');

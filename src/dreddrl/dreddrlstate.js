@@ -257,9 +257,9 @@ define([
                 //Load Game Plugins
 
                 //Setup Interaction System
-                this._interaction_actor = new CAAT.Actor().setFillStyle('green').setStrokeStyle('black').setSize(32,32).setVisible(false);
-                this.map.dynamicContainer.addChild(this._interaction_actor);
-                this.map.dynamicContainer.setZOrder(this._interaction_actor, 0);
+                this._interaction_actor = new CAAT.Actor().setFillStyle('lime').setStrokeStyle('black').setSize(32,32).setVisible(false);
+                this.map.highlightContainer.addChild(this._interaction_actor);
+                this.map.highlightContainer.setZOrder(this._interaction_actor, 0);
                 
 
                 //Add PC
@@ -289,6 +289,8 @@ define([
                 }.bind(this), 1000);
                 
                 //Add Render Layers
+                this._gamePlayContainer.addChild(this.map.baseContainer);
+                this._gamePlayContainer.addChild(this.map.highlightContainer);
                 this._gamePlayContainer.addChild(this.map.container);
                 this._gamePlayContainer.addChild(this.map.dynamicContainer);
                 this._gamePlayContainer.addChild(this._entityContainer);
@@ -524,7 +526,9 @@ define([
                         continue;
                     }
                     if (entity.get('interact.targets')!==null){
-                        coords = entity.get('interact.targets');
+                        coords = entity.get('interact.targets').map(function(target){
+                            return [entity.get('xform.tx')+target[0], entity.get('xform.ty')+target[1]]
+                        });
                     } else {
                         coords = [[entity.get('xform.tx'), entity.get('xform.ty')]];
                     }
@@ -545,17 +549,15 @@ define([
                 if (closest!=this._closest){
                     if (this._closest){
                         this._closest.fireEvent('focus.lose');
-                        this._interaction_actor.setVisible(false);
                     }
                     if (closest){
                         closest.fireEvent('focus.gain', ccord);
-                        this._interaction_actor.setLocation(ccord[0],ccord[1]);
-                        this._interaction_actor.setVisible(true);
                     }
                     this._closest = closest;
                 }
                 if (closest!=null){
-                    this._interaction_actor.setLocation(ccord[0],ccord[1]);
+                    
+                    //this._interaction_actor.setLocation(ccord[0]+closest.get('xform.offsetX'),ccord[1]+closest.get('xform.offsetY'));
                 }
             },
 
@@ -585,7 +587,7 @@ define([
                 if (!this.game.data._intro){
                     this.game.data._intro = true;
                     //this.startDialog(INTRO);
-                    this.startCutscene();
+                    //this.startCutscene();
                 }
                 
                 //Update Interaction System
@@ -620,7 +622,7 @@ define([
                 //Track Player
                 var tx = this.pc.get('xform.tx');
                 var ty = this.pc.get('xform.ty');
-                this._gamePlayContainer.setLocation(-tx+(this.game.renderer.width/2),-ty+(this.game.renderer.height/2));
+                this.setCameraLocation(tx, ty);
 
                 //Update Log
                 this._updateUI();
@@ -640,13 +642,21 @@ define([
                 if (this._debugTick){ var t=Date.now(); console.log('Render Time:', t-debugTime); debugTime=t};
                 //if (this._debugTick){ var t=Date.now(); console.log('Tick Time:', t-debugTime); debugTime=t};
             },
+            setCameraLocation: function(tx, ty){
+                this._gamePlayContainer.setLocation(-tx+(this.game.renderer.width/2),-ty+(this.game.renderer.height/2));
+            },
+            getCameraLocation: function(){
+                camX = -this._gamePlayContainer.x+(this.game.renderer.width/2);
+                camY = -this._gamePlayContainer.y+(this.game.renderer.height/2);
+                return [camX,camY];
+            },
             
             _paused_tick : function(delta){
 
                 //Track Player
                 var tx = this.pc.get('xform.tx');
                 var ty = this.pc.get('xform.ty');
-                this._gamePlayContainer.setLocation(-tx+(this.game.renderer.width/2),-ty+(this.game.renderer.height/2));
+                //this._gamePlayContainer.setLocation(-tx+(this.game.renderer.width/2),-ty+(this.game.renderer.height/2));
 
 
                 //this.game.renderer.track(this.pc);

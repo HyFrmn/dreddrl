@@ -46,13 +46,14 @@ define(['sge'], function(sge){
         },
         unlock: function(){
             this.entity.fireEvent('state.log','Unlocking the door.');
+            this.entity.fireEvent('unlock');
             this.set('locked', false);
         },
         createTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32);
             var ty = Math.floor(this.entity.get('xform.ty') / 32);
-            this.tileA = new CAAT.Actor().setLocation(tx*32+16,ty*32+16).setFillStyle('#FF0000').setSize(30,30);
-            this.tileB = new CAAT.Actor().setLocation(tx*32+16,(ty-1)*32+16).setFillStyle('#FF0000').setSize(30,30);
+            this.tileA = new CAAT.Actor().setLocation(tx*32,ty*32);
+            this.tileB = new CAAT.Actor().setLocation(tx*32,(ty-1)*32);
             var frame = DOORCLOSEDTILE1.srcY * 8 + DOORCLOSEDTILE1.srcX;
             this.tileB.setBackgroundImage(sge.Renderer.SPRITESHEETS['future2']).setSpriteIndex(frame);
             var frame = DOORCLOSEDTILE2.srcY * 8 + DOORCLOSEDTILE2.srcX;

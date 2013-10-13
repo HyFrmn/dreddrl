@@ -48,7 +48,7 @@ define([
 
 		var FACTORYDATA = {
             chara : function(){return{
-                xform : { container: '_entityContainer'},
+                xform : { container: '_entityContainer', offsetX: -16, offsetY:-16},
                 sprite : {
                     width: 32,
                     offsetY: -8,
@@ -180,7 +180,7 @@ define([
             }},
             door : function(){return {
                 xform: { container: '_entityContainer'},
-                highlight: {radius: 48},
+                highlight: {radius: 24},
                 interact : {},
                 door: {}
             }},

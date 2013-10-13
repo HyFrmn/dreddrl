@@ -39,7 +39,7 @@ define(['sge','../config'], function(sge, config){
             if (this.input.isPressed('left')){
                 xaxis--;
             }
-            if (this.input.isPressed('z')){
+            if (this.input.isPressed('Z')){
                 strafe=true;
             }
             var vx = vy = 0

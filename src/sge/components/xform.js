@@ -4,6 +4,8 @@ define(['sge/component'], function(Component){
 			this._super(entity, data);
 			this.data.tx = data.tx || 0;
 			this.data.ty = data.ty || 0;
+			this.data.offsetX = data.offsetX || 0;
+			this.data.offsetY = data.offsetY || 0;
 			this.data.vx =0;
 			if (data.vx !== undefined){
 				this.data.vx = data.vx;
@@ -59,7 +61,7 @@ define(['sge/component'], function(Component){
             this.scene.addChild(this.container);
             var tx = this.entity.get('xform.tx');
             var ty = this.entity.get('xform.ty');
-			this.container.setLocation(tx, ty);
+			this.container.setLocation(tx + this.get('offsetX'), ty + this.get('offsetY'));
         },
         deregister: function(state){
             this.scene.removeChild(this.container);
@@ -68,7 +70,7 @@ define(['sge/component'], function(Component){
 		render: function(renderer, layer){
 			var tx = this.entity.get('xform.tx');
             var ty = this.entity.get('xform.ty');
-			this.container.setLocation(tx, ty);
+			this.container.setLocation(tx + this.get('offsetX'), ty + this.get('offsetY'));
 		}
 	});
 	Component.register('xform', XFormComponent);
