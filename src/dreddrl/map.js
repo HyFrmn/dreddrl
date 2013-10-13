@@ -199,12 +199,12 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             }.bind(this));
         },
         render : function(renderer){
-            this.baseContainer.stopCacheAsBitmap();
+            this.container.stopCacheAsBitmap();
             this.objectContainer.stopCacheAsBitmap();
             _.each(this._tiles, function(t){
                 this.renderTile(t);
             }.bind(this));
-            this.objectContainer.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
+            this.container.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
             this.baseContainer.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
         },
         loadCallback : function(){
