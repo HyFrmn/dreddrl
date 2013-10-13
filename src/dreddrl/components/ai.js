@@ -19,8 +19,26 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
     }
 
     var IdleBehaviour = Behaviour.Add('idle', {
-        onStart: function(){
+        onStart: function(region){
             this.entity.set('movement.v',0,0);
+            this._timeout=0;
+            this._region = region;       
+        }
+        tick: function(){
+            if (this._timeout<=0){
+                this._timeout = 30 + (Math.random()*30);
+                vx = 32 * ((Math.random() * 2) - 1);
+                vy = 32 * ((Math.random() * 2) - 1);
+                if (this._region){
+                    while (!this._region.test(tx+vx,ty+vy)){
+                        vx = 32 * ((Math.random() * 2) - 1);
+                        vy = 32 * ((Math.random() * 2) - 1);
+                    }
+                }
+                this.entity.set('movement.v', vx, vy);
+            } else {
+                this._timeout--;
+            }
         }
     });
 
