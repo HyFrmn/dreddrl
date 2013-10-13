@@ -15,7 +15,7 @@ define(['sge', '../config', '../weapon'],function(sge, config, Weapon){
 
 			//DRAW CODE??? 
 			this.scene = this.state.scene;
-            this.container = new CAAT.ActorContainer().setLocation(12,12);
+            this.container = new CAAT.ActorContainer().setLocation(0,0);
             var sizeX = 4;
             var sizeY = 24;
             if (Math.abs(this.entity.get('xform.vx')) > Math.abs(this.entity.get('xform.vy'))){
