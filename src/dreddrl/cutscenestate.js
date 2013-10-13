@@ -12,6 +12,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             //A list of active entities.
             this._activeEntities = [];
 
+            //A list of callback functions to run on tick.
             this._tickCallbacks = [];
 
             //Setup choices
@@ -22,6 +23,8 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
 
             //Dialog Callback
             this._dialogCallback = null;
+
+            this._awaitInteraction = false;
 
             //End Cutscene
             this.endScene = function(){
@@ -38,8 +41,13 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             //this.container.addChild(new CAAT.Actor().setSize(width,height).setFillStyle('black').setAlpha(0.5));
             
             //Instruction to move on.
-            var instruct = new CAAT.TextActor().setText('Press Space to Continue').setFont('16px sans-serif').setTextAlign('right').setLocation(width-32,height-32);
-            this.container.addChild(instruct);
+            this.instructions = new CAAT.TextActor().
+                                        setText('Press Space to Continue').
+                                        setFont('16px sans-serif').
+                                        setTextAlign('right').
+                                        setLocation(width-32,height-32).
+                                        setVisible(false);
+            this.container.addChild(this.instructions);
             this.container.addChild(this.dialogContainer);
             
 
@@ -50,7 +58,14 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this.input.addListener('keydown:up', this.up.bind(this));
             this.input.addListener('keydown:down', this.down.bind(this));
         },
-        
+        awaitInteraction: function(){
+            this._awaitInteraction = true;
+            this.instructions.setVisible(true);
+        },
+        completeInteraction: function(){
+            this._awaitInteraction = false;
+            this.instructions.setVisible(false);
+        },
         _testScene : function(){
             var pc = this.game._states['game'].pc;
             
@@ -87,9 +102,8 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this.scene.addChild(this.container);
 
             this._super();
-
-            //this._testScene();
         },
+
         endDialog : function(){
             this._clearScreen();
             if (this._dialogCallback){
@@ -99,6 +113,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
                 this.endState();
             }
         },
+
         endState : function(){
             var state = this.game._states['game'];
 
@@ -111,50 +126,67 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this.scene = null;
             this._super();
         },
+        
         up: function(){
-            if (this._choosing){
-                this._choiceIndex-=1;
-                if (this._choiceIndex<0){
-                    this._choiceIndex = this._choices.length-1;
+            if (this._awaitInteraction){
+                if (this._choosing){
+                    this._choiceIndex-=1;
+                    if (this._choiceIndex<0){
+                        this._choiceIndex = this._choices.length-1;
+                    }
+                    this.displayChoices();
                 }
-                this.displayChoices();
             }
         },
+
         down: function(){
-            if (this._choosing){
-                this._choiceIndex+=1;
-                if (this._choiceIndex>=this._choices.length){
-                    this._choiceIndex = 0;
+            if (this._awaitInteraction){
+                if (this._choosing){
+                    this._choiceIndex+=1;
+                    if (this._choiceIndex>=this._choices.length){
+                        this._choiceIndex = 0;
+                    }
+                    this.displayChoices();
                 }
-                this.displayChoices();
             }
         },
+
         interact: function(){
-            if (this._choosing){
-                this._choosing = false;
-                var choice = this._currentNode.choices[this._choiceIndex];
-                this.parseNode(choice, true);
-                this._choiceIndex = 0;
-                this.interact();
-            } else {
-                if (this._dialogList.length<=0){
-                    var nodeList = this.nextNode();
-                    if (nodeList.length){
-                        if (nodeList.length==1){
-                            this.parseNode(nodeList[0]);
+            if (this._awaitInteraction){
+                console.log('Interact!!')
+                if (this._choosing){
+                    //Making a choice
+                    this._choosing = false;
+                    var choice = this._currentNode.choices[this._choiceIndex];
+                    this.parseNode(choice, true);
+                    this._choiceIndex = 0;
+                    this.interact();
+                } else {
+                    if (this._dialogList.length<=0){
+                        //No more dialog for this node.
+                        var nodeList = this.nextNode();
+                        if (nodeList.length){
+                            if (nodeList.length==1){
+                                //Automatically move to next node.
+                                this.parseNode(nodeList[0]);
+                            } else {
+                                this._choices = nodeList
+                                this.displayChoices();
+                            }
                         } else {
-                            this._choices = nodeList
-                            this.displayChoices();
+                            //Last dialog node. End dialog.
+                            this.completeInteraction();
+                            console.log('Dialog Over');
+                            this.endDialog();
+                            return
                         }
                     } else {
-                        this.endDialog();
-                        return
+                        this.setDialogText(this._dialogList.shift());
                     }
-                } else {
-                    this.setDialogText(this._dialogList.shift());
                 }
             }
         },
+
         parseNode: function(node, skip){
             skip = skip===undefined ? false : skip;
             this._currentNode = node;
@@ -229,9 +261,9 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
                 actor.setText(choice);
                 this.dialogContainer.addChild(actor);
             };
+            this.awaitInteraction();
         },
         setDialogText: function(dialog){
-            console.log('Update Text:', dialog)
             this.dialog = dialog;
             this._clearScreen();
             var chunks = dialog.split(' ');
@@ -261,6 +293,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this.dialogContainer.addChild(actor);
             this.dialogContainer.setLocation(16, this.game.renderer.height - (y+96));
             this.dialogContainer.cacheAsBitmap();
+            this.awaitInteraction();
         }
     });
 

@@ -1,16 +1,14 @@
 define(
 	[
 		'./dreddrlstate',
-		'./dialogstate',
 		'./pausestate',
 		'./mainmenustate',
 		'./cutscenestate',
 		'./config'
 	],
-function(DreddRLState, DialogState, PauseState, MainMenuState, CutsceneState, config){
+function(DreddRLState, PauseState, MainMenuState, CutsceneState, config){
 	return {
 		DreddRLState : DreddRLState,
-		DialogState : DialogState,
 		PauseState : PauseState,
 		MainMenuState : MainMenuState,
 		CutsceneState : CutsceneState,
@@ -26,7 +24,6 @@ function(DreddRLState, DialogState, PauseState, MainMenuState, CutsceneState, co
 	        });
 		    
 		    var state = game.setGameState(DreddRLState);
-		    game._states['dialog'] = new DialogState(game, 'Dialog');
 		    
 		    //Should create function when this works.
 		    game._states['cutscene'] = new CutsceneState(game, 'Cutscene');

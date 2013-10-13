@@ -19,25 +19,40 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
     }
 
     var IdleBehaviour = Behaviour.Add('idle', {
-        onStart: function(region){
+        onStart: function(){
             this.entity.set('movement.v',0,0);
-            this._timeout=0;
-            this._region = region;       
-        }
+            this._timeout=0;       
+        },
         tick: function(){
+            var region = this.entity.get('ai.region');
             if (this._timeout<=0){
                 this._timeout = 30 + (Math.random()*30);
-                vx = 32 * ((Math.random() * 2) - 1);
-                vy = 32 * ((Math.random() * 2) - 1);
-                if (this._region){
-                    while (!this._region.test(tx+vx,ty+vy)){
-                        vx = 32 * ((Math.random() * 2) - 1);
-                        vy = 32 * ((Math.random() * 2) - 1);
+                var vx = 0;
+                var vy = 0;
+                if (Math.random()>0.5){    
+                    vx = ((Math.random() * 2) - 1);
+                    vy = ((Math.random() * 2) - 1);
+                    if (region){
+                        var tx = this.entity.get('xform.tx');
+                        var ty = this.entity.get('xform.ty');
+                        if (region.test(tx,ty)){ 
+                            while (!region.test(tx+vx*32,ty+vy*32)){
+                                vx = ((Math.random() * 2) - 1);
+                                vy = ((Math.random() * 2) - 1);
+                            }
+                        }
                     }
                 }
                 this.entity.set('movement.v', vx, vy);
             } else {
                 this._timeout--;
+                if (region){
+                    var tx = this.entity.get('xform.tx');
+                    var ty = this.entity.get('xform.ty');
+                    if (!region.test(tx,ty)){ 
+                        this.entity.set('movement.v', -this.entity.get('movement.vx'),-this.entity.get('movement.vy'))
+                    }
+                }
             }
         }
     });
@@ -107,6 +122,7 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
         init: function(entity, data){
             this._super(entity, data);
             this.behaviour = null;
+            this.data.region = data.region || null;
             this.set('behaviour', 'idle');
         },
         _set_behaviour : function(value, arg0, arg1, arg2){

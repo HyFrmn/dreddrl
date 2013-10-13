@@ -430,6 +430,9 @@ function(sge, Factory, Map, Quest){
                     xform: {
                         tx: tx,
                         ty: ty
+                    },
+                    ai: {
+                        region: market
                     }
                 })
                 citizen.tags.push('shopper');
