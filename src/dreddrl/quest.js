@@ -6,15 +6,17 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 
 	var when = sge.vendor.when;
 
+
+	var eventId = 0;
 	var whenEntityEvent = function(entity, eventName){
 		var func = function(){
+			
 			var deferred = when.defer();
 			var listener = function(){
-				entity.removeListener(eventName, this);
+				entity.removeListener(eventName, listener);
 				deferred.resolve();
 			}
 			entity.addListener(eventName, listener);
-			console.log('When!', entity, eventName)
 			return deferred.promise;
 		}
 		return func;
@@ -102,8 +104,12 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 
     var Cutscene = sge.Class.extend({
         init: function(state){
+        	var id = eventId;
+			eventId++;
+			this.id=id;
         	this.deferred = when.defer();
             this.state = state;
+            this._playing = false;
             this.gameState = state.game._states.game;
             this._queue = [];
             this.actions = {
@@ -127,19 +133,34 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
         },
         play: function(){
         	this.state.game.fsm.startCutscene();
+        	this._playing = true;
             this.next();
             return this.deferred.promise;
         },
-        end: function(){
+        end: function(result){
+        	this._playing = false;
+        	if (result){
+        		this.result(result);
+        	}
             this.state.endScene();
-            this.deferred.resolve();
+            this.deferred.resolve(this._result);
+        },
+        result: function(result){
+        	this._result = result
         },
         startDialog : function(node, ctx){
+        	ctx = ctx || {};
+        	ctx['cutscene'] = this;
+        	console.log(ctx);
             this.state.setDialog(node, ctx, this.completeAction.bind(this));
         },
         next: function(){
+        	console.log('Q:', this.id, this._queue);
             if (this._queue.length<=0){
                 this.end();
+            }
+            if (this._playing == false){
+            	return
             }
             var action = this._queue.shift();
             var args = action.args;
@@ -149,11 +170,12 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
             var callback = this.actions[lib][func];
             callback.apply(this, args)
         },
-        completeAction: function(){
+        completeAction: function(data){
+        	console.log('Complete', this.id)
             if (this._queue.length>0){
-                this.next();
+                this.next(data);
             } else {
-                this.end();
+                this.end(data);
             }
         },
         addAction: function(){
@@ -386,15 +408,28 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 			//Get citizen entity, initialize for interaction.
 			var citizen = megablock.state.getEntitiesWithTag('shopper')[0];
 			citizen.addComponent('interact',{}).register(megablock.state);
-			citizen.set('interact.priority', true);
+			
 			
 
 			var introCutscene = function(){
+				console.log('Intro')
 				var pc     = megablock.state.pc;
 				var cutscene = new Cutscene(megablock.state.game._states['cutscene']);
 				cutscene.addAction('entity.dialog',  {
                         topic: '',
-                        dialog: [{entity:'npc', text: "Judge, can you escort me home. I just went shopping and am afraid I will be robbed.\ (Use the arrow keys to move around.)" }],
+                        dialog: [{
+                        			entity:'npc',
+                        			text: "Judge, can you escort me home. I just went shopping and am afraid I will be robbed.\ (Use the arrow keys to move around.)",
+                        }],
+                        choices: [{
+            				topic: "I'm here to protect and server. Where do you live?",
+            				dialog: {entity:'npc', text: "Over there."},
+            				postAction: "cutscene.result(true)"
+            			},{
+            				topic: "Sorry citizen. I have bigger fish to fry.",
+            				dialog: {entity: 'npc', text: "Shit. Well I need to get home quckly."},
+            				postAction: "cutscene.end(false)"
+            			}]			
                 });
                 citizen.set('interact.priority', false);
                 cutscene.addAction('camera.pan', room.doors[0]);
@@ -405,9 +440,25 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 			}
 
 
-			var startMission = function(){
-				var pc     = megablock.state.pc;
-				citizen.set('ai.behaviour', 'follow', pc);
+			var startMission = function(choice){
+				var deferred = new when.defer();
+				console.log('Choice:', choice, Boolean(choice));
+				if (choice){
+					var pc     = megablock.state.pc;
+					citizen.set('ai.behaviour', 'follow', pc);
+					deferred.resolve()
+				} else {
+					//Recreate interaction?
+					console.log('Reset');
+					
+					setTimeout(function(){
+						console.log('Create Mission')
+						createMission();
+					}, 1200);
+					
+					deferred.reject()
+				}
+				return deferred.promise;
 			}
 
 			var completeMission = function(){
@@ -425,12 +476,15 @@ define(['sge', './expr', './item', './config'], function(sge, Expr, Item, config
 			}
 
 			//First interaction.
-			var interaction = whenEntityEvent(citizen, 'interact')().
-								then(introCutscene).
-								then(startMission).
-								then(whenEntityEvent(room.doors[0],'unlock')).
-								then(completeMission);
-			
+			var createMission = function(){
+				citizen.set('interact.priority', true);
+				var interaction = whenEntityEvent(citizen, 'interact')().
+									then(introCutscene).
+									then(startMission).
+									then(whenEntityEvent(room.doors[0],'unlock')).
+									then(completeMission);
+			}
+			createMission();
 			megablock.populateRooms();
 		}
 	}

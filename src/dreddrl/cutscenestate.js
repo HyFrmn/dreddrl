@@ -28,7 +28,6 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
 
             //End Cutscene
             this.endScene = function(){
-                console.log('End Scene')
                 this.game.fsm.endCutscene();
             }.bind(this);
 
@@ -57,6 +56,12 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this.input.addListener('keydown:' + config.BButton, this.interact);
             this.input.addListener('keydown:up', this.up.bind(this));
             this.input.addListener('keydown:down', this.down.bind(this));
+        },
+        reset: function(){
+            this._choiceIndex = -1;
+            this.completeInteraction();
+            this._choosing = false
+            this._dialogList = [];
         },
         awaitInteraction: function(){
             this._awaitInteraction = true;
@@ -107,7 +112,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         endDialog : function(){
             this._clearScreen();
             if (this._dialogCallback){
-                this._dialogCallback();
+                this._dialogCallback(this._choiceIndex);
                 this._dialogCallback = null;
             } else {
                 this.endState();
@@ -122,7 +127,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
 
             //Remove Custom UI Container.
             this.scene.removeChild(this.container);
-
+            this.reset();
             this.scene = null;
             this._super();
         },
@@ -153,13 +158,11 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
 
         interact: function(){
             if (this._awaitInteraction){
-                console.log('Interact!!')
                 if (this._choosing){
                     //Making a choice
                     this._choosing = false;
                     var choice = this._currentNode.choices[this._choiceIndex];
                     this.parseNode(choice, true);
-                    this._choiceIndex = 0;
                     this.interact();
                 } else {
                     if (this._dialogList.length<=0){
@@ -170,13 +173,13 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
                                 //Automatically move to next node.
                                 this.parseNode(nodeList[0]);
                             } else {
-                                this._choices = nodeList
+                                this._choices = nodeList;
+                                this._choiceIndex = 0;
                                 this.displayChoices();
                             }
                         } else {
                             //Last dialog node. End dialog.
                             this.completeInteraction();
-                            console.log('Dialog Over');
                             this.endDialog();
                             return
                         }
