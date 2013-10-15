@@ -56,12 +56,15 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
             var dropDir = null;
             var tileX = Math.floor(this.entity.get('xform.tx')/32)
             var tileY = Math.floor(this.entity.get('xform.ty')/32)
-            var allDirs = sge.random.shuffle([[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,-1],[-1,1]]);
-            while (allDirs.length){
-                var dir = allDirs.shift()
-                var tile = this.state.map.getTile(tileX + dir[0], tileY + dir[1]);
+            var i=5;
+            while (i--){
+                var theta = Math.random() * 2 * Math.PI;
+                var dir = [Math.sin(theta),Math.cos(theta)];
+                dropX = this.entity.get('xform.tx')+(32*dir[0]);
+                dropY = this.entity.get('xform.ty')+(32*dir[1]);
+                var tile = this.state.map.getTile(Math.floor(dropX/32), Math.floor(dropY/32));
                 if (tile.passable){
-                    dropDir = [32 * (tileX + dir[0] + 0.5), 32 * (tileY + dir[1] + 0.5)];
+                    dropDir = [dropX, dropY];
                     break;
                 }
             }

@@ -49,8 +49,14 @@ define(['sge', '../actions/followpath'], function(sge, FollowPathAction){
                 if (region){
                     var tx = this.entity.get('xform.tx');
                     var ty = this.entity.get('xform.ty');
-                    if (!region.test(tx,ty)){ 
-                        this.entity.set('movement.v', -this.entity.get('movement.vx'),-this.entity.get('movement.vy'))
+                    if (!region.test(tx,ty)){
+                        var rx = region.get('xform.tx');
+                        var ry = region.get('xform.ty');
+                        var dx = tx - rx;
+                        var dy = ty - ry;
+                        var dist = Math.sqrt(dx*dx+dy*dy);
+
+                        this.entity.set('movement.v', -dx/dist,-dy/dist)
                     }
                 }
             }

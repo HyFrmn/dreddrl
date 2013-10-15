@@ -172,7 +172,6 @@ define([
                 sprite : {
                     src : 'assets/sprites/scifi_icons_1.png',
                     width: 24,
-                    offsetY: 0,
                     scale: 2,
                     frame: 1
                 },
