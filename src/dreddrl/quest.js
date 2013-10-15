@@ -13,10 +13,27 @@ define(['sge', './cutscene', './expr', './item', './config'], function(sge, Cuts
 			
 			var deferred = when.defer();
 			var listener = function(){
+
 				entity.removeListener(eventName, listener);
 				deferred.resolve();
 			}
 			entity.addListener(eventName, listener);
+			return deferred.promise;
+		}
+		return func;
+	}
+
+	var whenRegionEnter = function(entity, region){
+		var func = function(){
+			var deferred = when.defer();
+			var listener = function(r){
+				if (r==region){
+					entity.removeListener('region.enter', listener);
+					deferred.resolve();
+				}
+			}
+			entity.addListener('region.enter', listener);
+			
 			return deferred.promise;
 		}
 		return func;

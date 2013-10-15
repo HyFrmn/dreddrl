@@ -63,7 +63,35 @@ function(sge, Factory, Map, Quest){
             if (attr=='xform.ty'){
                 return this.top + (this.bottom-this.top)/2;
             }
-        }
+        },
+        getTiles : function(){
+            return this.level.map.getTiles(boxcoords(Math.floor(this.left/32), Math.floor(this.top/32), Math.floor((this.right-this.left)/32), Math.floor((this.bottom-this.top)/32)));
+        },
+        spawn : function(name, data){
+            var tx, ty, entity;
+            var tile = sge.random.item(this.getTiles());
+            if (tile){
+                while (tile.data.spawn!==undefined||tile.passable!=true){
+                    tile = sge.random.item(this.getTiles());
+                };
+                tx = tile.x * 32 + 16;
+                ty = tile.y * 32 + 16;
+                tile.spawn = true;
+            }
+            if (typeof name==='string'){
+
+                data = data || {};
+                data['xform'] = {tx: tx, ty: ty};
+                entity = this.level.addEntity(name, data);
+            } else {
+                entity = name;
+                entity.set('xform.t', tx, ty);
+                if (!entity.id){
+                    this.level.state.addEntity(entity);
+                }
+            }
+            return entity;
+        },
     })
 
     var MegaBlockRoom = MegaBlockRegion.extend({
@@ -204,33 +232,8 @@ function(sge, Factory, Map, Quest){
             }});
             return door;
         },
-        getTiles : function(){
-            return this.level.map.getTiles(boxcoords(this.cx - (this.width-1)/2,this.cy - (this.height-1)/2, this.width-1, this.height-1));
-        },
-        spawn : function(name, data){
-            var tx, ty, entity;
-            var tile = sge.random.item(this.getTiles());
-            if (tile){
-                while (tile.data.spawn!==undefined){
-                    tile = sge.random.item(this.getTiles());
-                };
-                tx = tile.x * 32 + 16;
-                ty = tile.y * 32 + 16;
-                tile.spawn = true;
-            }
-            if (typeof name==='string'){
-
-                data = data || {};
-                data['xform'] = {tx: tx, ty: ty};
-                entity = this.level.addEntity(name, data);
-            } else {
-                entity = name;
-                entity.set('xform.t', tx, ty);
-                if (!entity.id){
-                    this.level.state.addEntity(entity);
-                }
-            }
-        },
+        
+        
         update: function(){
             if (this.doors.length){
                 if (this.doors[0].get('door.open')){
@@ -402,6 +405,19 @@ function(sge, Factory, Map, Quest){
                 }
             }
 
+            for (var y=0;y<this.map.height-2;y++){
+                var tile = this.map.getTile(0, y);
+                tile.layers = {
+                    'layer0' : CEILTILE
+                }
+                tile.passable = false;
+                tile = this.map.getTile(this.map.width-1, y);
+                tile.layers = {
+                    'layer0' : CEILTILE
+                }
+                tile.passable = false;
+            }
+
             _.each(this.map._tiles, function(t){
                 if ((t.x>=Math.floor(marketLeft/32)&&t.x<(marketRight/32))&&(t.y>=Math.floor(marketTop/32)&&t.y<(marketBottom/32))) {
                     t.layers = {
@@ -459,31 +475,16 @@ function(sge, Factory, Map, Quest){
                     }
                 });
             }
-
+            
+        },
+        setup: function(){
+            this.market = market;
             Quest.Load(this);
-
-            for (var y=0;y<this.map.height-2;y++){
-                var tile = this.map.getTile(0, y);
-                tile.layers = {
-                    'layer0' : CEILTILE
-                }
-                tile.passable = false;
-                tile = this.map.getTile(this.map.width-1, y);
-                tile.layers = {
-                    'layer0' : CEILTILE
-                }
-                tile.passable = false;
-            }
+            this.populateRooms();
             //*/
             
 
             this.map.setup(this.state._entityContainer);
-            //this.updateState();
-            
-             
-            
-            
-
             _.map(this.rooms, function(r){r.update()});
         },
         _getRandomItemType : function(){

@@ -157,7 +157,6 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         },
 
         interact: function(){
-            console.log('Interact!', this._awaitInteraction);
             if (this._awaitInteraction){
                 if (this._choosing){
                     //Making a choice
@@ -165,13 +164,11 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
                     var choice = this._currentNode.choices[this._choiceIndex];
                     this.parseNode(choice, true);
                     this._awaitInteraction = true;
-                    console.log('Choose')
                     this.interact();
                 } else {
                     if (this._dialogList.length<=0){
                         //No more dialog for this node.
                         var nodeList = this.nextNode();
-                        console.log('Next')
                         if (nodeList.length>0){
                             if (nodeList.length==1){
                                 //Automatically move to next node.

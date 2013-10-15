@@ -252,9 +252,7 @@ define([
                 this._gamePlayContainer.addChild(this.map.dynamicContainer);
                 this._gamePlayContainer.addChild(this._entityContainer);
                 this._gamePlayContainer.addChild(this.map.canopy);
-
-
-
+                this.level.setup();
                 this.map.render();
                 this._updateUI();
                 this.log('You are the Law.');
@@ -267,20 +265,6 @@ define([
                 this.removeEntity(this.pc);
                 this.game._states['game'] = new this.game._gameState(this.game, 'Game');
                 this.game._states['game'].loader.start();
-            },
-
-            progressListener : function(e){
-                var subpath = e.resource.getName().split('/');
-                var name = subpath[subpath.length-1].split('.')[0];
-                var spriteSize = 32;
-                if (name.match(/icons/)){
-                    spriteSize = 24;
-                }
-                //console.log(name, e.resource.img.height / spriteSize, e.resource.img.width / spriteSize)
-                sge.Renderer.SPRITESHEETS[name] = new CAAT.SpriteImage().initialize(e.resource.img, e.resource.img.height / spriteSize, e.resource.img.width / spriteSize);
-                if (e.completedCount == e.totalCount){
-                    this.initGame();
-                }
             },
 
             addEntity: function(entity){
@@ -479,6 +463,9 @@ define([
                     if (entity.get('interact')==undefined){
                         continue;
                     }
+                    if (!entity.get('interact.enabled')){
+                        continue
+                    }
                     if (entity==this.pc){
                         continue;
                     }
@@ -623,12 +610,6 @@ define([
                 }.bind(this))
             },
     	})
-
-        DreddRLState.init = function(){
-            console.trace();
-            Item.bootstrap();
-            Weapon.bootstrap();
-        }
 
     	return DreddRLState;
     }

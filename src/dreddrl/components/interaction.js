@@ -9,11 +9,19 @@ define(['sge', '../config'], function(sge, config){
             this.data.height = data.height || 32;
             this.data.dist = data.dist || 96;
             this.data.priority = data.priority || false;
+            this.data.enabled = true;
             this.active = false;
             this.interact = this.interact.bind(this);
             this.interactSecondary = this.interactSecondary.bind(this);
             this.entity.addListener('focus.gain', this.activate.bind(this));
             this.entity.addListener('focus.lose', this.deactivate.bind(this));
+        },
+        _set_enabled : function(value){
+            console.log('Value:', value);
+            this.data.enabled = this.__set_value('enabled', Boolean(value));
+            if (this.active){
+                this.entity.fireEvent('focus.lose');
+            }
         },
         _set_priority : function(priority){
             this.data.priority = this.__set_value('priority', Boolean(priority));
@@ -33,16 +41,18 @@ define(['sge', '../config'], function(sge, config){
             }
         },
         activate: function(coord){
-            this.activeCoord = coord;
-            this.active = true;
-            this.state.input.addListener('keydown:' + config.BButton, this.interact);
-            this.state.input.addListener('keydown:' + config.YButton, this.interactSecondary);
+            if (this.get('enabled')){
+                this.activeCoord = coord;
+                this.active = true;
+                this.state.input.addListener('keydown:' + config.BButton, this.interact);
+                this.state.input.addListener('keydown:' + config.YButton, this.interactSecondary);
+            }
         },
         deactivate: function(){
-            this.active = false;
-            this.state.input.removeListener('keydown:' + config.BButton, this.interact);
-            this.state.input.removeListener('keydown:' + config.YButton, this.interactSecondary);
-
+                this.active = false;
+                this.state.input.removeListener('keydown:' + config.BButton, this.interact);
+                this.state.input.removeListener('keydown:' + config.YButton, this.interactSecondary);
+            
         },
         interact: function(){
             var evt = 'interact';

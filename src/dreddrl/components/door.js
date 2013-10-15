@@ -19,8 +19,10 @@ define(['sge'], function(sge){
         interact: function(e){
             if (this.get('locked')){
                 this.entity.fireEvent('state.log','Door is locked');
+                this.entity.fireEvent('close');
             } else {
                 this.set('open', !this.get('open'));
+                this.entity.fireEvent('open');
                 this.room.update();
                 this.updateTiles();
             }
@@ -98,6 +100,15 @@ define(['sge'], function(sge){
             this.updateMapTiles();
             this.createTiles();
             this.updateTiles();
+
+        },
+        _set_locked: function(value, arg0, arg1, arg2){
+            value = this.__set_value('locked', value, arg0);
+            if (Boolean(value)){
+                this.entity.set('highlight.focusColor', 'red');
+            } else {
+                this.entity.set('highlight.focusColor', 'lime');
+            }
         },
         unregister: function(){
             this.state = null;

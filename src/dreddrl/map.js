@@ -139,7 +139,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             this.scene = scene;
             //this.render();
         },
-        makeGraph : function(){
+        makeGraph : function(obstacles){
             var graph = [];
             for (x=0;x<this.width;x++){
                 var row = []
@@ -148,13 +148,23 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
                 }
                 graph.push(row);
             }
+            if (obstacles){
+                obstacles.forEach(function(obj){
+                    var tileX = Math.floor(obj.get('xform.tx')/32);
+                    var tileY = Math.floor(obj.get('xform.ty')/32);
+                    graph[tileY][tileX]=1;
+                })
+            }
             return new Graph(graph);
         },
-        getPath : function(sx, sy, ex, ey){
+        getPath : function(sx, sy, ex, ey, obstacles){
+            /*
             if (this._graph===undefined){
                 this._graph = this.makeGraph();
             }
-            result = astar.search(this._graph.nodes, this._graph.nodes[sx][sy], this._graph.nodes[ex][ey], false);
+            */
+            var graph = this.makeGraph(obstacles);
+            result = astar.search(graph.nodes, graph.nodes[sx][sy], graph.nodes[ex][ey], false);
             var points = _.map(result, function(node){
                 return [node.x * 32 + 16, node.y * 32 + 16];
             })

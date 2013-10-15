@@ -8,7 +8,8 @@ define(['sge', '../behaviour', '../actions/followpath'], function(sge, Behaviour
             options.speed = 'match';
             if (options.speed == 'match'){
                 this._matchSpeed = this.entity.get('movement.speed');
-                this.entity.set('movement.speed', target.get('movement.speed'))
+                this.entity.set('movement.speed', 
+                    target.get('movement.speed'))
             }
         },
 

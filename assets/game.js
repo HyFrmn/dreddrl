@@ -5,8 +5,6 @@ var game = null;
 requirejs(['sge','dreddrl'],
 function   (sge, dreddrl) {
     dreddrl.config.questDataUrl = '/quest/';
-    dreddrl.DreddRLState.init();
-
 
     function getURLParameter(name) {
         return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
@@ -42,6 +40,5 @@ function   (sge, dreddrl) {
     CAAT.DEBUG=Boolean(getURLParameter('caat-debug'));
     game = new sge.Game({elem: document.getElementById('game'), pauseState: dreddrl.PauseState, mainMenuState: dreddrl.MainMenuState, width: idealWidth, height: idealHeight, fps:idealFPS});
     var state = game.setGameState(dreddrl.DreddRLState);
-    game._states['dialog'] = new dreddrl.DialogState(game, 'Dialog');
     game.start();
 });

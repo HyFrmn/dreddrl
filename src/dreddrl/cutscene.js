@@ -25,8 +25,8 @@ define(['sge'], function(sge){
             entity.fireEvent(evt, arg0, arg1, arg2);
 	        cutscene.completeAction();
         },
-        set: function(cutscene, entity, attr, value){
-            entity.set(attr, value);
+        set: function(cutscene, entity, attr, value, arg1, arg2, arg3){
+            entity.set(attr, value, arg1, arg2, arg3);
             cutscene.completeAction();
         },
         behave: function(cutscene, entity, behaviour, options){
@@ -147,7 +147,6 @@ define(['sge'], function(sge){
             callback.apply(this, args)
         },
         completeAction: function(data){
-        	console.log('Complete', this.id)
             if (this._queue.length>0){
                 this.next(data);
             } else {

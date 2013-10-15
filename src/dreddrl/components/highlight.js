@@ -3,6 +3,7 @@ define(['sge', '../config'], function(sge, config){
         init: function(entity, data){
             this._super(entity, data);
             this.data.color = data.fillStyle || 'orange';
+            this.data.focusColor = data.focusColor || 'lime';
             this.data.border = data.fillStyle || 'black';
             this.data.radius = data.radius || 16;
             this._focus = false;
@@ -36,7 +37,7 @@ define(['sge', '../config'], function(sge, config){
         _updateVisibility: function(){
             if (this._focus){
                 for (var i = this._highlightActors.length - 1; i >= 0; i--) {
-                    this._highlightActors[i].setFillStyle('lime');
+                    this._highlightActors[i].setFillStyle(this.get('focusColor'));
                     this._highlightActors[i].setVisible(true);
                 };
             } else if (this._highlight){
@@ -80,15 +81,18 @@ define(['sge', '../config'], function(sge, config){
         },
         _set_color: function(value, method){
             value = this.__set_value('color', value, method);
-            if (this._highlight_actor){
-                console.log('C', value);
-                this._highlight_actor.setFillStyle(value);
-            }
+            this._updateVisibility();
+        },
+        _set_focusColor: function(value, method){
+            value = this.__set_value('focusColor', value, method);
+            this._updateVisibility();
+            
         },
         deregister: function(state){
             if (this.get('priority')){
                 this.entity.get('xform').container.removeChild(this._highlight_actor);
             }
+            state.map.highlightContainer.removeChild(this._highlightContainer);
             this._super(state);
         }
     });
