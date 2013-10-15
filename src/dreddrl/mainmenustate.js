@@ -46,9 +46,8 @@ define(['sge', './config'], function(sge, config){
             this.itemCallbacks[this.selectedIndex]();
         },
         startGame : function(){
-            this.game._states['game'] = new this.game._gameState(this.game, 'Game');
             this.game.fsm.startLoad();
-            this.game._states['game'].loader.start();    
+            this.game._states['game'] = new this.game._gameState(this.game, 'Game');
         },
 
 	});

@@ -17,8 +17,7 @@ requirejs.config({
 var game = null;
 requirejs(['sge','dreddrl'],
 function   (sge, dreddrl) {
-    dreddrl.config.questDataUrl = '/quest/';
-    dreddrl.DreddRLState.init();
+    dreddrl.config.gameDataUrl = '/content/demo.json';
 
 
     function getURLParameter(name) {

@@ -100,10 +100,8 @@ define(['sge', './config'], function(sge, config){
 
 
 	Weapon.DATA = null;
-	Weapon.bootstrap = function(){
-		sge.util.ajax(config.weaponDataUrl, function(rawText){
-			Weapon.DATA = JSON.parse(rawText);
-		});
+	Weapon.bootstrap = function(data){
+		Weapon.DATA = data;
 	};
 
 	Weapon.Factory = function(entity, weaponType){

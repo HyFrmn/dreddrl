@@ -59,13 +59,10 @@ define(['sge', './config'], function(sge, config){
 		};
 	}
 	var library = {};
-	Item.bootstrap = function(){
-		ajax(config.itemDataUrl, function(rawtext){
-			var data = JSON.parse(rawtext);
-			data.forEach(function(item){
-				library[item.id]=item;
-			})
-		});
+	Item.bootstrap = function(data){
+		data.forEach(function(item){
+			library[item.id]=item;
+		})
 	}
 
 	Item.Factory = function(name, options){

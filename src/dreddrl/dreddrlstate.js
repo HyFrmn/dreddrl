@@ -1,6 +1,7 @@
 define([
         'sge',
         './config',
+        './loader',
         './blocklevelgenerator',
         './physics',
         './factory',
@@ -9,7 +10,7 @@ define([
         './weapon',
         './item'
     ],
-    function(sge, config, BlockLevelGenerator, Physics, Factory, Map, megablock, Weapon, Item){
+    function(sge, config, Loader, BlockLevelGenerator, Physics, Factory, Map, megablock, Weapon, Item){
 
         INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is your responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
@@ -132,51 +133,6 @@ define([
 
                 this._regionEntityHash = new HashTable();
 
-                this.loader = new sge.vendor.PxLoader();
-                this.loader.addProgressListener(this.progressListener.bind(this));
-                this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future1.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future2.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future3.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/tiles/future4.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/judge.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/judge_tint_red.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert_tint_red.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair_tint_red.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert_tint_blue.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair_tint_blue.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albert_tint_cyan.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/albertbrownhair_tint_cyan.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_1.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_4.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_1_tint_red.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2_tint_red.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3_tint_red.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_4_tint_red.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_1_tint_cyan.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2_tint_cyan.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3_tint_cyan.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_4_tint_cyan.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_1_tint_blue.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_2_tint_blue.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_3_tint_blue.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/punk_4_tint_blue.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_1.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_2.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/gang_6.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_1.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_2.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_3.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_4.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_5.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_6.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_7.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/women_8.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/scifi_icons_1.png');
-                this.loader.addImage(sge.config.baseUrl + 'assets/sprites/exclimation_icons.png');
                 
                 
 
@@ -190,9 +146,10 @@ define([
                     this.shadows.toggle()
                 }.bind(this);
 
-                this.loader.start();
+                this.loader = new Loader();
+                this.loader.loadAssets('/content/demo.json').then(this.initGame.bind(this));
             },
-
+            
             evalValue : function(path, ctx){
                 var _ctx = ctx;
                 if (path.match(/^@/)){
@@ -668,6 +625,7 @@ define([
     	})
 
         DreddRLState.init = function(){
+            console.trace();
             Item.bootstrap();
             Weapon.bootstrap();
         }

@@ -1,0 +1,30 @@
+{
+	"name" : "Demo Game",
+	"charas" : [
+				"albert",
+				"albertbrownhair",
+				"punk_1",
+				"punk_2",
+				"punk_3",
+				"judge"
+				],
+	"sprites" : [
+				"exclimation_icons",
+				"scifi_icons_1",
+				"women_1",
+				"women_2",
+				"women_3",
+				"women_4",
+				"women_5",
+				"women_6",
+				"women_7",
+				"women_8"
+
+	],
+	"tiles" : [
+		"future1",
+		"future2",
+		"future3",
+		"future4"
+	]
+}
