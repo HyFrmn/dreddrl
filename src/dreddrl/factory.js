@@ -179,8 +179,10 @@ define([
             }},
             door : function(){return {
                 xform: { container: '_entityContainer'},
-                highlight: {radius: 24},
-                interact : {},
+                highlight: {radius: 32},
+                interact : {
+                    targets: [[0,0],[0,-64]]
+                },
                 door: {}
             }},
             elevator : function(){return {

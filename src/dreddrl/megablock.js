@@ -210,13 +210,16 @@ function(sge, Factory, Map, Quest){
             this.level.map.canopy.addChild(this.cover);
         },
         createDoor : function(cx, cy, open){
-            var door = this.level.addEntity('door', {xform:{
-                tx: ((cx + 0.5) * 32),
-                ty: ((cy + 0.5) * 32),
-            }, door: {open: open, room: this, locked: this.options.locked},
-            interact : {
-                targets: [[0,0],[0,-64]]
-            }});
+            var door = this.level.addEntity('door', {
+                xform:{
+                    tx: ((cx + 0.5) * 32),
+                    ty: ((cy + 0.5) * 32),
+                }, door: {
+                    open: open,
+                    room: this,
+                    locked: this.options.locked
+                }
+            });
             this.doors.push(door);
             door.tags.push('door');
             return door;
