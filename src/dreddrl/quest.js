@@ -198,7 +198,19 @@ define(['sge', './cutscene', './expr', './item', './config'], function(sge, Cuts
 		});
 	};
 
+	var QUESTLIST = [];
+	Quest.Add = function(text){
+		QUESTLIST.push(text);
+	}
+
 	Quest.Load = function(megablock){
+		var block = megablock;
+		QUESTLIST.forEach(function(text){
+			eval(text);
+		})
+	}
+
+	Quest._Load = function(megablock){
 		if (config.questDataUrl&&false){
 			sge.util.ajax(config.questDataUrl, function(rawText){
 				data = JSON.parse(rawText);
@@ -224,7 +236,7 @@ define(['sge', './cutscene', './expr', './item', './config'], function(sge, Cuts
 		    * * Return Item. Get Reward Quest Over
 		    *
 			*/
-
+			/*
 			//Get Quest Room
 			var room = megablock.getRandomRoom();
 			room.lockDoors();
@@ -311,7 +323,9 @@ define(['sge', './cutscene', './expr', './item', './config'], function(sge, Cuts
 									then(completeMission);
 			}
 			createMission();
+
 			megablock.populateRooms();
+			*/
 		}
 	}
 

@@ -18,7 +18,10 @@
 				"women_5",
 				"women_6",
 				"women_7",
-				"women_8"
+				"women_8",
+				"gang_1",
+				"gang_2",
+				"gang_6"
 
 	],
 	"tiles" : [
@@ -26,5 +29,8 @@
 		"future2",
 		"future3",
 		"future4"
+	],
+	"quests" : [
+		"tutorial"
 	]
 }

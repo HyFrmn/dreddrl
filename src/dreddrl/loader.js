@@ -1,4 +1,4 @@
-define(['sge', './item', './weapon'], function(sge, Item, Weapon){
+define(['sge', './item', './weapon', './quest'], function(sge, Item, Weapon, Quest){
 	var when = sge.vendor.when;
 
 	function loadImage (src) {
@@ -39,7 +39,16 @@ define(['sge', './item', './weapon'], function(sge, Item, Weapon){
 			})
 			return deferred.promise;
 		},
+		loadQuest: function(url){
+			var deferred = new when.defer();
+			sge.util.ajax(url, function(raw){
+				Quest.Add(raw);
+				deferred.resolve(data);
+			})
+			return deferred.promise;
+		},
 		parseConfig: function(config){
+			console.log(this, config)
 			var deferred = new when.defer();
 
 			// srcs = array of image src urls
@@ -69,6 +78,10 @@ define(['sge', './item', './weapon'], function(sge, Item, Weapon){
 			}.bind(this))
 
 
+			config.quests.forEach(function(quest){
+				var url = '/content/quests/' + quest + '.js';
+				deferreds.push(this.loadQuest(url).then(this.updateProgress.bind(this)));
+			}.bind(this));
 
 			deferreds.push(this.loadJSON("/content/items/standard.json").then(Item.bootstrap).then(this.updateProgress.bind(this)));
 			

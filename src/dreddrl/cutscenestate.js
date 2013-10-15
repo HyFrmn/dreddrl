@@ -157,21 +157,26 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         },
 
         interact: function(){
+            console.log('Interact!', this._awaitInteraction);
             if (this._awaitInteraction){
                 if (this._choosing){
                     //Making a choice
                     this._choosing = false;
                     var choice = this._currentNode.choices[this._choiceIndex];
                     this.parseNode(choice, true);
+                    this._awaitInteraction = true;
+                    console.log('Choose')
                     this.interact();
                 } else {
                     if (this._dialogList.length<=0){
                         //No more dialog for this node.
                         var nodeList = this.nextNode();
-                        if (nodeList.length){
+                        console.log('Next')
+                        if (nodeList.length>0){
                             if (nodeList.length==1){
                                 //Automatically move to next node.
                                 this.parseNode(nodeList[0]);
+                                this.setDialogText(this._dialogList.shift());
                             } else {
                                 this._choices = nodeList;
                                 this._choiceIndex = 0;
@@ -204,7 +209,11 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
                 if (node.dialog){
                     for (var i = 0; i < node.dialog.length; i++) {
                         var dialog = node.dialog[i];
-                        this._dialogList.push(dialog.entity+': '+dialog.text);
+                        var text = dialog.text;
+                        var lines = text.split('\n');
+                        for (var j = 0; j<lines.length;j++) {
+                            this._dialogList.push(dialog.entity+': '+lines[j]);
+                        }
                     }
                 }
             }
