@@ -472,9 +472,6 @@ function(sge, Factory, Map, Quest){
                     xform: {
                         tx: tx,
                         ty: ty
-                    },
-                    enemyai : {
-                        region: market,
                     }
                 });
             }
@@ -502,7 +499,7 @@ function(sge, Factory, Map, Quest){
                     room._populated = true;
                     var spawnType = sge.random.item(['citizen','lawbreaker','spacer']);
                     room.spawn(spawnType, {
-                        enemyai: {
+                        ai: {
                             region: room
                         },
                         inventory : {
@@ -510,7 +507,7 @@ function(sge, Factory, Map, Quest){
                         }
                     });    
                     room.spawn(spawnType, {
-                        enemyai: {
+                        ai: {
                             region: room
                         },
                         inventory : {
@@ -518,7 +515,7 @@ function(sge, Factory, Map, Quest){
                         }
                     });
                     room.spawn(spawnType, {
-                        enemyai: {
+                        ai: {
                             region: room
                         },
                         inventory : {

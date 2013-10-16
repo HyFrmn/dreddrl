@@ -135,7 +135,7 @@ define([
                     },
                     emote: {},
                     health : {alignment:-10, life: 8},
-                    enemyai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
+                    ai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
                     //deaddrop: {items:['key','gun','ramen','ramen','ramen']},
                     combat: {faction : 'lawbreak'},
                 }
@@ -161,7 +161,7 @@ define([
                     },
                     emote: {},
                     health : {alignment:-10, life: 5},
-                    enemyai : { tracking: 'pc', territory: 'spacer', xp: 1, faction: 'spacer'},
+                    ai : {},
                     //deaddrop: {items:['key','gun','ramen','ramen','ramen']},
                     combat: {faction : 'spacer'},
                 }

@@ -11,7 +11,9 @@ var victim = room.spawn("citizen", {
 });
 
 var thief = block.market.spawn("spacer", {
-
+	ai: {
+		region: block.market
+	}
 })
 //block.state.addEntity(thief);
 
