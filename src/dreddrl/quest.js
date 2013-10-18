@@ -222,9 +222,10 @@ define(['sge', './cutscene', './expr', './item', './config'], function(sge, Cuts
 
 	Quest.Load = function(megablock){
 		var block = megablock;
-		QUESTLIST.forEach(function(text){
+		while (QUESTLIST.length){
+			var text = QUESTLIST.shift();
 			eval(text);
-		})
+		};
 	}
 
 	Quest._Load = function(megablock){

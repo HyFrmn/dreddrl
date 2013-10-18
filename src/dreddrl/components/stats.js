@@ -19,8 +19,8 @@ define(['sge'],function(sge){
 		levelUp: function(){
 			this.set('level', 1, 'add');
 			level = this.data.level;
-			this.entity.set('health.maxLife', 12 + (level*level));
-			this.entity.set('health.life', 12 + (level*level));
+			this.entity.set('health.maxLife', 122 + (level*level));
+			this.entity.set('health.life', 122 + (level*level));
 			this.nextLevel += (level * 10);
 			this.entity.fireEvent('state.log','Level Up: ' + level);
 		},

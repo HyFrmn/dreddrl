@@ -146,7 +146,7 @@ define([
                     this.shadows.toggle()
                 }.bind(this);
 
-                this.loader = new Loader();
+                this.loader = new Loader(this.game);
                 this.loader.loadAssets('/content/demo.json').then(this.initGame.bind(this));
             },
             
@@ -205,7 +205,11 @@ define([
                 var width = 24;
                 var height = 24;
                 this.physics = new Physics(this);
-                this.level = new megablock.MegaBlockLevel(null, this);
+                if (this.game.data.megablock==undefined){
+                    console.log('Creating MegaBlock!')
+                    this.game.data.megablock = new megablock.MegaBlock();
+                }
+                this.level = this.game.data.megablock.getCurrentLevel(this);
                 this.physics.setMap(this.map);
                 this.scene.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
                 this._uiContainer.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
@@ -258,13 +262,27 @@ define([
                 this.log('You are the Law.');
             },
 
-            newLevel : function(options){
+            nextLevel : function(up){
+                if (up){
+                    console.log('Going Up?', this.game.data.megablock.level);
+                    if (this.game.data.megablock.level>=this.game.data.megablock.levels.length-1){
+                        return false;
+                    } else {
+                       this.game.data.megablock.level=this.game.data.megablock.level+1; 
+                    }
+                } else {
+                    if (this.game.data.megablock.level==0){
+                        return false;
+                    } else {
+                       this.game.data.megablock.level=this.game.data.megablock.level-1; 
+                    }
+                }
                 this.game.fsm.startLoad();
-                options = options || {};
                 this.game.data.pc = this.pc;
+                console.log('Loading Level', this.game.data.megablock.level)
                 this.removeEntity(this.pc);
                 this.game._states['game'] = new this.game._gameState(this.game, 'Game');
-                this.game._states['game'].loader.start();
+                
             },
 
             addEntity: function(entity){

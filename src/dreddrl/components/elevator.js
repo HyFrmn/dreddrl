@@ -2,12 +2,17 @@ define(['sge'], function(sge){
     var Elevator = sge.Component.extend({
         init: function(entity, data){
             this._super(entity, data);
-            this.data.open = data.open || true;
+            this.data.up = Boolean(data.up);
             this.interact = this.interact.bind(this);
-            this.entity.addListener('interact', this.interact);
+            this.entity.addListener('interact', this.interact.bind(this));
         },
         interact: function(){
-            this.state.newLevel();
+            console.log('Elevate',this.get('up'))
+            if (this.state.nextLevel(this.get('up'))){
+
+            } else {
+
+            }
         },
         updateTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32)-1;

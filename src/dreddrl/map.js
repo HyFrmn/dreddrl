@@ -1,4 +1,4 @@
-define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], function(Class, CAAT, Renderer, config){
+define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/random'], function(Class, CAAT, Renderer, config, random){
     var Tile = Class.extend({
         init: function(x, y){
             this.x = x;
@@ -67,7 +67,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
                 e.get('xform.container').setVisible(visible)
             })
         }
-    })
+    });
 
     var Map = Class.extend({
         init: function(width, height, options){
@@ -223,6 +223,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             }
         }
     });
+
 
 // javascript-astar
 // http://github.com/bgrins/javascript-astar

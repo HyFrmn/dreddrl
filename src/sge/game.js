@@ -5,9 +5,9 @@ function(_, util, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer,
             var width = this.game.renderer.width;
             var height = this.game.renderer.height;
             var title = new CAAT.TextActor().setText('Loading').setLocation(width/2,height/2);
-            //var instruct = new CAAT.TextActor().setText('Press Enter to Start')
+            this.bar = new CAAT.ShapeActor().setSize(200,8).setLocation((width/2) -100,(height/2) + 32).setFillStyle('white').setShape(CAAT.ShapeActor.SHAPE_RECT);
             this.scene.addChild(title);
-            //this.scene.addChild(instruct);
+            this.scene.addChild(this.bar);
         },
         startState : function(){
             this._super();
@@ -20,6 +20,9 @@ function(_, util, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer,
             if (this.elem){
                 this.elem.fadeOut();
             }
+        },
+        updateProgress: function(pct){
+            this.bar.setSize(200*pct,8);
         }
     });
 
@@ -245,6 +248,7 @@ function(_, util, Class, CAAT, StateMachine, Engine, GameState, Input, Renderer,
         tick: function(delta){
             this.input.tick();
             if (this.state!=null){
+                this.state._time += delta;
                 this.state.tick(delta);
             } else {
                 //Do Something;

@@ -135,7 +135,7 @@ define([
                     },
                     emote: {},
                     health : {alignment:-10, life: 8},
-                    ai : { tracking: 'pc', territory: 'albert', xp: 1, faction: 'westsider'},
+                    ai : { behaviour: 'enemy' },
                     //deaddrop: {items:['key','gun','ramen','ramen','ramen']},
                     combat: {faction : 'lawbreak'},
                 }
@@ -161,7 +161,7 @@ define([
                     },
                     emote: {},
                     health : {alignment:-10, life: 5},
-                    ai : {},
+                    ai : { behaviour: 'enemy' },
                     //deaddrop: {items:['key','gun','ramen','ramen','ramen']},
                     combat: {faction : 'spacer'},
                 }
@@ -188,6 +188,7 @@ define([
             elevator : function(){return {
                 xform: { container: '_entityContainer'},
                 interact : {},
+                highlight: {radius: 48},
                 elevator: {}
             }},
             man: function(){return deepExtend(FACTORYDATA['citizen'](), {

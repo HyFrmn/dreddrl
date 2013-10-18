@@ -18,6 +18,9 @@ define(['sge', './item', './weapon', './quest'], function(sge, Item, Weapon, Que
 	}
 
 	var Loader = sge.Class.extend({
+		init: function(game){
+			this.game = game;
+		},
 		loadImage: function(url){
 			var _loadImage = function(img){
 				var subpath = img.src.split('/');
@@ -100,7 +103,7 @@ define(['sge', './item', './weapon', './quest'], function(sge, Item, Weapon, Que
 
 		updateProgress: function(){
 			this._count++;
-			console.log('Loaded:', 100*(this._count/this._countTotal) + '%');
+			this.game._states.loading.updateProgress((this._count/this._countTotal));
 		}
 	});
 

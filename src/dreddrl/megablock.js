@@ -98,7 +98,8 @@ function(sge, Factory, Map, Quest){
         init: function(gen, cx, cy, width, height, options){
             this.level = gen;
             this._populated = false;
-            this.options = _.extend({doors:'bottom', open: false, locked: false}, options ||{})
+
+            this.options = _.extend({doors:'bottom', open: false, locked: false}, options ||{});
             this.cx = cx
             this.cy = cy
             this.width = width;
@@ -188,8 +189,6 @@ function(sge, Factory, Map, Quest){
                 tile.passable = false;
                 tile.transparent = false;
             }
-            //this.options.open=true;
-            
             if ((this.options.doors=='bottom')||(this.options.doors=='both')){
                 this.createDoor(this.cx, this.cy+halfY+3, this.options.open);
             } 
@@ -197,7 +196,7 @@ function(sge, Factory, Map, Quest){
                 this.createDoor(this.cx, this.cy-halfY-1, this.options.open);
             }
             if ((this.options.doors=='elevator')){
-                this.createElevator(this.cx, this.cy+halfY+3);
+                this.createElevator(this.cx, this.cy+halfY+3, this.options.up);
             }
 
             this.cover = new CAAT.Actor().
@@ -224,14 +223,17 @@ function(sge, Factory, Map, Quest){
             door.tags.push('door');
             return door;
         },
-        createElevator : function(cx, cy){
+        createElevator : function(cx, cy, up){
             this._populated = true;
             var door = this.level.addEntity('elevator', {xform:{
                 tx: ((cx + 0.5) * 32),
                 ty: ((cy + 0.5) * 32),
             }, 
-            interact : {
-                targets: [[((cx + 0.5) * 32),((cy + 0.5) * 32)],[((cx + 0.5) * 32),((cy - 1.5) * 32)]]
+            highlight: {
+                focusColor: (up ? 'orange' : 'blue'),
+            },
+            elevator: {
+                up: Boolean(up)
             }});
             return door;
         },
@@ -294,18 +296,31 @@ function(sge, Factory, Map, Quest){
             Full Cooridor Width: 6
     */
 
+    var MegaBlock = sge.Class.extend({
+        init: function(){
+            this.level = 0;
+            this.levels = [];
+            var level = {};
+            this.levels.push(level);
+            var level = {};
+            this.levels.push(level);
+            var level = {};
+            this.levels.push(level);
+        },
+        getCurrentLevel: function(state){
+            return new MegaBlockLevel(this, state);
+        }
+    });
+
 	var MegaBlockLevel = sge.Class.extend({
 		init: function(block, state){
             this._entities = [];
             this.rooms = [];
-
             this.options = {
                 padding: 3,
                 width: 6,
                 height: 2,
             }
-
-
 
             this.width = this.options.width*6 + this.options.padding*2 + 1;
             this.height = (this.options.height * 21) + this.options.padding+2 + 8;
@@ -374,14 +389,18 @@ function(sge, Factory, Map, Quest){
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
                         var open =  false; //(Math.random() > 0.5 ? true : false);
+                        var up = true;
                         if (!open){
                             locked = (Math.random() > 0.75 ? true : false)
                         }
                         doors = 'bottom';
                         if (i==0||i==this.options.width-1){
                             doors = 'elevator';
+                            if (i==0){
+                                up = false;
+                            }
                         }
-                        room = new MegaBlockRoom(this, tx, ty, 5, 5, {open: open, locked: locked, doors: doors});
+                        room = new MegaBlockRoom(this, tx, ty, 5, 5, {open: open, locked: locked, doors: doors, up: up});
                         room.name = 'Room ' + i + '-' + j + ' A';
                     } else {
                         marketLeft = Math.min(marketLeft, tx*32);
@@ -503,7 +522,7 @@ function(sge, Factory, Map, Quest){
                             region: room
                         },
                         inventory : {
-                            items: [this._getRandomItemType(),this._getRandomItemType()]
+                            items: [this._getRandomItemType()]
                         }
                     });    
                     room.spawn(spawnType, {
@@ -511,7 +530,7 @@ function(sge, Factory, Map, Quest){
                             region: room
                         },
                         inventory : {
-                            items: [this._getRandomItemType(),this._getRandomItemType()]
+                            items: [this._getRandomItemType()]
                         }
                     });
                     room.spawn(spawnType, {
@@ -519,7 +538,7 @@ function(sge, Factory, Map, Quest){
                             region: room
                         },
                         inventory : {
-                            items: [this._getRandomItemType(),this._getRandomItemType()]
+                            items: [this._getRandomItemType()]
                         }
                     });
                     room.update();
@@ -592,13 +611,6 @@ function(sge, Factory, Map, Quest){
             return goodRoom;
         },
 	});
-
-	var MegaBlock = sge.Class.extend({
-		init : function(){
-			this._levels = []; //Precompute Entire Block. (Memory? What's memory?)
-		},
-
-	})
 
     return {
         MegaBlock : MegaBlock,

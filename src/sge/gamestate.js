@@ -20,6 +20,7 @@ define(['sge/lib/class', 'sge/vendor/underscore'],
 	var GameState = Class.extend({
 		init: function(game, name, options){
 			this.game = game;
+			this._time = 0;
             this._keepScene = false; 
 			this._sceneIndex = game.renderer.scenes.length;
 			var scene = game.renderer.createScene();
@@ -75,6 +76,10 @@ define(['sge/lib/class', 'sge/vendor/underscore'],
         		var entity = this.entities[id];
         		entity.componentCall('render', this.game.renderer, 'main');
         	}.bind(this))
+        },
+
+        getTime: function(){
+        	return this._time;
         },
 
 		getNextId: function(){
