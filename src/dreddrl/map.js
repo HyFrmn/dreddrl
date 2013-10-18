@@ -1,4 +1,4 @@
-define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/random'], function(Class, CAAT, Renderer, config, random){
+define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], function(Class, CAAT, Renderer, config){
     var Tile = Class.extend({
         init: function(x, y){
             this.x = x;
