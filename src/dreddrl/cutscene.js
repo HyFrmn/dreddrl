@@ -33,6 +33,10 @@ define(['sge'], function(sge){
             entity.set('ai.behaviour', behaviour, options);
             cutscene.completeAction();
         },
+        add: function(cutscene, entity){
+            cutscene.gameState.addEntity(entity);
+            cutscene.completeAction();
+        }
     }
 
     var RoomCutsceneActions = {
@@ -44,6 +48,13 @@ define(['sge'], function(sge){
     		room.openDoors();
     		cutscene.completeAction();
     	},
+        lock : function(cutscene, room, keyType){
+            if (keyType === undefined){
+                keyType = true;
+            }
+            room.lockDoors(keyType);
+            cutscene.completeAction();
+        },
     	highlight : function(cutscene, room, highlight){
     		room.highlight(highlight);
     		cutscene.completeAction();

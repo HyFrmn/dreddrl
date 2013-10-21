@@ -9,16 +9,14 @@ console.log('Room:', room)
 var pc = block.state.pc;
 
 var victim = room.spawn("citizen", {
-	'interact' : {
-		'priority' : true
-	}
+	'interact' : {}
 });
 
 var thief = block.market.spawn("lawbreaker", {
 	ai: {
 		region: block.market
 	}
-})
+}, false);
 
 //Get citizen entity, initialize for interaction.
 var citizen = megablock.state.getEntitiesWithTag('shopper')[0];
@@ -68,11 +66,13 @@ var interactionCutscene = function(){
 			text: "So as you may have noticed by now. When an object is highlighted in green, you can interact with it using the arrow keys.\nHowever this door has a red highlight, that's because it's locked. If you have a key you can unlock the door using [X]. Go ahead and open the door."
 		}]
 	});
+	cutscene.addAction('room.lock', room)
 	return cutscene.play();
 }
 
 var meetVictimCutscene = function(){
 	var cutscene = new Cutscene(cutsceneState);
+	console.log('Room:', room)
 	cutscene.addAction('entity.dialog', {
 		topic: '',
 		dialog: [{
@@ -104,6 +104,7 @@ var meetVictimCutscene = function(){
 var arriveMarketCutscene = function(){
 	var pc = block.state.pc;
 	var cutscene = new Cutscene(cutsceneState);
+	cutscene.addAction('entity.add', thief);
 	cutscene.addAction('entity.set', thief, 'highlight.color', 'red');
 	cutscene.addAction('entity.event', thief, 'highlight.on');
 	cutscene.addAction('entity.dialog', {
@@ -126,6 +127,7 @@ var recoverCutscene = function(){
 			text: "Great let's go return this stuff to the victim and you'll be all set."
 		}]
 	});
+	cutscene.addAction('entity.set', victim, 'interact.priority', true);
 	cutscene.addAction('entity.set', victim, 'interact.enabled', true);
 	return cutscene.play();
 }
@@ -143,6 +145,7 @@ var completeCutscene = function(){
 			text: "After completing a mission. You will receive something for your trouble.\nYou will always get XP, and usually get some money and health. Sometimes you will even get new items.\nNow go dispense justice.\nAnd don't worry you will see more of me as the you unlock new features."
 		}]
 	});
+	cutscene.addAction('entity.set', victim, 'interact.priority', false);
 	cutscene.addAction('entity.set', citizen, 'interact.enabled', false);
 	cutscene.addAction('entity.set', victim, 'interact.enabled', false);
 	cutscene.addAction('entity.set', citizen, 'ai.behaviour', 'idle');

@@ -253,7 +253,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
             this.data.right = right;
             this.data.top = top;
             this.data.bottom = bottom;
-            this.data['xform.tx'] = (left - right)/2 + left;
+            this.data['xform.tx'] = (right - left)/2 + left;
             this.data['xform.ty'] = (bottom - top)/2 + top;
             console.log(this.data)
 
@@ -270,7 +270,10 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
             var coords = boxcoords(Math.floor(this.data.left/32), Math.floor(this.data.top/32), Math.floor((this.data.right-this.data.left)/32), Math.floor((this.data.bottom-this.data.top)/32));
             return this.state.map.getTiles(coords);
         },
-        spawn : function(name, data){
+        spawn : function(name, data, spawn){
+            if (spawn===undefined){
+                spawn=true;
+            }
             var tx, ty, entity;
             var tile = random.item(this.getTiles());
             if (tile){
@@ -285,12 +288,14 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
                 data = data || {};
                 data['xform'] = {tx: tx, ty: ty};
                 entity = this.state.createEntity(name, data);
-                this.state.addEntity(entity);
+                if (spawn){
+                    this.state.addEntity(entity);
+                }
                 
             } else {
                 entity = name;
                 entity.set('xform.t', tx, ty);
-                if (!entity.id){
+                if (!entity.id&&spawn){
                     this.state.addEntity(entity);
                 }
             }
