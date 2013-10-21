@@ -4,13 +4,22 @@ var cutsceneState = block.state.game._states['cutscene'];
 var room = block.getRandomRoom();
 room.lockDoors();
 
+console.log('Room:', room)
+
+var pc = block.state.pc;
+
 var victim = room.spawn("citizen", {
 	'interact' : {
 		'priority' : true
 	}
 });
 
-var thief = block.market.spawn("lawbreaker", {})
+var thief = block.market.spawn("lawbreaker", {
+	ai: {
+		region: block.market
+	}
+})
+
 //Get citizen entity, initialize for interaction.
 var citizen = megablock.state.getEntitiesWithTag('shopper')[0];
 citizen.addComponent('interact',{}).register(megablock.state);
@@ -63,7 +72,6 @@ var interactionCutscene = function(){
 }
 
 var meetVictimCutscene = function(){
-	var pc     = megablock.state.pc;
 	var cutscene = new Cutscene(cutsceneState);
 	cutscene.addAction('entity.dialog', {
 		topic: '',
@@ -102,7 +110,7 @@ var arriveMarketCutscene = function(){
 		topic: '',
 		dialog: [{
 			entity: 'Tutor',
-			text: "I've marked the theif in red.\nYou can use your lawbreaker to kill him, and recover the stolen goods.\nPress [Space Bar] to fire your sidearm."
+			text: "I've marked the theif in red.\nYou can use your lawgiver to kill him, and recover the stolen goods.\nPress [Space Bar] to fire your sidearm."
 		}]
 	});
 	return cutscene.play();
@@ -132,7 +140,7 @@ var completeCutscene = function(){
 			text: "Thank you so much for returning my things. It's nice to know there is a judge around for protection around."
 		},{
 			entity: 'Tutor',
-			text: "After completinga a mission. You will receive something for your trouble.\nYou will always get XP, and usually get some money and health. Sometimes you will even get new items.\nNow go dispense justice.\nAnd don't worry you will see more of me as the you unlock new features."
+			text: "After completing a mission. You will receive something for your trouble.\nYou will always get XP, and usually get some money and health. Sometimes you will even get new items.\nNow go dispense justice.\nAnd don't worry you will see more of me as the you unlock new features."
 		}]
 	});
 	cutscene.addAction('entity.set', citizen, 'interact.enabled', false);
@@ -151,6 +159,7 @@ var createMission = function(){
 						then(whenEntityEvent(room.doors[0],'focus.gain')).
 						then(interactionCutscene).
 						then(whenEntityEvent(room.doors[0],'open')).
+						then(meetVictimCutscene).
 						then(whenRegionEnter(pc, block.market)).
 						then(arriveMarketCutscene).
 						then(whenEntityEvent(thief, 'entity.kill')).

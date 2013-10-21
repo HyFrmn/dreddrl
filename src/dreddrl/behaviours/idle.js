@@ -28,7 +28,7 @@ define(['sge', '../behaviour'], function(sge, Behaviour){
                 this.entity.set('movement.v', vx, vy);
             } else {
                 this._timeout--;
-                if (region){
+                if (false){
                     var tx = this.entity.get('xform.tx');
                     var ty = this.entity.get('xform.ty');
                     if (!region.test(tx,ty)){
@@ -38,7 +38,7 @@ define(['sge', '../behaviour'], function(sge, Behaviour){
                         var dy = ty - ry;
                         var dist = Math.sqrt(dx*dx+dy*dy);
 
-                        this.entity.set('movement.v', -dx/dist,-dy/dist)
+                        this.entity.set('movement.v', -dx/dist, -dy/dist)
                     }
                 }
             }

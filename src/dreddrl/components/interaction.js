@@ -17,7 +17,6 @@ define(['sge', '../config'], function(sge, config){
             this.entity.addListener('focus.lose', this.deactivate.bind(this));
         },
         _set_enabled : function(value){
-            console.log('Value:', value);
             this.data.enabled = this.__set_value('enabled', Boolean(value));
             if (this.active){
                 this.entity.fireEvent('focus.lose');

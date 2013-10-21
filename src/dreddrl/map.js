@@ -253,8 +253,10 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
             this.data.right = right;
             this.data.top = top;
             this.data.bottom = bottom;
-            this.data.tx = (left - right)/2 + left;
-            this.data.ty = (bottom - top)/2 + top;
+            this.data['xform.tx'] = (left - right)/2 + left;
+            this.data['xform.ty'] = (bottom - top)/2 + top;
+            console.log(this.data)
+
         },
         onRegionEnter: function(){},
         onRegionExit: function(){},
