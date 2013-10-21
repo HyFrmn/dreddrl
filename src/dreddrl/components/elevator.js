@@ -16,7 +16,7 @@ define(['sge'], function(sge){
         },
         updateTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32)-1;
-            var ty = Math.floor(this.entity.get('xform.ty') / 32)-2
+            var ty = Math.floor(this.entity.get('xform.ty') / 32)-2;
             
             for (var y=0;y<3;y++){
                 for (var x=0;x<3;x++){
@@ -27,7 +27,7 @@ define(['sge'], function(sge){
             }
         },
 
-    	_register: function(state){
+    	register: function(state){
 
             this._super(state);
             this.map = state.map;
