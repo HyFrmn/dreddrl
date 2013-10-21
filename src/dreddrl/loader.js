@@ -51,7 +51,6 @@ define(['sge', './item', './weapon', './quest'], function(sge, Item, Weapon, Que
 			return deferred.promise;
 		},
 		parseConfig: function(config){
-			console.log(this, config)
 			var deferred = new when.defer();
 
 			// srcs = array of image src urls
@@ -89,8 +88,6 @@ define(['sge', './item', './weapon', './quest'], function(sge, Item, Weapon, Que
 			deferreds.push(this.loadJSON("/content/items/standard.json").then(Item.bootstrap).then(this.updateProgress.bind(this)));
 			
 			deferreds.push(this.loadJSON("/content/weapons/standard.json").then(Weapon.bootstrap).then(this.updateProgress.bind(this)));
-			
-			console.log('Loading', deferreds.length)
 
 			this._count = 0;
 			this._countTotal = deferreds.length;

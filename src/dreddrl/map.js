@@ -1,4 +1,4 @@
-define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], function(Class, CAAT, Renderer, config){
+define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/lib/random'], function(Class, CAAT, Renderer, config, random){
     var Tile = Class.extend({
         init: function(x, y){
             this.x = x;
@@ -209,6 +209,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
             }.bind(this));
         },
         render : function(renderer){
+            console.log('Render!')
             this.container.stopCacheAsBitmap();
             this.objectContainer.stopCacheAsBitmap();
             _.each(this._tiles, function(t){
@@ -224,7 +225,76 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config'], functi
         }
     });
 
+    var boxcoords = function(sx, sy, width, height){
+        /*
+         * Return  a lit of coordinates that are in the box starting
+         * at sx, sy and had demisions of width and height.
+         */
+        var coords = [];
+        for (var y=0; y<=height;y++){
+            for (var x=0; x<=width;x++){
+                coords.push([sx+x,sy+y]);
+            }
+        }
+        return coords;
+    };
 
+    Map.Region = Class.extend({
+        init: function(state, left, right, top, bottom, options){
+            this.state = state;
+            this.data = {};
+            this.entities = [];
+            this._setSize(left, right, top, bottom);
+            this.options = options || {};
+            this.state._addRegion(this);
+        },
+        _setSize: function(left, right, top, bottom){
+            this.data.left = left;
+            this.data.right = right;
+            this.data.top = top;
+            this.data.bottom = bottom;
+            this.data.tx = (left - right)/2 + left;
+            this.data.ty = (bottom - top)/2 + top;
+        },
+        onRegionEnter: function(){},
+        onRegionExit: function(){},
+        get: function(attr){
+            return this.data[attr];
+        },
+        test : function(tx, ty){
+            return Boolean((tx>this.data.left)&&(tx<this.data.right)&&(ty>this.data.top)&&(ty<this.data.bottom));
+        },
+        getTiles : function(){
+            var coords = boxcoords(Math.floor(this.data.left/32), Math.floor(this.data.top/32), Math.floor((this.data.right-this.data.left)/32), Math.floor((this.data.bottom-this.data.top)/32));
+            return this.state.map.getTiles(coords);
+        },
+        spawn : function(name, data){
+            var tx, ty, entity;
+            var tile = random.item(this.getTiles());
+            if (tile){
+                while (tile.data.spawn!==undefined||tile.passable!=true){
+                    tile = random.item(this.getTiles());
+                };
+                tx = tile.x * 32 + 16;
+                ty = tile.y * 32 + 16;
+                tile.spawn = true;
+            }
+            if (typeof name==='string'){
+                data = data || {};
+                data['xform'] = {tx: tx, ty: ty};
+                entity = this.state.createEntity(name, data);
+                this.state.addEntity(entity);
+                
+            } else {
+                entity = name;
+                entity.set('xform.t', tx, ty);
+                if (!entity.id){
+                    this.state.addEntity(entity);
+                }
+            }
+            return entity;
+        },
+    })
 // javascript-astar
 // http://github.com/bgrins/javascript-astar
 // Freely distributable under the MIT License.

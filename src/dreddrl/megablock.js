@@ -35,91 +35,28 @@ function(sge, Factory, Map, Quest){
         };
     });
 
-    var MegaBlockRegion = sge.Class.extend({
-        init: function(level, left, right, top, bottom, options){
-            this.level = level;
-
-            //Region Interface;
-            this.top = top;
-            this.bottom = bottom;
-            this.left = left;
-            this.right = right;
-            this.entities = [];
-            this.level.state._addRegion(this);
-        },
-        test : function(tx, ty){
-            return Boolean((tx>this.left)&&(tx<this.right)&&(ty>this.top)&&(ty<this.bottom));
-        },
-        onRegionEnter: function(){
-
-        },
-        onRegionExit: function(){
-
-        },
-        get: function(attr){
-            if (attr=='xform.tx'){
-                return this.left + (this.right-this.left)/2;
-            }
-            if (attr=='xform.ty'){
-                return this.top + (this.bottom-this.top)/2;
-            }
-        },
-        getTiles : function(){
-            return this.level.map.getTiles(boxcoords(Math.floor(this.left/32), Math.floor(this.top/32), Math.floor((this.right-this.left)/32), Math.floor((this.bottom-this.top)/32)));
-        },
-        spawn : function(name, data){
-            var tx, ty, entity;
-            var tile = sge.random.item(this.getTiles());
-            if (tile){
-                while (tile.data.spawn!==undefined||tile.passable!=true){
-                    tile = sge.random.item(this.getTiles());
-                };
-                tx = tile.x * 32 + 16;
-                ty = tile.y * 32 + 16;
-                tile.spawn = true;
-            }
-            if (typeof name==='string'){
-
-                data = data || {};
-                data['xform'] = {tx: tx, ty: ty};
-                entity = this.level.addEntity(name, data);
-            } else {
-                entity = name;
-                entity.set('xform.t', tx, ty);
-                if (!entity.id){
-                    this.level.state.addEntity(entity);
-                }
-            }
-            return entity;
-        },
-    })
-
-    var MegaBlockRoom = MegaBlockRegion.extend({
-        init: function(gen, cx, cy, width, height, options){
-            this.level = gen;
-            this._populated = false;
-
-            this.options = _.extend({doors:'bottom', open: false, locked: false}, options ||{});
-            this.cx = cx
-            this.cy = cy
-            this.width = width;
-            this.height = height;
-            this.spawned = [];
-            this.data = {};
-            this.doors = [];
-            this.plot();
-            this.level.rooms.push(this);
-
+    var MegaBlockRoom = Map.Region.extend({
+        init: function(level, cx, cy, width, height, options){
             var realWidth = width * 32;
             var realHeight = height * 32;
+            this._tileWidth = width;
+            this._tileHeight = height;
+            var top = (cy*32) - (realHeight/2) - 48;
+            var bottom = (cy*32) + (realHeight/2) + 80;
+            var left = (cx*32)-(realWidth/2) + 16;
+            var right = (cx*32)+(realWidth/2) + 16;
 
-            //Region Interface;
-            this.top = (cy*32) - (realHeight/2) - 48;
-            this.bottom = (cy*32) + (realHeight/2) + 80;
-            this.left = (cx*32)-(realWidth/2) + 16;
-            this.right = (cx*32)+(realWidth/2) + 16;
-            this.entities = [];
-            this.level.state._addRegion(this);
+            this._super(level.state, left, right, top, bottom, options);
+            this.data.cx = cx;
+            this.data.cy = cy;
+            this.level = level;
+            this._populated = false;
+
+            this.options = _.extend({doors:'bottom', open: false, locked: false}, this.options);
+
+            this.doors = [];
+            this.plot();
+
         },
         isLocked : function(){
             var locked = false;
@@ -156,60 +93,67 @@ function(sge, Factory, Map, Quest){
             this.update();
         },
         plot : function(){
-            var halfX = Math.floor((this.width-1)/2);
-            var halfY = Math.floor((this.height-1)/2);
 
+
+            var halfX = Math.floor((this._tileWidth-1)/2);
+            var halfY = Math.floor((this._tileHeight-1)/2);
+            
             var tile = null;
-            for (var y=(this.cy-halfY);y<=(this.cy+halfY);y++){
-                for (var x=(this.cx-halfX);x<=(this.cx+halfX);x++){
-                    tile = this.level.map.getTile(x,(this.cy+halfY)+1);
+            /*
+            for (var y=(this.data.cy-halfY);y<=(this.data.cy+halfY);y++){
+                for (var x=(this.data.cx-halfX);x<=(this.data.cx+halfX);x++){
+                    tile = this.level.map.getTile(x,(this.data.cy+halfY)+1);
                     tile.layers['layer0'] = FLOORTILE;
                     tile.passable = true;
                 }
             }
-            this.level.buildWall((this.cx-halfX),(this.cy-halfY)-2,this.width);
-            this.level.buildWall((this.cx-halfX)-1,(this.cy+halfY)+2,this.width+2);
-            for (x=(this.cx-halfX-1);x<=(this.cx+halfX+1);x++){
-                tile = this.level.map.getTile(x,(this.cy+halfY)+1);
+            */
+
+
+
+            this.level.buildWall((this.data.cx-halfX),(this.data.cy-halfY)-2,this._tileWidth);
+            this.level.buildWall((this.data.cx-halfX)-1,(this.data.cy+halfY)+2,this._tileWidth+2);
+            
+            for (x=(this.data.cx-halfX-1);x<=(this.data.cx+halfX+1);x++){
+                tile = this.level.map.getTile(x,(this.data.cy+halfY)+1);
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
                 tile.transparent = false;
-                tile = this.level.map.getTile(x,(this.cy-halfY)-3);
+                tile = this.level.map.getTile(x,(this.data.cy-halfY)-3);
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
                 tile.transparent = false;
             }
-            for (y=(this.cy-halfY-2);y<=(this.cy+halfY+1);y++){
-                tile = this.level.map.getTile((this.cx+halfX)+1,y);
+            for (y=(this.data.cy-halfY-2);y<=(this.data.cy+halfY+1);y++){
+                tile = this.level.map.getTile((this.data.cx+halfX)+1,y);
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
                 tile.transparent = false;
-                tile = this.level.map.getTile((this.cx-halfX)-1,y);
+                tile = this.level.map.getTile((this.data.cx-halfX)-1,y);
                 tile.layers['layer0'] = CEILTILE;
                 tile.passable = false;
                 tile.transparent = false;
             }
             if ((this.options.doors=='bottom')||(this.options.doors=='both')){
-                this.createDoor(this.cx, this.cy+halfY+3, this.options.open);
+                this.createDoor(this.data.cx, this.data.cy+halfY+3, this.options.open);
             } 
             if ((this.options.doors=='top')||(this.options.doors=='both')) {
-                this.createDoor(this.cx, this.cy-halfY-1, this.options.open);
+                this.createDoor(this.data.cx, this.data.cy-halfY-1, this.options.open);
             }
             if ((this.options.doors=='elevator')){
-                this.createElevator(this.cx, this.cy+halfY+3, this.options.up);
+                this.createElevator(this.data.cx, this.data.cy+halfY+3, this.options.up);
             }
-
             this.cover = new CAAT.Actor().
                                 setFillStyle('black').
                                 setAlpha(0.65).
-                                setSize(this.width*32,
-                                        (2+this.height)*32).
-                                setLocation((this.cx-(this.width-1)/2)*32,
-                                            (this.cy-(this.height+3)/2)*32);
-            this.level.map.canopy.addChild(this.cover);
+                                setSize(this._tileWidth*32,
+                                        (2+this._tileHeight)*32).
+                                setLocation((this.data.cx-(this._tileWidth-1)/2)*32,
+                                            (this.data.cy-(this._tileHeight+3)/2)*32);
+            this.state.map.canopy.addChild(this.cover);
         },
         createDoor : function(cx, cy, open){
-            var door = this.level.addEntity('door', {
+            var door = this.state.createEntity('door', {
                 xform:{
                     tx: ((cx + 0.5) * 32),
                     ty: ((cy + 0.5) * 32),
@@ -221,11 +165,12 @@ function(sge, Factory, Map, Quest){
             });
             this.doors.push(door);
             door.tags.push('door');
+            this.state.addEntity(door);
             return door;
         },
         createElevator : function(cx, cy, up){
             this._populated = true;
-            var door = this.level.addEntity('elevator', {xform:{
+            var door = this.state.createEntity('elevator', {xform:{
                 tx: ((cx + 0.5) * 32),
                 ty: ((cy + 0.5) * 32),
             }, 
@@ -235,6 +180,7 @@ function(sge, Factory, Map, Quest){
             elevator: {
                 up: Boolean(up)
             }});
+            this.state.addEntity(door);
             return door;
         },
         
@@ -308,53 +254,44 @@ function(sge, Factory, Map, Quest){
             this.levels.push(level);
         },
         getCurrentLevel: function(state){
-            return new MegaBlockLevel(this, state);
+            var lvl = new MegaBlockLevel(this, state);
+            return lvl;
         }
     });
 
-	var MegaBlockLevel = sge.Class.extend({
-		init: function(block, state){
+    var Level = sge.Class.extend({
+        init: function(state, options){
             this._entities = [];
-            this.rooms = [];
-            this.options = {
-                padding: 3,
-                width: 6,
-                height: 2,
-            }
-
-            this.width = this.options.width*6 + this.options.padding*2 + 1;
-            this.height = (this.options.height * 21) + this.options.padding+2 + 8;
             this.state = state;
-            this.map = new Map(this.width,this.height,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
-			this.map.defaultSheet = 'future2';
+
+            this.options = _.extend({
+                padding: 3,
+                width: 12,
+                height: 6,
+            }, options);
+
+
+
+            if (this.width==undefined){
+                this.width = this.options.width + 2;
+                this.height = this.options.height + 6;
+            }
             
             this.startLocation = {
-                tx: this.width*16,
-                ty: this.height*16
+                tx: (this.width*16),
+                ty: (this.height*16)
             }
+            
+            this.map = state.map = new Map(this.width,this.height,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
+            this.map.defaultSheet = 'future2';
 
-            state.map  = this.map
-            this.block = block;
-            this.map = state.map;
-            this.factory = state.factory;
-            //*
-            _.each(this.map._tiles, function(t){
-                if ((t.x>(this.width/3)&&t.x<(this.width*2/3))&&(t.y>(this.height/3)&&t.y<(this.height*2/3))) {
-                    t._mask=true;
-                    t.layers = {
-                        'layerBase' : FLOORTILE
-                    }
-                } else {
-                    t._mask = false;
-                    t.layers = {
-                        'layerBase' : FLOORTILE
-                    }
+             _.each(this.map._tiles, function(t){
+                t._mask=false;
+                t.layers = {
+                    'layerBase' : FLOORTILE
                 }
                 t.fade = 0;
-                
             }.bind(this));
-            //*/
-
 
             // Build level borders.
             this.buildWall(0,1,this.map.width,true);
@@ -374,18 +311,80 @@ function(sge, Factory, Map, Quest){
             }
             this.buildWall(0,this.map.height-2,this.map.width, true);
 
-            var marketLeft = (this.width*32);
-            var marketRight = 0;
+        },
+        setup: function(){
+            this.map.setup(this.state._entityContainer);
+        },
+        tick: function(){
+
+        },
+        buildWall: function(sx, sy, length, ceil){
+            for (var x=0;x<length;x++){
+                var tile = this.map.getTile(x+sx, sy);
+                tile.layers = {
+                    'layer0' : { srcX : 6, srcY: 1, spritesheet: 'future2'}
+                }
+                tile.passable = false;
+                tile = this.map.getTile(x+sx, sy+1);
+                tile.layers = {
+                    'layer0' : { srcX : 6, srcY: 2, spritesheet: 'future2'}
+                }
+                tile.transparent = false;
+                tile.passable = false;
+                if (ceil){
+                   tile = this.map.getTile(x+sx, sy-1);
+                    tile.layers['layer0'] = CEILTILE;
+                    tile.passable = false; 
+                }
+            }
+        }
+    })
+
+	var MegaBlockLevel = Level.extend({
+		init: function(block, state, options){
+
+            options = _.extend({
+                padding: 3,
+                width: 6,
+                height: 2,
+            }, options || {});
+            this.width = options.width*6 + options.padding*2 + 1;
+            this.height = (options.height * 21) + options.padding+2 + 8;
+            this.block = block;
+
+            this._super(state, options);
+            this.rooms = [];
+            this.block = block;
+
+            var marketLeft =this.width*32;
+            var marketRight =  0;
             var marketTop = this.height*32;
             var marketBottom = 0;
 
+            _.each(this.map._tiles, function(t){
+                if ((t.x>(this.width/3)&&t.x<(this.width*2/3))&&(t.y>(this.height/3)&&t.y<(this.height*2/3))) {
+                    t._mask=true;
+                    t.layers = {
+                        'layerBase' : FLOORTILE
+                    }
+                } else {
+                    t._mask = false;
+                    t.layers = {
+                        'layerBase' : FLOORTILE
+                    }
+                }
+                t.fade = 0;
+                
+            }.bind(this));
 
             //Build Rooms
+            //*
             var rooms = null;
-            for (var i=0;i<this.options.width;i++){
-                for (var j=0;j<this.options.height;j++){
-                    var tx = 3+this.options.padding+(6*i);
-                    var ty = 7+this.options.padding+(21*j);
+            for (var i=0;i<options.width;i++){
+                for (var j=0;j<options.height;j++){
+                    var tx = 3+options.padding+(6*i);
+                    var ty = 7+options.padding+(21*j);
+
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
                         var open =  false; //(Math.random() > 0.5 ? true : false);
@@ -394,7 +393,7 @@ function(sge, Factory, Map, Quest){
                             locked = (Math.random() > 0.75 ? true : false)
                         }
                         doors = 'bottom';
-                        if (i==0||i==this.options.width-1){
+                        if (i==0||i==options.width-1){
                             doors = 'elevator';
                             if (i==0){
                                 up = false;
@@ -402,14 +401,16 @@ function(sge, Factory, Map, Quest){
                         }
                         room = new MegaBlockRoom(this, tx, ty, 5, 5, {open: open, locked: locked, doors: doors, up: up});
                         room.name = 'Room ' + i + '-' + j + ' A';
+                        this.rooms.push(room);
+
                     } else {
                         marketLeft = Math.min(marketLeft, tx*32);
                         marketRight = Math.max(marketRight, tx*32+32);
                         marketTop = Math.min(marketTop, ty*32);
                         marketBottom = Math.max(marketBottom, ty*32+32);
                     }
-                    tx = 3+this.options.padding+(6*i);
-                    ty = 7+this.options.padding+13+(21*j);
+                    tx = 3+options.padding+(6*i);
+                    ty = 7+options.padding+13+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = false;
                         var open = true;//(Math.random() > 0.5 ? true : false);
@@ -418,93 +419,77 @@ function(sge, Factory, Map, Quest){
                         }
                         room = new MegaBlockRoom(this, tx, ty, 5, 5, {doors: 'top', open: open, locked: locked});
                         room.name = 'Room ' + i + '-' + j + ' B';
+                        this.rooms.push(room);
                     } else {
                         marketLeft = Math.min(marketLeft, tx*32);
                         marketRight = Math.max(marketRight, tx*32+32);
                         marketTop = Math.min(marketTop, ty*32);
                         marketBottom = Math.max(marketBottom, ty*32+32);
+
                     }
                 }
             }
+            //*/
 
-            for (var y=0;y<this.map.height-2;y++){
-                var tile = this.map.getTile(0, y);
-                tile.layers = {
-                    'layer0' : CEILTILE
-                }
-                tile.passable = false;
-                tile = this.map.getTile(this.map.width-1, y);
-                tile.layers = {
-                    'layer0' : CEILTILE
-                }
-                tile.passable = false;
-            }
-
-            _.each(this.map._tiles, function(t){
-                if ((t.x>=Math.floor(marketLeft/32)&&t.x<(marketRight/32))&&(t.y>=Math.floor(marketTop/32)&&t.y<(marketBottom/32))) {
-                    t.layers = {
-                            'layerBase' : FLOORTILE2
-                    }
-                }
-            }.bind(this));
-
-            market = new MegaBlockRegion(this, marketLeft, marketRight, marketTop, marketBottom);
-            market.name = 'Market';
-
+            this.market = new Map.Region(this.state, marketLeft, marketRight, marketTop, marketBottom);
+            this.market.name = 'Market';
+            this.market.getTiles().forEach(function(t){t.layers = {
+                        'layerBase' : FLOORTILE2
+                    }})
+    
             //Populate market place.
             //*
             var npcs=4;
             var citizen = null;
             while (npcs--){
-                var tx = sge.random.range(market.left, market.right);
-                var ty = sge.random.range(market.top, market.bottom);
+                var tx = sge.random.range(this.market.data.left, this.market.data.right);
+                var ty = sge.random.range(this.market.data.top, this.market.data.bottom);
                 var tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
+                //console.log('Tile', tile, tx, ty)
                 while (!tile.passable){
-                    tx = sge.random.range(market.left, market.right);
-                    ty = sge.random.range(market.top, market.bottom);
+                    tx = sge.random.range(this.market.data.left, this.market.data.right);
+                    ty = sge.random.range(this.market.data.top, this.market.data.bottom);
                     tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
                 }
-                citizen =  this.addEntity('citizen',{
+                citizen =  this.state.createEntity('citizen',{
                     xform: {
                         tx: tx,
                         ty: ty
                     },
                     ai: {
-                        region: market
+                        region: this.market
                     }
-                })
+                });
+                this.state.addEntity(citizen);
                 citizen.tags.push('shopper');
             }
 
             var lawbreakers=0;
             var lawbreaker = null;
             while (lawbreakers--){
-                var tx = sge.random.range(market.left, market.right);
-                var ty = sge.random.range(market.top, market.bottom);
+                var tx = sge.random.range(this.market.left, this.market.right);
+                var ty = sge.random.range(this.market.top, this.market.bottom);
                 var tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
                 while (!tile.passable){
-                    tx = sge.random.range(market.left, market.right);
-                    ty = sge.random.range(market.top, market.bottom);
+                    tx = sge.random.range(this.market.left, this.market.right);
+                    ty = sge.random.range(this.market.top, this.market.bottom);
                     tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
                 }
-                lawbreaker =  this.addEntity('spacer',{
+                lawbreaker =  this.createEntity('spacer',{
                     xform: {
                         tx: tx,
                         ty: ty
                     }
                 });
+                this.state.addEntity(lawbreaker)
             }
+            //*/
             
         },
         setup: function(){
-            this.market = market;
             Quest.Load(this);
             this.populateRooms();
-            //*/
-            
-
-            this.map.setup(this.state._entityContainer);
-            _.map(this.rooms, function(r){r.update()});
+            this._super();
         },
         _getRandomItemType : function(){
             var typ = sge.random.item(ITEMTYPE_P);
@@ -512,8 +497,8 @@ function(sge, Factory, Map, Quest){
         },
         populateRooms : function(){
             //Populate Rooms
-            //*
             _.each(this.rooms, function(room){
+               // console.log(room._populated)
                 if (!room._populated){
                     room._populated = true;
                     var spawnType = sge.random.item(['citizen','lawbreaker','spacer']);
@@ -545,26 +530,7 @@ function(sge, Factory, Map, Quest){
                 }
             }.bind(this));
         },
-        buildWall: function(sx, sy, length, ceil){
-            for (var x=0;x<length;x++){
-                var tile = this.map.getTile(x+sx, sy);
-                tile.layers = {
-                    'layer0' : { srcX : 6, srcY: 1, spritesheet: 'future2'}
-                }
-                tile.passable = false;
-                tile = this.map.getTile(x+sx, sy+1);
-                tile.layers = {
-                    'layer0' : { srcX : 6, srcY: 2, spritesheet: 'future2'}
-                }
-                tile.transparent = false;
-                tile.passable = false;
-                if (ceil){
-                   tile = this.map.getTile(x+sx, sy-1);
-                    tile.layers['layer0'] = CEILTILE;
-                    tile.passable = false; 
-                }
-            }
-        },
+        
         addEntity: function(type, options){
             var entity = this.factory(type, options);
             this.state.addEntity(entity);

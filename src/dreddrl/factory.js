@@ -74,7 +74,7 @@ define([
                     },
                     movement : {
                         map: this.map,
-                        speed: 128
+                        speed: 196
                     },
                     health : {alignment:5, life: 100},
                     combat: {faction: 'judge', weapon: 'lawgiver'},

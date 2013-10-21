@@ -100,8 +100,9 @@ define(['sge'], function(sge){
             this.updateMapTiles();
             this.createTiles();
             this.updateTiles();
-
+            
         },
+        
         _set_locked: function(value, arg0, arg1, arg2){
             value = this.__set_value('locked', value, arg0);
             if (Boolean(value)){

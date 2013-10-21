@@ -210,7 +210,10 @@ define([
                     this.game.data.megablock = new megablock.MegaBlock();
                 }
                 this.level = this.game.data.megablock.getCurrentLevel(this);
+                this.map = this.level.map;
+                
                 this.physics.setMap(this.map);
+
                 this.scene.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
                 this._uiContainer.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
                 this._gamePlayContainer.setBounds(0,0,this.level.width*32+16,this.level.height*32+16);
@@ -221,9 +224,9 @@ define([
                 this._interaction_actor = new CAAT.Actor().setFillStyle('lime').setStrokeStyle('black').setSize(32,32).setVisible(false);
                 this.map.highlightContainer.addChild(this._interaction_actor);
                 this.map.highlightContainer.setZOrder(this._interaction_actor, 0);
-                
 
                 //Add PC
+
                 var pc = null;
                 if (this.game.data.pc!==undefined){
                     pc = this.game.data.pc;
@@ -232,10 +235,13 @@ define([
                         xform : {
                             tx: this.level.startLocation.tx || 96,
                             ty: this.level.startLocation.ty || 384,
-                        }});
+                        }
+                    });
                     pc.tags.push('pc');
+
                 }
                 this.addEntity(pc);
+
                 this.pc = pc;
                 this.pc.addListener('entity.kill', function(){
                     this.game.fsm.gameOver();
@@ -285,8 +291,14 @@ define([
                 
             },
 
+            createEntity: function(type, options){
+                var entity = Factory(type, options);
+                return entity;
+            },
+
             addEntity: function(entity){
                 this._super(entity);
+                
                 var funcs = [];
                 funcs.push(entity.addListener('entity.kill', function(){
                     entity.active = false;
@@ -306,11 +318,13 @@ define([
                         this.physics.dirty.push(entity);
                     }
                 }.bind(this)));
+
                 this._updateHash(entity);
                 this._listenersEntity[entity] = funcs;
                 if (entity.get('physics')!==undefined){
                     this.physics.dirty.push(entity);
                 }
+
             },
 
             removeEntity: function(entity){
@@ -366,6 +380,7 @@ define([
             },
 
             _updateHash : function(entity){
+
                 var cx = Math.floor(entity.get('xform.tx') / this._spatialHashWidth);
                 var cy = Math.floor(entity.get('xform.ty') / this._spatialHashHeight);
                 var hash = cx + '.' + cy;
@@ -378,7 +393,6 @@ define([
                     }
                     this._spatialHash[hash].push(entity.id);
                     this._spatialHashReverse[entity.id] = hash;
-
                     this._updateRegion(entity, hash);
         
                 } 
@@ -388,10 +402,9 @@ define([
                 var origRegions = this._regionEntityHash.reverseGet(entity.id);
                 var tx = entity.get('xform.tx');
                 var ty = entity.get('xform.ty');
-
                 //Remove old regions.
                 var pruned = _.filter(origRegions, function(region){
-                    if ((tx>region.left&&tx<region.right)&&(ty>region.top&&ty<region.bottom)){
+                    if ((tx>region.data.left&&tx<region.data.right)&&(ty>region.data.top&&ty<region.data.bottom)){
                         return true;
                     } else {
                         this._regionEntityHash.remove(region, entity.id);
@@ -405,7 +418,7 @@ define([
                 newRegions = this._spatialHashRegionsReverse[hash] || [];
                  _.each(newRegions, function(region){
                     if (!_.contains(pruned, region)){
-                        if ((tx>region.left&&tx<region.right)&&(ty>region.top&&ty<region.bottom)){
+                        if ((tx>region.data.left&&tx<region.data.right)&&(ty>region.data.top&&ty<region.data.bottom)){
                             this._regionEntityHash.add(region, entity.id);
                             entity.fireEvent('region.enter', region);
                             region.entities.push(entity);
@@ -418,13 +431,13 @@ define([
             
             _addRegion : function(region){
                 this._spatialHashRegions[region] = [];
-                for (var j = region.top; j <= region.bottom+this._spatialHashHeight; j+=this._spatialHashHeight){
-                    if (j>region.bottom){
-                        j = region.bottom;
+                for (var j = region.data.top; j <= region.data.bottom+this._spatialHashHeight; j+=this._spatialHashHeight){
+                    if (j>region.data.bottom){
+                        j = region.data.bottom;
                     }
-                    for (var i = region.left; i <= region.right+this._spatialHashWidth; i+=this._spatialHashWidth) {
-                        if (i>region.right){
-                            i = region.right;
+                    for (var i = region.data.left; i <= region.data.right+this._spatialHashWidth; i+=this._spatialHashWidth) {
+                        if (i>region.data.right){
+                            i = region.data.right;
                         }
                         var cx = Math.floor(i / this._spatialHashWidth);
                         var cy = Math.floor(j / this._spatialHashHeight);
@@ -436,11 +449,11 @@ define([
                             };
                             this._spatialHashRegionsReverse[hash].push(region);
                         }
-                        if (i>=region.right){
+                        if (i>=region.data.right){
                             break;
                         }
                     }
-                    if(j>=region.bottom){
+                    if(j>=region.data.bottom){
                         break;
                     }
                 }

@@ -27,10 +27,12 @@ define(['sge'], function(sge){
             }
         },
 
-    	register: function(state){
-			this._super(state);
+    	_register: function(state){
+
+            this._super(state);
             this.map = state.map;
             this.updateTiles();
+            
 		},
     });
     sge.Component.register('elevator', Elevator);

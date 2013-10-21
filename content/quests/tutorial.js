@@ -1,4 +1,4 @@
-var cutsceneState = megablock.state.game._states['cutscene'];
+var cutsceneState = block.state.game._states['cutscene'];
 
 //Get Quest Room
 var room = block.getRandomRoom();
@@ -10,13 +10,7 @@ var victim = room.spawn("citizen", {
 	}
 });
 
-var thief = block.market.spawn("spacer", {
-	ai: {
-		region: block.market
-	}
-})
-//block.state.addEntity(thief);
-
+var thief = block.market.spawn("lawbreaker", {})
 //Get citizen entity, initialize for interaction.
 var citizen = megablock.state.getEntitiesWithTag('shopper')[0];
 citizen.addComponent('interact',{}).register(megablock.state);
