@@ -18,7 +18,7 @@
 		"spriteFrame" : 26,
 		"spriteImage" : "scifi_icons_1.png",
 		"actions" : {
-			"pickup" : "self.set('health.life', -3, 'add');"
+			"pickup" : "self.set('health.life', -3, 'add'); self.fireEvent('emote.msg', 'Never as good as the first time.');"
 		},
 		"consumable" : true
 	},

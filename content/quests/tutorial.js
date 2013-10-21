@@ -2,7 +2,7 @@ var cutsceneState = block.state.game._states['cutscene'];
 
 //Get Quest Room
 var room = block.getRandomRoom();
-room.lockDoors();
+room.lockDoors('tutorial');
 
 console.log('Room:', room)
 

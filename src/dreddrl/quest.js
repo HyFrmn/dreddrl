@@ -222,6 +222,8 @@ define(['sge', './cutscene', './expr', './item', './config'], function(sge, Cuts
 
 	Quest.Load = function(megablock){
 		var block = megablock;
+		var cutsceneState = block.state.game._states.cutscene;
+		var pc = block.pc;
 		while (QUESTLIST.length){
 			var text = QUESTLIST.shift();
 			eval(text);

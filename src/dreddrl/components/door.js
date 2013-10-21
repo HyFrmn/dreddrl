@@ -29,18 +29,23 @@ define(['sge'], function(sge){
         },
         interactSecondary: function(e){
             if (this.get('locked')){
-                if (this.get('key')){
-                    var keyName = this.get('key');
-                    if (keyName in e.get('inventory.items')){
-                        this.unlock();
+                if (this.get('locked')===true){
+                    if (this.get('key')){
+                        var keyName = this.get('key');
+                        if (keyName in e.get('inventory.items')){
+                            this.unlock();
+                        }
+                    } else {
+                        if (e.get('inventory.keys')>0){
+                            e.set('inventory.keys', -1, 'add')
+                            this.unlock();
+                        } else {
+                            this.entity.fireEvent('emote.msg', "I don't have a key.")
+                            this.entity.fireEvent('state.log', "Need a key to unlock the door.")
+                        }
                     }
                 } else {
-                    if (e.get('inventory.keys')>0){
-                        e.set('inventory.keys', -1, 'add')
-                        this.unlock();
-                    } else {
-                        this.entity.fireEvent('state.log', "Need a key to unlock the door.")
-                    }
+                    e.fireEvent('emote.msg', "My key dosen't seem to be working.");
                 }
             } else {
                 this.entity.fireEvent('state.log', 'Door is already unlocked.');

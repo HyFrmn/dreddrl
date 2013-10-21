@@ -79,10 +79,10 @@ function(sge, Factory, Map, Quest){
             });
             this.update();
         },
-        lockDoors : function(){
+        lockDoors : function(keyType){
             this.closeDoors();
             _.each(this.doors, function(door){
-                door.set('door.locked', true);
+                door.set('door.locked', keyType || true);
             });
             this.update();
         },
