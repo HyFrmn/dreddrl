@@ -28,7 +28,7 @@ define(['sge', '../behaviour'], function(sge, Behaviour){
                 this.entity.set('movement.v', vx, vy);
             } else {
                 this._timeout--;
-                if (false){
+                if (region){
                     var tx = this.entity.get('xform.tx');
                     var ty = this.entity.get('xform.ty');
                     if (!region.test(tx,ty)){
