@@ -209,7 +209,6 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
             }.bind(this));
         },
         render : function(renderer){
-            console.log('Render!')
             this.container.stopCacheAsBitmap();
             this.objectContainer.stopCacheAsBitmap();
             _.each(this._tiles, function(t){
@@ -255,7 +254,6 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
             this.data.bottom = bottom;
             this.data['xform.tx'] = (right - left)/2 + left;
             this.data['xform.ty'] = (bottom - top)/2 + top;
-            console.log(this.data)
 
         },
         onRegionEnter: function(){},

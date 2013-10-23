@@ -270,7 +270,6 @@ define([
 
             nextLevel : function(up){
                 if (up){
-                    console.log('Going Up?', this.game.data.megablock.level);
                     if (this.game.data.megablock.level>=this.game.data.megablock.levels.length-1){
                         return false;
                     } else {
@@ -285,7 +284,6 @@ define([
                 }
                 this.game.fsm.startLoad();
                 this.game.data.pc = this.pc;
-                console.log('Loading Level', this.game.data.megablock.level)
                 this.removeEntity(this.pc);
                 this.game._states['game'] = new this.game._gameState(this.game, 'Game');
                 

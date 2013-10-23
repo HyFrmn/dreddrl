@@ -101,6 +101,7 @@ define(['sge'], function(sge){
 
         register: function(state){
             this.state = state;
+            this.set('locked', this.data.locked);
             this.map = state.map;
             this.updateMapTiles();
             this.createTiles();

@@ -17,8 +17,11 @@ define(['sge',
                 this.set('behaviour', data.behaviour);
             }
         },
+        setBehaviour: function(value, arg0, arg1, arg2){
+            this.set('behaviour', value, arg0, arg1, arg2)
+        },
         _set_behaviour : function(value, arg0, arg1, arg2){
-            var behaviour = Behaviour.Create(value, this.entity);
+            var behaviour = Behaviour.Create(value, this.entity, this);
             if (this.behaviour){
                 this.behaviour.end();
             }

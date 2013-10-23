@@ -6,7 +6,7 @@ define(['sge'], function(sge){
             this.data.life = data.life || 100;
             this.data.maxLife = data.maxLife || data.life || 100;
             this.data.alignment = data.alignment || 0;
-
+            this.data.xp = data.xp || 5;
             this._stuned = false;
 
             this.entity.addListener('entity.takeDamage', function(damageProfile){
@@ -35,6 +35,12 @@ define(['sge'], function(sge){
                     }
                 }
             }.bind(this));
+            this.entity.addListener('entity.kill', this.onKill.bind(this));
+        },
+        onKill: function(entity){
+            //factionSystem.update(this.entity.get('combat.faction'), -this.get('xp'));
+            this.entity.fireEvent('state.log', this.entity.name + ' killed by ' + entity.name);
+            entity.set('stats.xp', this.get('xp'), 'add');
         },
         register: function(state){
             this._super(state);

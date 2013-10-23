@@ -23,10 +23,12 @@ define(['sge'],function(sge){
 			this.entity.set('health.life', 122 + (level*level));
 			this.nextLevel += (level * 10);
 			this.entity.fireEvent('state.log','Level Up: ' + level);
+			msg = sge.random.unit() > 0.5 ? "Fuckin' right doggy!" : "Level Up!";
+			this.entity.fireEvent('emote.msg', msg);
 		},
 		_set_xp: function(xp, method){
 			var xp = this.__set_value('xp', xp, method);
-			if (xp>this.nextLevel){
+			if (xp>=this.nextLevel){
 				this.levelUp();
 			}
 		}

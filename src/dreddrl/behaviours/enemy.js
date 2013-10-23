@@ -59,7 +59,9 @@ define(['sge','../behaviour'],function(sge, Behaviour){
             options = options || {};
             this.target = options.target;
             this.timeout = options.timeout || -1;
+            this.dist = options.dist || 128;
             this._startTime = this.state.getTime();
+            this.end();
         },
 
         tick: function(delta){
@@ -73,8 +75,37 @@ define(['sge','../behaviour'],function(sge, Behaviour){
             var deltay = targety - ty;
             var dist = Math.sqrt(deltax * deltax + deltay * deltay);
 
-            if (Math.abs(deltax)<10||Math.abs(deltay)<10){
+            if (Math.abs(deltax)<10||Math.abs(deltay)<10&&dist<this.dist){
             	this.entity.fireEvent('weapon.fire');
+            }
+        }
+    })
+
+    var AttackOnSightBehaviour =  Behaviour.Add('attackonsight', {
+        onStart: function(options){
+            options = options || {};
+            this.target = options.target;
+            this.timeout = options.timeout || -1;
+            this.dist = options.dist || 128;
+            this._startTime = this.state.getTime();
+            this.end();
+        },
+
+        tick: function(delta){
+            var targetx = this.target.get('xform.tx');
+            var targety = this.target.get('xform.ty');
+
+            var tx = this.entity.get('xform.tx');
+            var ty = this.entity.get('xform.ty');
+
+            var deltax = targetx - tx;
+            var deltay = targety - ty;
+            var dist = Math.sqrt(deltax * deltax + deltay * deltay);
+
+            if (dist<this.dist){
+                this.setBehaviour('track+attack', {timeout: 1, target: this.target}).
+                    then(this.parent.deferBehaviour('wait+attack+attackonsight', {timeout: 1, target: this.target})).
+                    then(this.parent.deferBehaviour('idle+attackonsight', {timeout: 1, target: this.target}));
             }
         }
     })
@@ -101,17 +132,18 @@ define(['sge','../behaviour'],function(sge, Behaviour){
 
 
         setBehaviour: function(behaviour, arg0, arg1, arg2, arg3, arg4){
+            console.log('Set Behaviour:', behaviour);
             if (this._currentBehaviour){
                 this._currentBehaviour.end();
             }
-            this._currentBehaviour = Behaviour.Create(behaviour, this.entity);
+            this._currentBehaviour = Behaviour.Create(behaviour, this.entity, this);
             this._currentBehaviour.onStart(arg0, arg1, arg2, arg3, arg4);
             return this._currentBehaviour;
         },
         onDamaged: function(dp){
             this.setBehaviour('track+attack', {timeout: 1, target: this.entity.state.pc}).
-	            then(this.deferBehaviour('wait+attack', {timeout: 1, target: this.entity.state.pc})).
-	            then(this.deferBehaviour('idle'));
+	            then(this.deferBehaviour('wait+attack+attackonsight', {timeout: 1, target: this.entity.state.pc})).
+	            then(this.deferBehaviour('idle+attackonsight', {timeout: 1, target: this.entity.state.pc}));
         },
         onStart: function(){
         	this._currentBehaviour = null;

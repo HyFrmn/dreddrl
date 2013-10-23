@@ -65,7 +65,8 @@ define([
                 physics : {},
                 inventory : {},
                 chara: {},
-                navigate: {}
+                navigate: {},
+                emote: {},
             }},
 			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     'judge.controls' : {},
@@ -79,7 +80,6 @@ define([
                     health : {alignment:5, life: 100},
                     combat: {faction: 'judge', weapon: 'lawgiver'},
                     stats: {},
-                    emote: {},
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     movement : {
@@ -92,7 +92,6 @@ define([
                     sprite : {
                         src : 'assets/sprites/' + sge.random.item(NPCSHEETS) +'.png',
                     },
-                    emote : {}
                 })},
             citizen : function(){return deepExtend(FACTORYDATA['npc'](), {
                     ai : {

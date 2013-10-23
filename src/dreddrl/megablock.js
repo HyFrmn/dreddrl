@@ -13,21 +13,6 @@ function(sge, Factory, Map, Quest){
     var DOORCLOSEDTILE1 = { srcX : 2, srcY: 36, spriteSheet: 'future2'}
     var DOORCLOSEDTILE2 = { srcX : 2, srcY: 37, spriteSheet: 'future2'}
 
-    var boxcoords = function(sx, sy, width, height){
-        /*
-         * Return  a lit of coordinates that are in the box starting
-         * at sx, sy and had demisions of width and height.
-         */
-        var coords = [];
-        for (var y=0; y<=height;y++){
-            for (var x=0; x<=width;x++){
-                coords.push([sx+x,sy+y]);
-            }
-        }
-        return coords;
-    };
-
-
     var ITEMTYPE_P = [];
     [['ramen',20],['gun',10],['key',5],['medkit',3],['smack',3],['phone',3],['ace.spades',1],['ace.hearts',1]].forEach(function(foo){
         for (var i = foo[1] - 1; i >= 0; i--) {
@@ -99,18 +84,7 @@ function(sge, Factory, Map, Quest){
             var halfY = Math.floor((this._tileHeight-1)/2);
             
             var tile = null;
-            /*
-            for (var y=(this.data.cy-halfY);y<=(this.data.cy+halfY);y++){
-                for (var x=(this.data.cx-halfX);x<=(this.data.cx+halfX);x++){
-                    tile = this.level.map.getTile(x,(this.data.cy+halfY)+1);
-                    tile.layers['layer0'] = FLOORTILE;
-                    tile.passable = true;
-                }
-            }
-            */
-
-
-
+           
             this.level.buildWall((this.data.cx-halfX),(this.data.cy-halfY)-2,this._tileWidth);
             this.level.buildWall((this.data.cx-halfX)-1,(this.data.cy+halfY)+2,this._tileWidth+2);
             
@@ -152,6 +126,7 @@ function(sge, Factory, Map, Quest){
                                             (this.data.cy-(this._tileHeight+3)/2)*32);
             this.state.map.canopy.addChild(this.cover);
         },
+
         createDoor : function(cx, cy, open){
             var door = this.state.createEntity('door', {
                 xform:{
@@ -168,6 +143,7 @@ function(sge, Factory, Map, Quest){
             this.state.addEntity(door);
             return door;
         },
+
         createElevator : function(cx, cy, up){
             this._populated = true;
             var door = this.state.createEntity('elevator', {xform:{
@@ -202,12 +178,15 @@ function(sge, Factory, Map, Quest){
                 this.cover.setVisible(true);
             }
         },
+
         onRegionEnter: function(entity){
             this._updateHighlight();
         },
+
         onRegionExit: function(entity){
             this._updateHighlight();
         },
+
         highlight: function(highlight){
             if (highlight){
                 this._highlight = true;
@@ -216,6 +195,7 @@ function(sge, Factory, Map, Quest){
             }
             this._updateHighlight();
         },
+
         _updateHighlight: function(){
             var evt = null;
             if (this._highlight){
@@ -293,6 +273,18 @@ function(sge, Factory, Map, Quest){
                 t.fade = 0;
             }.bind(this));
 
+             this.buildBorders();
+
+        },
+        setup: function(){
+            this.map.setup(this.state._entityContainer);
+        },
+        
+        tick: function(){
+
+        },
+
+        buildBorders: function(){
             // Build level borders.
             this.buildWall(0,1,this.map.width,true);
             for (var y=0;y<this.map.height;y++){
@@ -310,14 +302,8 @@ function(sge, Factory, Map, Quest){
                 tile.transparent = false;
             }
             this.buildWall(0,this.map.height-2,this.map.width, true);
+        },
 
-        },
-        setup: function(){
-            this.map.setup(this.state._entityContainer);
-        },
-        tick: function(){
-
-        },
         buildWall: function(sx, sy, length, ceil){
             for (var x=0;x<length;x++){
                 var tile = this.map.getTile(x+sx, sy);
@@ -386,7 +372,7 @@ function(sge, Factory, Map, Quest){
                     var ty = 7+options.padding+(21*j);
 
                     if (this.map.getTile(tx,ty)._mask!=true){
-                        var locked = false;
+                        var locked = (Math.random() > 0.5 ? true : false);
                         var open =  false; //(Math.random() > 0.5 ? true : false);
                         var up = true;
                         if (!open){
@@ -412,8 +398,8 @@ function(sge, Factory, Map, Quest){
                     tx = 3+options.padding+(6*i);
                     ty = 7+options.padding+13+(21*j);
                     if (this.map.getTile(tx,ty)._mask!=true){
-                        var locked = false;
-                        var open = true;//(Math.random() > 0.5 ? true : false);
+                        var locked = (Math.random() > 0.5 ? true : false);
+                        var open = false;//
                         if (!open){
                             locked = (Math.random() > 0.75 ? true : false)
                         }
@@ -429,23 +415,25 @@ function(sge, Factory, Map, Quest){
                     }
                 }
             }
-            //*/
+
+            this.buildBorders();
 
             this.market = new Map.Region(this.state, marketLeft, marketRight, marketTop, marketBottom);
             this.market.name = 'Market';
-            this.market.getTiles().forEach(function(t){t.layers = {
-                        'layerBase' : FLOORTILE2
-                    }})
+            this.market.getTiles().forEach(function(t){
+                t.layers = {
+                    'layerBase' : FLOORTILE2
+                }
+            })
     
             //Populate market place.
             //*
-            var npcs=4;
+            var npcs=12;
             var citizen = null;
             while (npcs--){
                 var tx = sge.random.range(this.market.data.left, this.market.data.right);
                 var ty = sge.random.range(this.market.data.top, this.market.data.bottom);
                 var tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
-                //console.log('Tile', tile, tx, ty)
                 while (!tile.passable){
                     tx = sge.random.range(this.market.data.left, this.market.data.right);
                     ty = sge.random.range(this.market.data.top, this.market.data.bottom);
@@ -455,7 +443,7 @@ function(sge, Factory, Map, Quest){
                     xform: {
                         tx: tx,
                         ty: ty
-                    },
+                },
                     ai: {
                         region: this.market
                     }

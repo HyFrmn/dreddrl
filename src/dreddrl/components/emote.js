@@ -7,13 +7,14 @@ define(['sge'], function(sge){
 			this.data.text = data.text || "";
             this.data.length = data.length || 2;
 			this.entity.addListener('emote.msg', function(msg, length){
-                //console.log(msg);
-                length = length || this.get('length')
-				this.container.setVisible(true);
-				this.set('text', msg);
-				this.entity.state.createTimeout(length, function(){
-					this.container.setVisible(false);
-				}.bind(this));
+                if (this.container!=undefined){
+                    length = length || this.get('length')
+    				this.container.setVisible(true);
+    				this.set('text', msg);
+    				this.entity.state.createTimeout(length, function(){
+    					this.container.setVisible(false);
+    				}.bind(this));
+                }
 			}.bind(this))
 		},
 		register: function(state){

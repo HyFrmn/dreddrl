@@ -3,10 +3,10 @@
 	 	"id" : "ramen",
  		"name" : "Ramen",
 		"description" : "A warm bowl of ramen noodles.",
-		"spriteFrame" : 123,
+		"spriteFrame" : 124,
 		"spriteImage" : "scifi_icons_1.png",
 		"actions" : {
-			"pickup" : "self.set('health.life', 5, 'add');"
+			"pickup" : "self.set('health.life', 5, 'add'); self.fireEvent('emote.msg','Tasty!');"
 		},
 		"consumable" : true
 	},

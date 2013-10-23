@@ -7,7 +7,6 @@ define(['sge'], function(sge){
             this.entity.addListener('interact', this.interact.bind(this));
         },
         interact: function(){
-            console.log('Elevate',this.get('up'))
             if (this.state.nextLevel(this.get('up'))){
 
             } else {
