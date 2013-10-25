@@ -12,10 +12,7 @@ define(['sge',
             this._super(entity, data);
             this.behaviour = null;
             this.data.region = data.region || null;
-            this.set('behaviour', 'idle');
-            if (data.behaviour){
-                this.set('behaviour', data.behaviour);
-            }
+            this._behaviour = data.behaviour || 'idle';
         },
         setBehaviour: function(value, arg0, arg1, arg2){
             this.set('behaviour', value, arg0, arg1, arg2)
@@ -33,6 +30,10 @@ define(['sge',
             if (this.behaviour){
                 this.behaviour.tick(delta);
             }
+        },
+        register: function(state){
+            this._super(state);
+            this.set('behaviour', this._behaviour);
         }
 
     });

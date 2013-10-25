@@ -5,6 +5,8 @@ define(['sge'], function(sge){
             this.data.up = Boolean(data.up);
             this.interact = this.interact.bind(this);
             this.entity.addListener('interact', this.interact.bind(this));
+            this.entity.addListener('focus.gain', this.open.bind(this));
+            this.entity.addListener('focus.lose', this.close.bind(this));
         },
         interact: function(){
             if (this.state.nextLevel(this.get('up'))){
@@ -13,24 +15,22 @@ define(['sge'], function(sge){
 
             }
         },
-        updateTiles : function(){
-            var tx = Math.floor(this.entity.get('xform.tx') / 32)-1;
-            var ty = Math.floor(this.entity.get('xform.ty') / 32)-2;
-            
-            for (var y=0;y<3;y++){
-                for (var x=0;x<3;x++){
-                    tile = this.map.getTile(tx+x,ty+y);
-                    //tile.passable=true;
-                    tile.layers['layer1'] = {srcX: x,srcY: 32+y, spriteSheet:"future1"}
-                }
-            }
+        open: function(){
+            this.entity.set('anim.anim', 'open');
+            this.entity.set('anim.play', true);
         },
-
+        close: function(){
+            this.entity.set('anim.anim', 'close');
+            this.entity.set('anim.play', true);
+        },
     	register: function(state){
-
             this._super(state);
             this.map = state.map;
-            this.updateTiles();
+            this.elevatorActor = new CAAT.ActorContainer().
+                                        setBackgroundImage(sge.Renderer.SPRITESHEETS['elevator']).
+                                        setSpriteIndex(0).
+                                        setLocation(-48, -64);
+            //this.entity.get('xform.container').addChild(this.elevatorActor);
             
 		},
     });

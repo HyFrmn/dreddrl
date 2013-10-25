@@ -5,13 +5,13 @@ define([
     './quest'
 ],
 function(sge, Factory, Map, Quest){
-    var FLOORTILE =  { srcX : 0, srcY: 0, spriteSheet: 'future2'};
-    var FLOORTILE2 =  { srcX : 1, srcY: 1, spriteSheet: 'future2'};
-    var CEILTILE = { srcX : 0, srcY: 36, layer: "canopy", spriteSheet: 'future2'}
-    var DOOROPENTILE1 = { srcX : 1, srcY: 36, spriteSheet: 'future2'}
-    var DOOROPENTILE2 = { srcX : 1, srcY: 37, spriteSheet: 'future2'}
-    var DOORCLOSEDTILE1 = { srcX : 2, srcY: 36, spriteSheet: 'future2'}
-    var DOORCLOSEDTILE2 = { srcX : 2, srcY: 37, spriteSheet: 'future2'}
+    var FLOORTILE =  { srcX : 0, srcY: 2};
+    var FLOORTILE2 =  { srcX : 0, srcY: 0};
+    var CEILTILE = { srcX : 1, srcY: 3, layer: "canopy"}
+    var DOOROPENTILE1 = { srcX : 2, srcY: 4}
+    var DOOROPENTILE2 = { srcX : 2, srcY: 5}
+    var DOORCLOSEDTILE1 = { srcX : 1, srcY: 4}
+    var DOORCLOSEDTILE2 = { srcX : 1, srcY: 5}
 
     var ITEMTYPE_P = [];
     [['ramen',20],['gun',10],['key',5],['medkit',3],['smack',3],['phone',3],['ace.spades',1],['ace.hearts',1]].forEach(function(foo){
@@ -263,7 +263,7 @@ function(sge, Factory, Map, Quest){
             }
             
             this.map = state.map = new Map(this.width,this.height,{src: ['assets/tiles/future1.png', 'assets/tiles/future2.png','assets/tiles/future3.png','assets/tiles/future4.png']});
-            this.map.defaultSheet = 'future2';
+            this.map.defaultSheet = 'base_tiles';
 
              _.each(this.map._tiles, function(t){
                 t._mask=false;
@@ -308,12 +308,12 @@ function(sge, Factory, Map, Quest){
             for (var x=0;x<length;x++){
                 var tile = this.map.getTile(x+sx, sy);
                 tile.layers = {
-                    'layer0' : { srcX : 6, srcY: 1, spritesheet: 'future2'}
+                    'layer0' : { srcX : 2, srcY: 1}
                 }
                 tile.passable = false;
                 tile = this.map.getTile(x+sx, sy+1);
                 tile.layers = {
-                    'layer0' : { srcX : 6, srcY: 2, spritesheet: 'future2'}
+                    'layer0' : { srcX : 2, srcY: 2}
                 }
                 tile.transparent = false;
                 tile.passable = false;
@@ -514,8 +514,8 @@ function(sge, Factory, Map, Quest){
                             items: [this._getRandomItemType()]
                         }
                     });
-                    room.update();
                 }
+                room.update();
             }.bind(this));
         },
         

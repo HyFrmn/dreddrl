@@ -189,6 +189,37 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
             }.bind(this));
             return tiles;
         },
+        testTileAttr: function(tx, ty, attr){
+            attr = attr  || 'passable'
+            var tile = this.getTile(tx, ty);
+            var result = true;
+            if (tile){
+                result = tile[attr] != true;
+            }
+            return result;
+        },
+        traceStaticTiles : function(x0, y0, x1, y1, attr){
+           var dx = Math.abs(x1-x0);
+           var dy = Math.abs(y1-y0);
+           var sx = (x0 < x1) ? 1 : -1;
+           var sy = (y0 < y1) ? 1 : -1;
+           var err = dx-dy;
+
+           while(true){
+             var result = this.testTileAttr(x0,y0, attr);  // Do what you need to for this
+             if (result){
+                return [x0, y0, true];
+             }
+             if ((x0==x1) && (y0==y1)) break;
+             var e2 = 2*err;
+             if (e2 >-dy){ err -= dy; x0  += sx; }
+             if (e2 < dx){ err += dx; y0  += sy; }
+           }
+           return [x1, y1, false];
+        },
+        traceStatic: function(x0, y0, x1, y1, attr){
+            return this.traceStaticTiles(Math.round(x0/32),Math.round(y0/32),Math.round(x1/32),Math.round(y1/32));
+        },
         renderTile : function(t){
             _.each(this.layers, function(layerName){
                 if (t.layers[layerName]){

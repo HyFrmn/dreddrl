@@ -10,7 +10,7 @@
 				],
 	"sprites" : [
 				"exclimation_icons",
-				"scifi_icons_1",
+				{"name": "scifi_icons_1", "size": 24},
 				"women_1",
 				"women_2",
 				"women_3",
@@ -21,16 +21,15 @@
 				"women_8",
 				"gang_1",
 				"gang_2",
-				"gang_6"
+				"gang_6",
+				{"name": "elevator", "size": 96}
 
 	],
 	"tiles" : [
-		"future1",
-		"future2",
-		"future3",
-		"future4"
+		"base_tiles"
 	],
 	"quests" : [
-		"tutorial"
+		"tutorial",
+		"hideout"
 	]
 }

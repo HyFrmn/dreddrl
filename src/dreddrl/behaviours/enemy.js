@@ -22,7 +22,7 @@ define(['sge','../behaviour'],function(sge, Behaviour){
             options = options || {};
             this.target = options.target;
             this.timeout = options.timeout || -1;
-            this.dist = options.dist || 128;
+            this.dist = options.dist || 256;
             this._timeout = -1;
         },
 
@@ -130,9 +130,11 @@ define(['sge','../behaviour'],function(sge, Behaviour){
 			return func;
 		},
 
+        _setBehaviourCallback: function(behaviour, arg0, arg1, arg2, arg3, arg4){
+            this.setBehaviourCallback(behaviour, arg0, arg1, arg2, arg3, arg4);
+        },
 
         setBehaviour: function(behaviour, arg0, arg1, arg2, arg3, arg4){
-            console.log('Set Behaviour:', behaviour);
             if (this._currentBehaviour){
                 this._currentBehaviour.end();
             }
@@ -144,11 +146,24 @@ define(['sge','../behaviour'],function(sge, Behaviour){
             this.setBehaviour('track+attack', {timeout: 1, target: this.entity.state.pc}).
 	            then(this.deferBehaviour('wait+attack+attackonsight', {timeout: 1, target: this.entity.state.pc})).
 	            then(this.deferBehaviour('idle+attackonsight', {timeout: 1, target: this.entity.state.pc}));
+            this.broadcastEvent('ai.setBehaviour', 'track+attackonsight',  {timeout: 1, target: this.entity.state.pc})
+        },
+        broadcastEvent : function(event, arg0, arg1, arg2, arg3, arg4){
+            var entities = this.state.findEntities(this.entity.get('xform.tx'), this.entity.get('xform.ty'), 128);
+            _.each(entities, function(entity){
+                if (entity==this.entity){
+                    return;
+                }
+                if (entity.get('ai')){    
+                    entity.fireEvent(event, arg0, arg1, arg2, arg3, arg4);
+                }
+            }.bind(this));
         },
         onStart: function(){
         	this._currentBehaviour = null;
         	this.setBehaviour('idle');
             this.entity.addListener('entity.takeDamage', this.onDamaged.bind(this));
+            this.entity.addListener('ai.setBehaviour', this.setBehaviour.bind(this));
         },
         seePlayer: function(){
         	var pc = this.entity.state.pc;

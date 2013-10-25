@@ -14,7 +14,6 @@ define(['sge'], function(sge){
         then: function(value){return this.deferred.promise.then(value)},
         onStart: function(){},
         onEnd: function(){
-            console.log('End Behaviour:', this.type);
             this._ended = true;
         },
         end: function(){

@@ -188,7 +188,21 @@ define([
                 xform: { container: '_entityContainer'},
                 interact : {},
                 highlight: {radius: 48},
-                elevator: {}
+                elevator: {},
+                sprite: {
+                    src : 'elevator',
+                    width: 96,
+                    height: 96,
+                    frame: 0,
+                    offsetX: -48,
+                    offsetY: -64
+                },
+                anim : {
+                    frames: {
+                        open : { frames: [0,1,2,3], loop: false},
+                        close: { frames: [3,2,1,0], loop: false}
+                    },
+                }
             }},
             man: function(){return deepExtend(FACTORYDATA['citizen'](), {
                 sprite : {

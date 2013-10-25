@@ -1,7 +1,7 @@
-var DOOROPENTILE1 = { srcX : 2, srcY: 36}
-var DOOROPENTILE2 = { srcX : 2, srcY: 37}
-var DOORCLOSEDTILE1 = { srcX : 1, srcY: 36}
-var DOORCLOSEDTILE2 = { srcX : 1, srcY: 37}
+var DOOROPENTILE1 = { srcX : 2, srcY: 4}
+var DOOROPENTILE2 = { srcX : 2, srcY: 5}
+var DOORCLOSEDTILE1 = { srcX : 1, srcY: 4}
+var DOORCLOSEDTILE2 = { srcX : 1, srcY: 5}
 
 define(['sge'], function(sge){
     var Door = sge.Component.extend({
@@ -62,9 +62,9 @@ define(['sge'], function(sge){
             this.tileA = new CAAT.Actor().setLocation(tx*32,ty*32);
             this.tileB = new CAAT.Actor().setLocation(tx*32,(ty-1)*32);
             var frame = DOORCLOSEDTILE1.srcY * 8 + DOORCLOSEDTILE1.srcX;
-            this.tileB.setBackgroundImage(sge.Renderer.SPRITESHEETS['future2']).setSpriteIndex(frame);
+            this.tileB.setBackgroundImage(sge.Renderer.SPRITESHEETS['base_tiles']).setSpriteIndex(frame);
             var frame = DOORCLOSEDTILE2.srcY * 8 + DOORCLOSEDTILE2.srcX;
-            this.tileA.setBackgroundImage(sge.Renderer.SPRITESHEETS['future2']).setSpriteIndex(frame);
+            this.tileA.setBackgroundImage(sge.Renderer.SPRITESHEETS['base_tiles']).setSpriteIndex(frame);
             this.map.dynamicContainer.addChild(this.tileA);
             this.map.dynamicContainer.addChild(this.tileB);
         },

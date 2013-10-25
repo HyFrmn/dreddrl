@@ -21,16 +21,9 @@ define(['sge', './item', './weapon', './quest'], function(sge, Item, Weapon, Que
 		init: function(game){
 			this.game = game;
 		},
-		loadImage: function(url){
+		loadImage: function(url, data){
 			var _loadImage = function(img){
-				var subpath = img.src.split('/');
-	            var name = subpath[subpath.length-1].split('.')[0];
-	            var spriteSize = 32;
-	            if (name.match(/icons/)){
-	                spriteSize = 24;
-	            }
-	            sge.Renderer.SPRITESHEETS[name] = new CAAT.SpriteImage().initialize(img, img.height / spriteSize, img.width / spriteSize);
-	           
+	            sge.Renderer.SPRITESHEETS[data.name] = new CAAT.SpriteImage().initialize(img, img.height / data.size, img.width / data.size);
 			}
             return loadImage(url).then(_loadImage);
 		},
@@ -59,24 +52,30 @@ define(['sge', './item', './weapon', './quest'], function(sge, Item, Weapon, Que
 			var deferreds = [];
 
 			config.charas.forEach(function(sprite){
-				var url = '/content/sprites/' + sprite + ".png"
-				deferreds.push(this.loadImage(url).then(this.updateProgress.bind(this)));
-				url = '/content/sprites/' + sprite + "_tint_red.png"
-				deferreds.push(this.loadImage(url).then(this.updateProgress.bind(this)));
+				sprite = { name: sprite, size: 32}
+				var url = '/content/sprites/' + sprite.name + ".png"
+				deferreds.push(this.loadImage(url, sprite).then(this.updateProgress.bind(this)));
+				var sprite_tint = { name: sprite.name + "_tint_red", size: 32}
+				url = '/content/sprites/' + sprite_tint.name + ".png"
+				deferreds.push(this.loadImage(url, sprite_tint).then(this.updateProgress.bind(this)));
 			}.bind(this));
 
 			
 
 			config.sprites.forEach(function(sprite){
-				var url = '/content/sprites/' + sprite + ".png"
-				deferreds.push(this.loadImage(url).then(this.updateProgress.bind(this)));
+				if (sprite.name == undefined){
+					sprite = { name: sprite, size: 32}
+				}
+				var url = '/content/sprites/' + sprite.name + ".png"
+				deferreds.push(this.loadImage(url, sprite).then(this.updateProgress.bind(this)));
 			}.bind(this))
 
 
 
 			config.tiles.forEach(function(sprite){
-				var url = '/content/tiles/' + sprite + ".png"
-				deferreds.push(this.loadImage(url).then(this.updateProgress.bind(this)));
+				sprite = { name: sprite, size: 32}
+				var url = '/content/tiles/' + sprite.name + ".png"
+				deferreds.push(this.loadImage(url, sprite).then(this.updateProgress.bind(this)));
 			}.bind(this))
 
 
