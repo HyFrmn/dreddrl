@@ -4,7 +4,10 @@ define(['sge', '../behaviour', '../actions/followpath'], function(sge, Behaviour
             options = options || {};
             this.target = target;
             this.dist = options.dist || 64;
+            
             this._matchSpeed = null;
+            
+
             options.speed = 'match';
             if (options.speed == 'match'){
                 this._matchSpeed = this.entity.get('movement.speed');
@@ -26,11 +29,13 @@ define(['sge', '../behaviour', '../actions/followpath'], function(sge, Behaviour
             var dist = Math.sqrt(deltax * deltax + deltay * deltay);
             var nx = 0;
             var ny = 0;
-            if (dist>this.dist){
+            
+           if (dist>this.dist){
                 nx = deltax / dist;
                 ny = deltay / dist;
             }
-            this.entity.set('movement.v', nx,ny);
+            this.entity.set('movement.v', nx,ny); 
+            
         }
     })
 	return FollowBehaviour;

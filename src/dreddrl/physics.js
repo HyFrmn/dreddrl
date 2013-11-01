@@ -224,7 +224,7 @@ define(['sge'], function(sge){
             this.dirty = _.filter(this.dirty, function(entity){
                 
                 if (!entity.active){
-                    return;
+                    return false;
                 }
                 if (entity.get('physics')._wait){
                     entity.get('physics')._wait = false;
@@ -248,12 +248,12 @@ define(['sge'], function(sge){
                 }
                 return true;
             }.bind(this));
-            if (this.state._debugTick) console.log('Moved:', entities.length);
+            if (this.state._debugTick) console.log('Moved:', this.dirty.length);
             var tested = [];
             var count=0;
             if (this.state._debugTick){ var t=Date.now(); console.log('Move Time:', t-debugTime); debugTime=t};
-            for (var i = entities.length - 1; i >= 0; i--) {
-                var e = entities[i];
+            for (var i = this.dirty.length - 1; i >= 0; i--) {
+                var e = this.dirty[i];
                 var tx = e.get('xform.tx');
                 var ty = e.get('xform.ty');
                 var hashA = e.id;

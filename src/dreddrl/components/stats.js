@@ -2,11 +2,10 @@ define(['sge'],function(sge){
 	var StatsComponent = sge.Component.extend({
 		init: function(entity, data){
 			this._super(entity, data);
-			this.data.xp = 0; //data.xp==undefined ? 0 : data.xp;
+			this.data.xp = 5; //data.xp==undefined ? 0 : data.xp;
 			this.data.level = 0;
 			this.data.alignment = data.alignment || 'evil';
 			this.nextLevel = 5;
-			this.levelUp();
 		},
 		addStat : function(stat, value){
 			value = value || 1;

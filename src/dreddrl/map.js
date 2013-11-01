@@ -218,7 +218,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
            return [x1, y1, false];
         },
         traceStatic: function(x0, y0, x1, y1, attr){
-            return this.traceStaticTiles(Math.round(x0/32),Math.round(y0/32),Math.round(x1/32),Math.round(y1/32));
+            return this.traceStaticTiles(Math.floor(x0/32),Math.floor(y0/32),Math.floor(x1/32),Math.floor(y1/32));
         },
         renderTile : function(t){
             _.each(this.layers, function(layerName){
@@ -292,8 +292,9 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
         get: function(attr){
             return this.data[attr];
         },
-        test : function(tx, ty){
-            return Boolean((tx>this.data.left)&&(tx<this.data.right)&&(ty>this.data.top)&&(ty<this.data.bottom));
+        test : function(tx, ty, padding){
+            padding = padding === undefined ? 0 : padding;
+            return Boolean((tx>this.data.left+padding)&&(tx<this.data.right-padding)&&(ty>this.data.top+padding)&&(ty<this.data.bottom-padding));
         },
         getTiles : function(){
             var coords = boxcoords(Math.floor(this.data.left/32), Math.floor(this.data.top/32), Math.floor((this.data.right-this.data.left)/32), Math.floor((this.data.bottom-this.data.top)/32));

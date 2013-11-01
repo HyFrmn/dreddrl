@@ -9,8 +9,14 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             var height = this.game.renderer.height;
             this.container = new CAAT.ActorContainer().setBounds(0,0,width,height);
             this.dialogContainer = new CAAT.ActorContainer().setLocation(16, height/2 - 32);
-            this.container.addChild(new CAAT.Actor().setSize(width,height).setFillStyle('black').setAlpha(0.5));
-            var instruct = new CAAT.TextActor().setText('Press Space to Continue').setFont('16px sans-serif').setTextAlign('right').setLocation(width-32,height-32);
+            //this.container.addChild(new CAAT.Actor().setSize(width,height).setFillStyle('black').setAlpha(0.5));
+            
+            var instruct = new CAAT.TextActor().
+                                setText('Press Space to Continue').
+                                setFont('16px sans-serif').
+                                setTextAlign('right').
+                                setLocation(width-32,height-32);
+
             this.container.addChild(instruct);
             this.container.addChild(this.dialogContainer);
             this.interact = this.interact.bind(this);

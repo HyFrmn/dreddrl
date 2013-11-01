@@ -45,6 +45,17 @@ define([
             'women_8',
         ];
 
+        var ITEMTYPE_P = [];
+        [['ramen',20],['gun',10],['key',5],['medkit',3],['smack',3],['phone',3],['ace.spades',1],['ace.hearts',1]].forEach(function(foo){
+            for (var i = foo[1] - 1; i >= 0; i--) {
+                ITEMTYPE_P.push(foo[0])
+            };
+        });
+
+        var getRandomItemType = function(){
+            var typ = sge.random.item(ITEMTYPE_P);
+            return typ;
+        }
 
 		var FACTORYDATA = {
             chara : function(){return{
@@ -67,6 +78,7 @@ define([
                 chara: {},
                 navigate: {},
                 emote: {},
+                stats: {}
             }},
 			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     'judge.controls' : {},
@@ -79,7 +91,10 @@ define([
                     },
                     health : {alignment:5, life: 100},
                     combat: {faction: 'judge', weapon: 'lawgiver'},
-                    stats: {},
+                    stats: {
+                        xp: 0,
+                        level: 1
+                    }
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
                     movement : {
@@ -96,6 +111,11 @@ define([
             citizen : function(){return deepExtend(FACTORYDATA['npc'](), {
                     ai : {
                         
+                    },
+                })},
+            resident : function(){return deepExtend(FACTORYDATA['citizen'](), {
+                    ai : {
+                        behaviour: 'resident'
                     },
                 })},
             'citizen.boring' : function(){return deepExtend(FACTORYDATA['citizen'],{
@@ -120,7 +140,7 @@ define([
                                }]
                     },
                 })},
-            lawbreaker : function(){
+            enemy : function(){
                 var msgs = [
                     'I am the law.',
                     'Objection noted.',
@@ -137,34 +157,26 @@ define([
                     ai : { behaviour: 'enemy' },
                     //deaddrop: {items:['key','gun','ramen','ramen','ramen']},
                     combat: {faction : 'lawbreak'},
+                    stats: {
+                        xp: Math.round(sge.random.range(2,4)),
+                        level: 1,
+                        cash: Math.round(sge.random.range(5, 25))
+                    },
+                    inventory: {
+                        items: [getRandomItemType()]
+                    }
                 }
             )},
-            gangboss : function(){return deepExtend(FACTORYDATA['lawbreaker'](), {
+            lawbreaker : function(){return deepExtend(FACTORYDATA['enemy'](), {
                 sprite : {
-                    src : 'assets/sprites/albertbrownhair.png',
-                },
-                health : {alignment:-10, life: 24},
-                //deaddrop: {count: 2, always: ['key','key','key']},
+                    src : 'assets/sprites/albert.png',
+                }
             })},
-            spacer : function(){
-                var msgs = [
-                    'I am the law.',
-                    'Objection noted.',
-                    'Sentence. Execution!',
-                    "You've been found guilt.",
-                    'One less Lawbreaker.'
-                ]
-                return deepExtend(FACTORYDATA['npc'](), {
-                    sprite : {
+            spacer : function(){return deepExtend(FACTORYDATA['enemy'](), {
+                sprite : {
                         src : 'assets/sprites/punk_' + sge.random.item([1,2,3]) +'.png',
                     },
-                    emote: {},
-                    health : {alignment:-10, life: 5},
-                    ai : { behaviour: 'enemy' },
-                    //deaddrop: {items:['key','gun','ramen','ramen','ramen']},
-                    combat: {faction : 'spacer'},
-                }
-            )},
+            })},
             freeitem : function(){ return {
                 xform: { container: '_entityContainer'},
                 physics: {},
@@ -172,7 +184,9 @@ define([
                     src : 'assets/sprites/scifi_icons_1.png',
                     width: 24,
                     scale: 2,
-                    frame: 1
+                    frame: 1,
+                    offsetX: -12,
+                    offsetY: -12
                 },
 
             }},

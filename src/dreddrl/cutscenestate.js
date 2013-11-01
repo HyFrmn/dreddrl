@@ -37,6 +37,13 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             
             this.container = new CAAT.ActorContainer().setBounds(0,0,width,height);
             this.dialogContainer = new CAAT.ActorContainer().setLocation(16, height/2 - 32);
+            this.backDrop = new CAAT.ShapeActor().
+                                    setShape(CAAT.ShapeActor.SHAPE_RECT).
+                                    setSize(width-24, (height/2) - 24).
+                                    setFillStyle('black').
+                                    setAlpha(0.75)
+                                    
+            this.container.addChild(this.backDrop);
             //this.container.addChild(new CAAT.Actor().setSize(width,height).setFillStyle('black').setAlpha(0.5));
             
             //Instruction to move on.
@@ -253,6 +260,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         _clearScreen: function(){
             this.dialogContainer.stopCacheAsBitmap();
             this.dialogContainer.emptyChildren();
+            this.backDrop.setVisible(false);
         },
         displayChoices: function(){
             var choices = this._choices;
@@ -302,6 +310,8 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this.dialogContainer.addChild(actor);
             this.dialogContainer.setLocation(16, this.game.renderer.height - (y+96));
             this.dialogContainer.cacheAsBitmap();
+            this.backDrop.setVisible(true);
+            this.backDrop.setLocation(12, this.game.renderer.height - (y+100));
             this.awaitInteraction();
         }
     });

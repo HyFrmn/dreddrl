@@ -23,7 +23,17 @@ define(['sge', './item', './weapon', './quest'], function(sge, Item, Weapon, Que
 		},
 		loadImage: function(url, data){
 			var _loadImage = function(img){
-	            sge.Renderer.SPRITESHEETS[data.name] = new CAAT.SpriteImage().initialize(img, img.height / data.size, img.width / data.size);
+				spriteHeight = 32;
+				spriteWidth = 32;
+				if (data.size){
+					if (data.size[1]!==undefined){
+						spriteWidth = data.size[0];
+						spriteHeight = data.size[1]
+					} else {
+						spriteWidth = spriteHeight = data.size;
+					}
+				}
+	            sge.Renderer.SPRITESHEETS[data.name] = new CAAT.SpriteImage().initialize(img, img.height / spriteHeight, img.width / spriteWidth);
 			}
             return loadImage(url).then(_loadImage);
 		},

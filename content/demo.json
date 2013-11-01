@@ -22,7 +22,8 @@
 				"gang_1",
 				"gang_2",
 				"gang_6",
-				{"name": "elevator", "size": 96}
+				{"name": "elevator", "size": 96},
+				{"name": "door", "size": [32,64]}
 
 	],
 	"tiles" : [

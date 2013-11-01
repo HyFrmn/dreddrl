@@ -10,6 +10,16 @@ define(['sge'], function(sge){
         setBehaviour: function(behaviour, arg0, arg1, arg2){
             return this.parent.setBehaviour(behaviour, arg0, arg1, arg2);
         },
+        deferBehaviour: function(behaviour, arg0, arg1, arg2, arg3, arg4){
+            var func = function(){
+                
+                var deferred = new sge.vendor.when.defer();
+                this.setBehaviour(behaviour, arg0, arg1, arg2, arg3, arg4)
+                    .then(deferred.resolve);
+                return deferred.promise;
+            }.bind(this)
+            return func;
+        },
         tick: function(delta){},
         then: function(value){return this.deferred.promise.then(value)},
         onStart: function(){},
@@ -20,6 +30,10 @@ define(['sge'], function(sge){
             this.onEnd();
             this.deferred.resolve();
         },
+        fail: function(){
+            this.onEnd();
+            this.deferred.reject()
+        }
     });
 
     var CompoundBehaviour = Behaviour.extend({

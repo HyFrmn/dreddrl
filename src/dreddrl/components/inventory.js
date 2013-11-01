@@ -5,6 +5,7 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
 			this._super(entity, data);
 			this.data.ammo = data.ammo || 100;
 			this.data.keys = data.keys || 3;
+            this.data.cash = data.cash || 3;
 			this.data.items = [];
             if (data.items){
                 data.items.forEach(function(itemType){

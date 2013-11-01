@@ -13,12 +13,7 @@ function(sge, Factory, Map, Quest){
     var DOORCLOSEDTILE1 = { srcX : 1, srcY: 4}
     var DOORCLOSEDTILE2 = { srcX : 1, srcY: 5}
 
-    var ITEMTYPE_P = [];
-    [['ramen',20],['gun',10],['key',5],['medkit',3],['smack',3],['phone',3],['ace.spades',1],['ace.hearts',1]].forEach(function(foo){
-        for (var i = foo[1] - 1; i >= 0; i--) {
-            ITEMTYPE_P.push(foo[0])
-        };
-    });
+
 
     var MegaBlockRoom = Map.Region.extend({
         init: function(level, cx, cy, width, height, options){
@@ -166,11 +161,13 @@ function(sge, Factory, Map, Quest){
                 if (this.doors[0].get('door.open')){
                     this.cover.setVisible(false);
                     _.each(this.entities, function(e){
+                        e.set('active', true);
                         e.get('xform.container').setVisible(true);
                     })
                 } else {
                     this.cover.setVisible(true);
                     _.each(this.entities, function(e){
+                        e.set('active', false);
                         e.get('xform.container').setVisible(false);
                     });
                 }
@@ -428,7 +425,7 @@ function(sge, Factory, Map, Quest){
     
             //Populate market place.
             //*
-            var npcs=12;
+            var npcs=2;
             var citizen = null;
             while (npcs--){
                 var tx = sge.random.range(this.market.data.left, this.market.data.right);
@@ -443,7 +440,7 @@ function(sge, Factory, Map, Quest){
                     xform: {
                         tx: tx,
                         ty: ty
-                },
+                    },
                     ai: {
                         region: this.market
                     }
@@ -452,18 +449,18 @@ function(sge, Factory, Map, Quest){
                 citizen.tags.push('shopper');
             }
 
-            var lawbreakers=0;
+            var lawbreakers=1;
             var lawbreaker = null;
             while (lawbreakers--){
-                var tx = sge.random.range(this.market.left, this.market.right);
-                var ty = sge.random.range(this.market.top, this.market.bottom);
+                var tx = sge.random.range(this.market.data.left, this.market.data.right);
+                var ty = sge.random.range(this.market.data.top, this.market.data.bottom);
                 var tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
                 while (!tile.passable){
-                    tx = sge.random.range(this.market.left, this.market.right);
-                    ty = sge.random.range(this.market.top, this.market.bottom);
+                    tx = sge.random.range(this.market.data.left, this.market.data.right);
+                    ty = sge.random.range(this.market.data.top, this.market.data.bottom);
                     tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
                 }
-                lawbreaker =  this.createEntity('spacer',{
+                lawbreaker =  this.state.createEntity('spacer',{
                     xform: {
                         tx: tx,
                         ty: ty
@@ -479,41 +476,40 @@ function(sge, Factory, Map, Quest){
             this.populateRooms();
             this._super();
         },
-        _getRandomItemType : function(){
-            var typ = sge.random.item(ITEMTYPE_P);
-            return typ;
-        },
         populateRooms : function(){
             //Populate Rooms
             _.each(this.rooms, function(room){
                // console.log(room._populated)
                 if (!room._populated){
                     room._populated = true;
-                    var spawnType = sge.random.item(['citizen','lawbreaker','spacer']);
+                    var spawnType = sge.random.item(['resident','lawbreaker','spacer']);
                     room.spawn(spawnType, {
                         ai: {
                             region: room
-                        },
-                        inventory : {
-                            items: [this._getRandomItemType()]
                         }
                     });    
                     room.spawn(spawnType, {
                         ai: {
                             region: room
-                        },
-                        inventory : {
-                            items: [this._getRandomItemType()]
                         }
                     });
-                    room.spawn(spawnType, {
+                    var e = room.spawn(spawnType, {
                         ai: {
                             region: room
-                        },
-                        inventory : {
-                            items: [this._getRandomItemType()]
                         }
                     });
+                    /*
+                    setTimeout(function(){
+                        room.openDoors()
+                        var ai = e.get('ai.behaviour');
+                        ai.setBehaviour('goto', {
+                            target: this.market
+                        }).then(function(){
+                            e.set('ai.region', this.market);
+                            console.log(this.market);
+                        }.bind(this)).then(ai.deferBehaviour('idle'));
+                    }.bind(this), 3000)
+                    */
                 }
                 room.update();
             }.bind(this));

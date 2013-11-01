@@ -29,9 +29,6 @@ define(['sge'], function(sge){
             }
         },
         tick: function(delta){
-            this.updateNavigation(delta);
-        },
-        updateNavigation: function(delta){
             if (this.pathPoints.length<=0){
                 return;
             }

@@ -1,4 +1,4 @@
-define(['sge','../behaviour'],function(sge, Behaviour){
+define(['sge','../behaviour', './attack', './track'],function(sge, Behaviour){
 	var WaitBehaviour = Behaviour.Add('wait', {
         onStart: function(options){
             options = options || {};
@@ -17,98 +17,7 @@ define(['sge','../behaviour'],function(sge, Behaviour){
         }
     })
 
-	var TrackBehaviour = Behaviour.Add('track', {
-        onStart: function(options){
-            options = options || {};
-            this.target = options.target;
-            this.timeout = options.timeout || -1;
-            this.dist = options.dist || 256;
-            this._timeout = -1;
-        },
-
-        tick: function(delta){
-
-            var tx = this.entity.get('xform.tx');
-            var ty = this.entity.get('xform.ty');
-
-            var targetx = this.target.get('xform.tx');
-            var targety = this.target.get('xform.ty');
-
-            var deltax = targetx - tx;
-            var deltay = targety - ty;
-            var dist = Math.sqrt(deltax * deltax + deltay * deltay);
-            var nx = deltax/dist;
-            var ny = deltay/dist;
-            if (dist<this.dist){
-	            this.entity.set('movement.v', nx, ny);
-	            this._timeout=-1;
-    		} else {
-    			if (this._timeout>0){
-    				if (this.state.getTime()-this._timeout>this.timeout){
-    					this.end();
-    				}
-    			} else {
-    				this._timeout = this.state.getTime();
-    			}
-    		}
-        }
-    })
-
-    var AttackBehaviour =  Behaviour.Add('attack', {
-    	onStart: function(options){
-            options = options || {};
-            this.target = options.target;
-            this.timeout = options.timeout || -1;
-            this.dist = options.dist || 128;
-            this._startTime = this.state.getTime();
-            this.end();
-        },
-
-        tick: function(delta){
-        	var targetx = this.target.get('xform.tx');
-            var targety = this.target.get('xform.ty');
-
-            var tx = this.entity.get('xform.tx');
-            var ty = this.entity.get('xform.ty');
-
-            var deltax = targetx - tx;
-            var deltay = targety - ty;
-            var dist = Math.sqrt(deltax * deltax + deltay * deltay);
-
-            if (Math.abs(deltax)<10||Math.abs(deltay)<10&&dist<this.dist){
-            	this.entity.fireEvent('weapon.fire');
-            }
-        }
-    })
-
-    var AttackOnSightBehaviour =  Behaviour.Add('attackonsight', {
-        onStart: function(options){
-            options = options || {};
-            this.target = options.target;
-            this.timeout = options.timeout || -1;
-            this.dist = options.dist || 128;
-            this._startTime = this.state.getTime();
-            this.end();
-        },
-
-        tick: function(delta){
-            var targetx = this.target.get('xform.tx');
-            var targety = this.target.get('xform.ty');
-
-            var tx = this.entity.get('xform.tx');
-            var ty = this.entity.get('xform.ty');
-
-            var deltax = targetx - tx;
-            var deltay = targety - ty;
-            var dist = Math.sqrt(deltax * deltax + deltay * deltay);
-
-            if (dist<this.dist){
-                this.setBehaviour('track+attack', {timeout: 1, target: this.target}).
-                    then(this.parent.deferBehaviour('wait+attack+attackonsight', {timeout: 1, target: this.target})).
-                    then(this.parent.deferBehaviour('idle+attackonsight', {timeout: 1, target: this.target}));
-            }
-        }
-    })
+   
 
 	var EnemyBehaviour = Behaviour.Add('enemy', {
         /**
@@ -146,7 +55,7 @@ define(['sge','../behaviour'],function(sge, Behaviour){
             this.setBehaviour('track+attack', {timeout: 1, target: this.entity.state.pc}).
 	            then(this.deferBehaviour('wait+attack+attackonsight', {timeout: 1, target: this.entity.state.pc})).
 	            then(this.deferBehaviour('idle+attackonsight', {timeout: 1, target: this.entity.state.pc}));
-            this.broadcastEvent('ai.setBehaviour', 'track+attackonsight',  {timeout: 1, target: this.entity.state.pc})
+            //this.broadcastEvent('ai.setBehaviour', 'track+attackonsight',  {timeout: 1, target: this.entity.state.pc})
         },
         broadcastEvent : function(event, arg0, arg1, arg2, arg3, arg4){
             var entities = this.state.findEntities(this.entity.get('xform.tx'), this.entity.get('xform.ty'), 128);
@@ -154,8 +63,11 @@ define(['sge','../behaviour'],function(sge, Behaviour){
                 if (entity==this.entity){
                     return;
                 }
-                if (entity.get('ai')){    
-                    entity.fireEvent(event, arg0, arg1, arg2, arg3, arg4);
+                var traceResults = this.state.map.traceStatic(this.entity.get('xform.tx'),this.entity.get('xform.ty'),entity.get('xform.tx'),this.entity.get('xform.ty'));
+                if (!traceResults[2]){
+                    if (entity.get('ai')){    
+                        entity.fireEvent(event, arg0, arg1, arg2, arg3, arg4);
+                    }
                 }
             }.bind(this));
         },

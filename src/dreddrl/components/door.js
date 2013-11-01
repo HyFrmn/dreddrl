@@ -59,14 +59,10 @@ define(['sge'], function(sge){
         createTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32);
             var ty = Math.floor(this.entity.get('xform.ty') / 32);
-            this.tileA = new CAAT.Actor().setLocation(tx*32,ty*32);
-            this.tileB = new CAAT.Actor().setLocation(tx*32,(ty-1)*32);
-            var frame = DOORCLOSEDTILE1.srcY * 8 + DOORCLOSEDTILE1.srcX;
-            this.tileB.setBackgroundImage(sge.Renderer.SPRITESHEETS['base_tiles']).setSpriteIndex(frame);
+            this.tileA = new CAAT.Actor().setLocation(tx*32,(ty-1)*32);
             var frame = DOORCLOSEDTILE2.srcY * 8 + DOORCLOSEDTILE2.srcX;
-            this.tileA.setBackgroundImage(sge.Renderer.SPRITESHEETS['base_tiles']).setSpriteIndex(frame);
+            this.tileA.setBackgroundImage(sge.Renderer.SPRITESHEETS['door']).setSpriteIndex(0);
             this.map.dynamicContainer.addChild(this.tileA);
-            this.map.dynamicContainer.addChild(this.tileB);
         },
         updateMapTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32);
@@ -92,10 +88,8 @@ define(['sge'], function(sge){
             tile.transparent = open;
             if (open){
                 this.tileA.setVisible(false);
-                this.tileB.setVisible(false);
             } else {
                 this.tileA.setVisible(true);
-                this.tileB.setVisible(true);
             }
         },
 

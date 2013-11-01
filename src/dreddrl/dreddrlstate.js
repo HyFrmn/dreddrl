@@ -87,8 +87,9 @@ define([
                 this._createUIItem('XP:', '@(pc).stats.xp');
                 this._createUIItem('AMMO:', '@(pc).inventory.ammo', {ty: 40});
                 this._createUIItem('HEALTH:', '@(pc).health.life', {ty: 64});
-                this._createUIItem('KEYS:', '@(pc).inventory.keys', {ty: 96});
+                this._createUIItem('KEYS:', '@(pc).inventory.keys', {ty: 88});
                 this._createUIItem('LEVEL:', '@(pc).stats.level', {tx: 96});
+                this._createUIItem('CASH:', '@(pc).inventory.cash', {ty: 112});
 
                 this._logs = [];
                 this._cachedLogLength = this._logs.length;
@@ -192,9 +193,9 @@ define([
                 var value = this.evalValue(path);
                     if (currentVal!=value){
                         currentVal = value;
-                        valuebox.stopCacheAsBitmap();
+                        container.stopCacheAsBitmap();
                         valuebox.setText('' + value);
-                        valuebox.cacheAsBitmap();
+                        container.cacheAsBitmap();
                     }
                 };
                 this._uiFunctions.push(callback.bind(this));
@@ -568,28 +569,37 @@ define([
                 if (this._debugTick){ var t=Date.now(); console.log('Interaction Time:', t-debugTime); debugTime=t};
                 
                 //Update Component System
-                for (var i = this._entity_ids.length - 1; i >= 0; i--) {
+                var updates = 0;
+                var _id_length = this._entity_ids.length;
+                var i, j;
+                for (i = _id_length - 1; i >= 0; i--) {
                     //var c = Date.now();
-                    this.entities[this._entity_ids[i]].tick(delta);
+                    if (this.entities[this._entity_ids[i]].active){
+                        updates++;
+                        this.entities[this._entity_ids[i]].tick(delta);
+                    }
                     //if (this._debugTick){ var t=Date.now(); console.log('Time:', i, t-c);};
                 };
-                if (this._debugTick){ var t=Date.now(); console.log('Component Time:', t-debugTime, this._entity_ids.length); debugTime=t};
+                if (this._debugTick){ var t=Date.now(); console.log('Component Time:', t-debugTime, updates, '/', _id_length); debugTime=t};
                 
                 //Update Action System
+                /*
                 var actions = this._activeActions.slice();
                 for (var i = actions.length - 1; i >= 0; i--) {
                     actions[i].tick(delta);
                 };
+                */
 
                 //Prune entities
-                _.each(this._killList, function(e){
-                    this._removeFromHash(e);
-                    this.removeEntity(e);
-                }.bind(this));
+                while (this._killList.length>0){
+                  var e = this._killList.shift();  
+                  this._removeFromHash(e);
+                  this.removeEntity(e);
+                };
                 //if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
                 
                 //Tick Encounter System
-                this.level.tick(delta);
+                //this.level.tick(delta);
                 //if (this._debugTick){ var t=Date.now(); console.log('Encounter Time:', t-debugTime); debugTime=t};
                 
                 //Track Player
@@ -602,13 +612,15 @@ define([
                 if (this._debugTick){ var t=Date.now(); console.log('Update Scene Time:', t-debugTime); debugTime=t};
 
                 _.each(this._entity_ids, function(id){
-                    var entity = this.entities[id];
-                    var tx = entity.get('xform.tx');
-                    var ty = entity.get('xform.ty');
-                    var tile = this.map.getTile(Math.floor(tx / 32), Math.floor(ty / 32));
-                    if (tile){
-                        if (tile.fade<1){
-                            entity.componentCall('render', this.game.renderer, 'main');
+                    if (this.entities[id].active){
+                        var entity = this.entities[id];
+                        var tx = entity.get('xform.tx');
+                        var ty = entity.get('xform.ty');
+                        var tile = this.map.getTile(Math.floor(tx / 32), Math.floor(ty / 32));
+                        if (tile){
+                            if (tile.fade<1){
+                                entity.componentCall('render', this.game.renderer, 'main');
+                            }
                         }
                     }
                 }.bind(this));

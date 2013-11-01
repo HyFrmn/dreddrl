@@ -15,7 +15,6 @@ define(['sge/component'], function(Component){
 				if (val.frames===undefined){
 					val = { frames: val }
 				}
-				console.log('Anim:', key, val);
 				this.animData[key] = val;
 			};
 			this.current = null;

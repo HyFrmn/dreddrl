@@ -4,7 +4,8 @@ define(['sge',
         '../behaviours/follow',
         '../behaviours/flee',
         '../behaviours/chase',
-        '../behaviours/enemy'
+        '../behaviours/enemy',
+        '../behaviours/resident'
         ], function(sge, Behaviour){
 
     var AIComponent = sge.Component.extend({
@@ -15,7 +16,15 @@ define(['sge',
             this._behaviour = data.behaviour || 'idle';
         },
         setBehaviour: function(value, arg0, arg1, arg2){
-            this.set('behaviour', value, arg0, arg1, arg2)
+            if (this.behaviour.setBehaviour){
+                this.behaviour.setBehaviour(value, arg0, arg1, arg2)
+            } else {
+                this.set('behaviour', value, arg0, arg1, arg2);
+            }
+
+        },
+        _get_behaviour : function(){
+            return this.behaviour;
         },
         _set_behaviour : function(value, arg0, arg1, arg2){
             var behaviour = Behaviour.Create(value, this.entity, this);
