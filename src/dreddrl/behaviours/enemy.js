@@ -55,7 +55,7 @@ define(['sge','../behaviour', './attack', './track'],function(sge, Behaviour){
             this.setBehaviour('track+attack', {timeout: 1, target: this.entity.state.pc}).
 	            then(this.deferBehaviour('wait+attack+attackonsight', {timeout: 1, target: this.entity.state.pc})).
 	            then(this.deferBehaviour('idle+attackonsight', {timeout: 1, target: this.entity.state.pc}));
-            //this.broadcastEvent('ai.setBehaviour', 'track+attackonsight',  {timeout: 1, target: this.entity.state.pc})
+            this.broadcastEvent('ai.setBehaviour', 'track+attackonsight',  {timeout: 1, target: this.entity.state.pc})
         },
         broadcastEvent : function(event, arg0, arg1, arg2, arg3, arg4){
             var entities = this.state.findEntities(this.entity.get('xform.tx'), this.entity.get('xform.ty'), 128);

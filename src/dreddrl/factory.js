@@ -46,7 +46,7 @@ define([
         ];
 
         var ITEMTYPE_P = [];
-        [['ramen',20],['gun',10],['key',5],['medkit',3],['smack',3],['phone',3],['ace.spades',1],['ace.hearts',1]].forEach(function(foo){
+        [['ramen',30],['gun',30],['key',5],['medkit',5],['smack',3],['phone',3],['ace.spades',1],['ace.hearts',1]].forEach(function(foo){
             for (var i = foo[1] - 1; i >= 0; i--) {
                 ITEMTYPE_P.push(foo[0])
             };

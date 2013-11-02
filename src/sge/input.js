@@ -133,13 +133,14 @@ function(Class, Observable, Hammer){
 
 	var Input = Observable.extend({
 		init: function(elem){
-            this._elem = elem;
+            this._elem = document.body
             this._super()
 			this._isNewKeyDown = {}
             this._isKeyDown = {};
             this._proxies = [];
             this._events = [];
             if ('ontouchstart' in window){
+                console.log('Enable Touch!', this._elem);
                 this.joystick = new VirtualJoystick({
                     container   : this._elem,
                     mouseSupport  : true

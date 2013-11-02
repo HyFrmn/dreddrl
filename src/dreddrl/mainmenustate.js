@@ -16,7 +16,9 @@ define(['sge', './config'], function(sge, config){
             this.itemActors = [start, settings, credits];
             this.itemCallbacks = [this.startGame.bind(this),]
             this.startState();
+
             this.input.addListener('keydown:enter', this.select.bind(this));
+            this.input.addListener('tap', this.select.bind(this));
             this.input.addListener('keydown:down', function(){
                 var index = this.selectedIndex + 1;
                 if (index>=this.itemActors.length) {

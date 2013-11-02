@@ -42,7 +42,7 @@
 		"spriteFrame" : 1,
 		"spriteImage" : "scifi_icons_1.png",
 		"actions" : {
-			"pickup" : "self.set('inventory.ammo', 10, 'add');"
+			"pickup" : "self.set('inventory.ammo', 15, 'add');"
 		},
 		"consumable" : true
 	},

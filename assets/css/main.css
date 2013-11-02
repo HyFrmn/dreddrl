@@ -100,7 +100,7 @@ html, body {
     border: none;
 }
 
-#game canvas, #tilesheet canvas {
+canvas#game ,  canvas#tilesheet {
     position: absolute;
     top: 0px;
     left: 0px;
