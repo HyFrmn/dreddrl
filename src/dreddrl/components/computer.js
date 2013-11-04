@@ -2,7 +2,7 @@ define(['sge'], function(sge){
     var ComputerComponent = sge.Component.extend({
         init: function(entity, data){
             this._super(entity, data);
-            this.data.on = data.on==undefined ? true || data.on;
+            this.data.on = data.on==undefined ? false : data.on;
             this.interact = this.interact.bind(this);
             this.entity.addListener('interact', this.interact.bind(this));
         },
