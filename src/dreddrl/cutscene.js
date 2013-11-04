@@ -2,6 +2,35 @@ define(['sge'], function(sge){
 
     var when = sge.vendor.when;
 
+    var navTo = function(entity, target){
+        var tx = this.entity.get('xform.tx');
+        var ty = this.entity.get('xform.ty');
+        var tileX = Math.floor(tx/32);
+        var tileY = Math.floor(ty/32);
+        var tx2 = this.target.get('xform.tx');
+        var ty2 = this.target.get('xform.ty');
+        var endTileX = Math.floor(tx2/32);
+        var endTileY = Math.floor(ty2/32);
+        var pathPoints = state.map.getPath(tileX, tileY,endTileX,endTileY);
+
+        var tickFunc = function(){
+            var tx = this.entity.get('xform.tx');
+            var ty = this.entity.get('xform.ty');
+            var goalX = this.pathPoints[0][0];
+            var goalY = this.pathPoints[0][1];
+            var dx = goalX - tx;
+            var dy = goalY - ty;
+            var dist = Math.sqrt((dx*dx)+(dy*dy));
+            if (dist<this.get('threshold')){
+                this.pathPoints.shift();
+                if (this.pathPoints.length<=0){
+                    this.stopNavigation();
+                    return;
+                }
+            }
+        }
+    }
+
     var EntityCutsceneActions = {
         navigate : function(cutscene, entity, target){
             cutscene.activateEntities(entity);

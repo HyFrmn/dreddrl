@@ -128,6 +128,38 @@ function(Class, Observable, Hammer){
         },
         isPressed: function(keyCode){
             return this._input.isPressed(keyCode);
+        },
+        dpad: function(){
+            var xaxis = 0;
+            var yaxis = 0;
+            if (this.joystick){
+                if (this.joystick.down()){
+                    yaxis++;
+                }
+                if (this.joystick.up()){
+                    yaxis--;
+                }
+                if (this.joystick.right()){
+                    xaxis++;
+                }
+                if (this.joystick.left()){
+                    xaxis--;
+                }
+            } else {
+                if (this.isPressed('down')){
+                    yaxis++;
+                }
+                if (this.isPressed('up')){
+                    yaxis--;
+                }
+                if (this.isPressed('right')){
+                    xaxis++;
+                }
+                if (this.isPressed('left')){
+                    xaxis--;
+                }
+            }
+            return [xaxis, yaxis];
         }
     });
 
@@ -139,6 +171,7 @@ function(Class, Observable, Hammer){
             this._isKeyDown = {};
             this._proxies = [];
             this._events = [];
+            this.joystick = null;
             if ('ontouchstart' in window){
                 console.log('Enable Touch!', this._elem);
                 this.joystick = new VirtualJoystick({
@@ -208,7 +241,7 @@ function(Class, Observable, Hammer){
             for (var i = proxies.length - 1; i >= 0; i--) {
                 proxies[i].fireEvent.apply(proxies[i], args);
             };
-        }
+        },
 	});
 
 	return Input

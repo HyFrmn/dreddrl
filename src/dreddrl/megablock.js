@@ -511,6 +511,12 @@ function(sge, Factory, Map, Quest){
                     }.bind(this), 3000)
                     */
                 }
+                computer = this.state.createEntity('computer');
+                console.log(room.get('xform.tx')-32,room.get('xform.ty')-32)
+                this.state.addEntity(computer);
+                computer.set('xform.tx', room.get('xform.tx')-64);
+                computer.set('xform.ty', room.get('xform.ty')-64);
+                
                 room.update();
             }.bind(this));
         },

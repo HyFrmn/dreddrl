@@ -19,7 +19,7 @@ define([
     './components/enemyai',
     './components/emote',
     './components/judgecontrols',
-    './components/navigate',
+    './components/computer',
 
     './actions/dialog',
     './actions/if',
@@ -76,7 +76,6 @@ define([
                 physics : {},
                 inventory : {},
                 chara: {},
-                navigate: {},
                 emote: {},
                 stats: {}
             }},
@@ -101,7 +100,6 @@ define([
                         map: this.map,
                         speed: 96
                     },
-                    navigate: {},
                     highlight: {},
                     health : {alignment:0, life: 8},
                     sprite : {
@@ -189,6 +187,26 @@ define([
                     offsetY: -12
                 },
 
+            }},
+            computer: function(){return {
+                xform: { container: '_entityContainer' },
+                interact: {},
+                highlight: {},
+                computer:{},
+                sprite: {
+                    src: 'computer',
+                    width: 32,
+                    height: 64,
+                    frame: 0,
+                    offsetX: -16,
+                    offsetY: -64
+                },
+                anim : {
+                    frames: {
+                        on : { frames: [0,1,2,3,4,5], loop: false},
+                        off: { frames: [5,4,3,2,1,0], loop: false}
+                    },
+                }
             }},
             door : function(){return {
                 xform: { container: '_entityContainer'},

@@ -26,21 +26,10 @@ define(['sge','../config'], function(sge, config){
             if (this.input===undefined){
                 return;
             }
-            var xaxis = 0;
-            var yaxis = 0;
+            var dpad = this.input.dpad();
+            var xaxis = dpad[0];
+            var yaxis = dpad[1];
             var strafe = false;
-            if (this.input.isPressed('down') || this.input.joystick.down()){
-                yaxis++;
-            }
-            if (this.input.isPressed('up') || this.input.joystick.up()){
-                yaxis--;
-            }
-            if (this.input.isPressed('right') || this.input.joystick.right()){
-                xaxis++;
-            }
-            if (this.input.isPressed('left') || this.input.joystick.left()){
-                xaxis--;
-            }
             if (this.input.isPressed('Z')){
                 strafe=true;
             }
