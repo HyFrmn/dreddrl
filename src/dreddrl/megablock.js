@@ -167,8 +167,10 @@ function(sge, Factory, Map, Quest){
                 } else {
                     this.cover.setVisible(true);
                     _.each(this.entities, function(e){
-                        e.set('active', false);
-                        e.get('xform.container').setVisible(false);
+                        if (e.get('door')==null){
+                            e.set('active', false);
+                            e.get('xform.container').setVisible(false);
+                        }
                     });
                 }
             } else { 
@@ -512,10 +514,18 @@ function(sge, Factory, Map, Quest){
                     */
                 }
                 computer = this.state.createEntity('computer');
-                console.log(room.get('xform.tx')-32,room.get('xform.ty')-32)
                 this.state.addEntity(computer);
                 computer.set('xform.tx', room.get('xform.tx')-64);
                 computer.set('xform.ty', room.get('xform.ty')-64);
+                tile = this.state.map.getTile(Math.floor((room.get('xform.tx')-64)/32),Math.floor((room.get('xform.ty')-64)/32));
+                tile.passable = false;
+
+                shelf = this.state.createEntity('shelf');
+                this.state.addEntity(shelf);
+                shelf.set('xform.tx', room.get('xform.tx')+64);
+                shelf.set('xform.ty', room.get('xform.ty')-64);
+                tile = this.state.map.getTile(Math.floor((room.get('xform.tx')+64)/32),Math.floor((room.get('xform.ty')-64)/32));
+                tile.passable = false;
                 
                 room.update();
             }.bind(this));

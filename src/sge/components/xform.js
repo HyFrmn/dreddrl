@@ -71,7 +71,6 @@ define(['sge/component'], function(Component){
 			var tx = this.entity.get('xform.tx');
             var ty = this.entity.get('xform.ty');
 			this.container.setLocation(tx + this.get('offsetX'), ty + this.get('offsetY'));
-			this.container.parent.setZOrder(this.container, ty);
 		}
 	});
 	Component.register('xform', XFormComponent);

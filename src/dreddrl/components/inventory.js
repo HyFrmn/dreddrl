@@ -18,10 +18,13 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
             this.entity.addListener('pickup', this.pickup.bind(this));
 			this.entity.addListener('inventory.add', this.addItem.bind(this));
 		},
-		pickup: function(entity){
-			var freeitem = entity.get('freeitem');
-			var item = freeitem.get('item');
+        pickupCallback: function(){
+            var freeitem = entity.get('freeitem');
+            var item = freeitem.get('item');
 
+            this.pickup(item);
+        },
+		pickup: function(item){
 			this.entity.fireEvent('state.log', 'Picked up ' + item.name);
 			if (item.actions.pickup){
 					var expr = new Expr(item.actions.pickup);

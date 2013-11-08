@@ -20,6 +20,7 @@ define([
     './components/emote',
     './components/judgecontrols',
     './components/computer',
+    './components/container',
 
     './actions/dialog',
     './actions/if',
@@ -190,8 +191,12 @@ define([
             }},
             computer: function(){return {
                 xform: { container: '_entityContainer' },
-                interact: {},
-                highlight: {},
+                interact: {
+                    targets: [[0,0]]
+                },
+                highlight: {
+                    radius: 18
+                },
                 computer:{},
                 sprite: {
                     src: 'computer',
@@ -199,13 +204,37 @@ define([
                     height: 64,
                     frame: 0,
                     offsetX: -16,
-                    offsetY: -64
+                    offsetY: -48
                 },
                 anim : {
                     frames: {
                         on : { frames: [0,1,2,3,4,5], loop: false},
                         off: { frames: [5,4,3,2,1,0], loop: false}
                     },
+                }
+            }},
+            shelf: function(){return {
+                xform: { container: '_entityContainer' },
+                interact: {
+                    targets: [[0,0]]
+                },
+                container: {
+                    fullFrame: 6,
+                    emptyFrame: 8
+                },
+                inventory: {
+                    items: [getRandomItemType(),getRandomItemType(),getRandomItemType()]
+                },
+                highlight: {
+                    radius: 18
+                },
+                sprite: {
+                    src: 'shelves',
+                    width: 32,
+                    height: 64,
+                    frame: sge.random.rangeInt(0,8),
+                    offsetX: -16,
+                    offsetY: -48
                 }
             }},
             door : function(){return {

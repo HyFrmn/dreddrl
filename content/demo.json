@@ -24,7 +24,8 @@
 				"gang_6",
 				{"name": "elevator", "size": 96},
 				{"name": "door", "size": [32,64]},
-				{"name": "computer", "size": [32,64]}
+				{"name": "computer", "size": [32,64]},
+				{"name": "shelves", "size": [32,64]}
 
 	],
 	"tiles" : [

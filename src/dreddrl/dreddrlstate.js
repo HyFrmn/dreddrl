@@ -490,6 +490,9 @@ define([
                 var entities = this.findEntities(pcTx, pcTy, 128)
                 for (var i = entities.length - 1; i >= 0; i--) {
                     entity = entities[i];
+                    if (!entity.get('active')){
+                        continue;
+                    }
                     if (entity.get('interact')==undefined){
                         continue;
                     }
@@ -611,6 +614,7 @@ define([
                 this._updateUI();
                 if (this._debugTick){ var t=Date.now(); console.log('Update Scene Time:', t-debugTime); debugTime=t};
 
+                this._sort_map = {}
                 _.each(this._entity_ids, function(id){
                     if (this.entities[id].active){
                         var entity = this.entities[id];
@@ -620,10 +624,12 @@ define([
                         if (tile){
                             if (tile.fade<1){
                                 entity.componentCall('render', this.game.renderer, 'main');
+                                this._sort_map[ty] = entity;
                             }
                         }
                     }
                 }.bind(this));
+                
                 if (this._debugTick){ var t=Date.now(); console.log('Render Time:', t-debugTime); debugTime=t};
                 //if (this._debugTick){ var t=Date.now(); console.log('Tick Time:', t-debugTime); debugTime=t};
             },
