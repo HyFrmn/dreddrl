@@ -81,7 +81,7 @@ define([
                 stats: {}
             }},
 			pc : function(){return deepExtend(FACTORYDATA['chara'](), {
-                    'judge.controls' : {},
+                    'judge_controls' : {},
                     sprite : {
                         src : 'assets/sprites/judge.png',
                     },

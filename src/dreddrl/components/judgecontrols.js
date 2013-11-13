@@ -44,6 +44,6 @@ define(['sge','../config'], function(sge, config){
             this.entity.set('movement.strafe', strafe);
         }
     });
-    sge.Component.register('judge.controls', ControlsComponent);
+    sge.Component.register('judge_controls', ControlsComponent);
     return ControlsComponent;
 });

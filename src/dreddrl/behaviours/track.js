@@ -23,7 +23,6 @@ define(['sge','../behaviour'],function(sge, Behaviour){
         },
 
         startNavigation: function(){
-            console.log('Start Navigation!');
             var tx1 = this.entity.get('xform.tx');
             var ty1 = this.entity.get('xform.ty');
             var tileX = Math.floor(tx1/32);

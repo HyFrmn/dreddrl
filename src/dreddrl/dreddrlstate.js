@@ -601,10 +601,6 @@ define([
                 };
                 //if (this._debugTick){ var t=Date.now(); console.log('Kill Time:', t-debugTime); debugTime=t};
                 
-                //Tick Encounter System
-                //this.level.tick(delta);
-                //if (this._debugTick){ var t=Date.now(); console.log('Encounter Time:', t-debugTime); debugTime=t};
-                
                 //Track Player
                 var tx = this.pc.get('xform.tx');
                 var ty = this.pc.get('xform.ty');
@@ -614,7 +610,7 @@ define([
                 this._updateUI();
                 if (this._debugTick){ var t=Date.now(); console.log('Update Scene Time:', t-debugTime); debugTime=t};
 
-                this._sort_map = {}
+                var sortMap = []
                 _.each(this._entity_ids, function(id){
                     if (this.entities[id].active){
                         var entity = this.entities[id];
@@ -624,12 +620,17 @@ define([
                         if (tile){
                             if (tile.fade<1){
                                 entity.componentCall('render', this.game.renderer, 'main');
-                                this._sort_map[ty] = entity;
+                                sortMap.push([entity, ty]);
                             }
                         }
                     }
                 }.bind(this));
-                
+                sortMap.sort(function(a,b){return a[1]-b[1]})
+                var i = 0;
+                sortMap.forEach(function(data){
+                    i++;
+                    this._entityContainer.setZOrder(data[0].get('xform.container'), i);
+                }.bind(this))
                 if (this._debugTick){ var t=Date.now(); console.log('Render Time:', t-debugTime); debugTime=t};
                 //if (this._debugTick){ var t=Date.now(); console.log('Tick Time:', t-debugTime); debugTime=t};
             },

@@ -6,10 +6,13 @@ define(['sge/lib/class'], function(Class){
 			this.entity = entity;
 			this.data = {};
 			this._listeners = {};
-			this.active = true;
+			this._active = true;
 		},
 		get : function(path){
 			var val = null
+			if (path=='active'){
+				return this._active;
+			}
 			if (this['_get_' + path] !== undefined){
 				val = this['_get_' + path]();
 			} else {
@@ -23,6 +26,9 @@ define(['sge/lib/class'], function(Class){
 			return val;
 		},
 		set : function(path, value, method){
+			if (path=='active'){
+				return (this._active = Boolean(value));
+			}
 			var newValue = null;
 			var args = Array.prototype.slice.call(arguments, 1);
 			if (this['_set_' + path] !== undefined){

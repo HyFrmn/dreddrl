@@ -2,47 +2,51 @@ define(['sge'], function(sge){
 
     var when = sge.vendor.when;
 
-    var navTo = function(entity, target){
-        var tx = this.entity.get('xform.tx');
-        var ty = this.entity.get('xform.ty');
+    var navTo = function(cutscene, entity, target){
+
+        var deferred = new when.defer();
+        var tx = entity.get('xform.tx');
+        var ty = entity.get('xform.ty');
         var tileX = Math.floor(tx/32);
         var tileY = Math.floor(ty/32);
-        var tx2 = this.target.get('xform.tx');
-        var ty2 = this.target.get('xform.ty');
+        var tx2 = target.get('xform.tx');
+        var ty2 = target.get('xform.ty');
         var endTileX = Math.floor(tx2/32);
         var endTileY = Math.floor(ty2/32);
-        var pathPoints = state.map.getPath(tileX, tileY,endTileX,endTileY);
+        var pathPoints = entity.state.map.getPath(tileX, tileY,endTileX,endTileY);
 
-        var tickFunc = function(){
-            var tx = this.entity.get('xform.tx');
-            var ty = this.entity.get('xform.ty');
-            var goalX = this.pathPoints[0][0];
-            var goalY = this.pathPoints[0][1];
+        var tickFunc = function(delta){
+            var tx = entity.get('xform.tx');
+            var ty = entity.get('xform.ty');
+            var goalX = pathPoints[0][0];
+            var goalY = pathPoints[0][1];
             var dx = goalX - tx;
             var dy = goalY - ty;
             var dist = Math.sqrt((dx*dx)+(dy*dy));
-            if (dist<this.get('threshold')){
-                this.pathPoints.shift();
-                if (this.pathPoints.length<=0){
-                    this.stopNavigation();
+            if (dist<16){
+                pathPoints.shift();
+                if (pathPoints.length<=0){
+                    cutscene.removeTickFunc(tickFunc);
+                    cutscene.deactiveEntities(entity);
+                    deferred.resolve();
                     return;
                 }
+            } else {
+                entity.set('movement.v', dx / dist, dy / dist)
+                console.log(entity.get('xform.vx'), entity.get('xform.vy'))
+                console.log('Tick', dx / dist, dy / dist);
             }
         }
+        cutscene.activateEntities(entity)
+        cutscene.addTickFunc(tickFunc);
+        return deferred.promise;
     }
 
     var EntityCutsceneActions = {
         navigate : function(cutscene, entity, target){
-            cutscene.activateEntities(entity);
-            var cb = function(){
-                cutscene.deactiveEntities(entity);
+	        navTo(cutscene, entity, target).then(function(){
                 cutscene.completeAction();
-            }.bind(this);
-            if (isArray(target)){
-            	entity.get('navigate').navToPoint(target[0],target[1], cb);
-            } else {
-	            entity.get('navigate').navToEntity(target, cb);
-	        }
+            })
         },
         dialog: function(cutscene, node){
             cutscene.startDialog(node);

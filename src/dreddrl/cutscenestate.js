@@ -103,7 +103,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         startState : function(){
             //this.interact();
             var state = this.game._states['game'];
-            
+            state.pc.set('judge_controls.active', false);
             //Disable HUD
             state._uiContainer.setVisible(false);
             
@@ -117,6 +117,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         },
 
         endDialog : function(){
+            this.game._states['game'].pc.set('judge_controls.active',true)
             this._clearScreen();
             if (this._dialogCallback){
                 this._dialogCallback(this._choiceIndex);
@@ -227,12 +228,24 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
 
             //this.game._states['game'].tick(delta);
             this._activeEntities.forEach(function(entity){
-                entity.componentCall('updateNavigation');
+                //*
+                var movement = entity.get('movement');
+                movement.tick(delta);
+                //*/
+                //entity.tick(delta);
             })
             this._tickCallbacks.forEach(function(cb){
                 cb(delta);
             });
             state.physics.resolveCollisions(delta, this._activeEntities);
+
+            /*
+            if (!this._cameraAnimated){
+                var tx = state.pc.get('xform.tx');
+                var ty = state.pc.get('xform.ty');
+                this.setCameraLocation(tx, ty);
+            }
+            */
             state.getEntities().forEach(function(entity){
                 entity.componentCall('render');
 

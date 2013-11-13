@@ -43,7 +43,7 @@ define([
 			var keys = Object.keys(this.components);
 			for (var i = keys.length - 1; i >= 0; i--) {
 				var comp = this.components[keys[i]];
-				if (comp[method]!==undefined){
+				if (comp[method]!==undefined&&comp.get('active')){
 					comp[method].apply(comp, args);
 				}
 			};
@@ -97,9 +97,7 @@ define([
 			}
 		},
 		tick : function(delta){
-			for (var i = this._tick_callbacks.length - 1; i >= 0; i--) {
-				this._tick_callbacks[i](delta);
-			};
+			this.componentCall('tick', delta);
 		}
 	});
 	return Entity;
