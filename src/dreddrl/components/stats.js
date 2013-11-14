@@ -5,6 +5,7 @@ define(['sge'],function(sge){
 			this.data.xp = 5; //data.xp==undefined ? 0 : data.xp;
 			this.data.level = 0;
 			this.data.alignment = data.alignment || 'evil';
+			this.data.faction = data.faction ||  'citizen';
 			this.nextLevel = 5;
 		},
 		addStat : function(stat, value){

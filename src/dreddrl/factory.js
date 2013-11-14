@@ -93,7 +93,8 @@ define([
                     combat: {faction: 'judge', weapon: 'lawgiver'},
                     stats: {
                         xp: 0,
-                        level: 1
+                        level: 1,
+                        faction: 'judge'
                     }
                 })},
             npc : function(){return deepExtend(FACTORYDATA['chara'](), {
@@ -111,6 +112,9 @@ define([
                     ai : {
                         
                     },
+                    stats : {
+                        faction: 'citizen'
+                    }
                 })},
             resident : function(){return deepExtend(FACTORYDATA['citizen'](), {
                     ai : {
@@ -169,12 +173,18 @@ define([
             lawbreaker : function(){return deepExtend(FACTORYDATA['enemy'](), {
                 sprite : {
                     src : 'assets/sprites/albert.png',
+                },
+                stats : {
+                    faction : 'lawbreaker'
                 }
             })},
             spacer : function(){return deepExtend(FACTORYDATA['enemy'](), {
                 sprite : {
                         src : 'assets/sprites/punk_' + sge.random.item([1,2,3]) +'.png',
                     },
+                stats : {
+                    faction : 'spacer'
+                }
             })},
             freeitem : function(){ return {
                 xform: { container: '_entityContainer'},

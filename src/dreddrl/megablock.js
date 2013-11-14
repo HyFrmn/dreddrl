@@ -438,7 +438,7 @@ function(sge, Factory, Map, Quest){
                     ty = sge.random.range(this.market.data.top, this.market.data.bottom);
                     tile = this.map.getTile(Math.floor(tx/32),Math.floor(ty/32));
                 }
-                citizen =  this.state.createEntity('citizen',{
+                citizen =  this.state.createEntity('resident',{
                     xform: {
                         tx: tx,
                         ty: ty

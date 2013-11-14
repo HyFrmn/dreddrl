@@ -117,8 +117,13 @@ define(['sge'], function(sge){
 		    	}
 
     		}
+            cutscene.state._cameraAnimated = true;
     		cutscene.addTickFunc(cb);
     	},
+        reset : function(cutscene){
+            cutscene.state._cameraAnimated = false;
+            cutscene.completeAction();
+        },
     	wait : function(cutscene, wait){
     		setTimeout(function(){
     			cutscene.completeAction();
@@ -172,8 +177,10 @@ define(['sge'], function(sge){
         startDialog : function(node, ctx){
         	ctx = ctx || {};
         	ctx['cutscene'] = this;
-        	console.log(ctx);
             this.state.setDialog(node, ctx, this.completeAction.bind(this));
+        },
+        resetCamera : function(){
+            this.state._cameraAnimated = false;
         },
         next: function(){
             if (this._queue.length<=0){

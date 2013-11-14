@@ -65,8 +65,10 @@ define(['sge','../behaviour', './attack', './track'],function(sge, Behaviour){
                 }
                 var traceResults = this.state.map.traceStatic(this.entity.get('xform.tx'),this.entity.get('xform.ty'),entity.get('xform.tx'),this.entity.get('xform.ty'));
                 if (!traceResults[2]){
-                    if (entity.get('ai')){    
-                        entity.fireEvent(event, arg0, arg1, arg2, arg3, arg4);
+                    if (entity.get('ai')){
+                        if (entity.get('stats.faction')==this.entity.get('stats.faction')){
+                            entity.fireEvent(event, arg0, arg1, arg2, arg3, arg4);
+                        }
                     }
                 }
             }.bind(this));

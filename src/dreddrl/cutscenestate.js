@@ -65,6 +65,8 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this.input.addListener('keydown:down', this.down.bind(this));
         },
         reset: function(){
+            //RESET
+            this._cameraAnimated = false;
             this._choiceIndex = -1;
             this.completeInteraction();
             this._choosing = false
@@ -239,13 +241,13 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             });
             state.physics.resolveCollisions(delta, this._activeEntities);
 
-            /*
+            //*
             if (!this._cameraAnimated){
                 var tx = state.pc.get('xform.tx');
                 var ty = state.pc.get('xform.ty');
-                this.setCameraLocation(tx, ty);
+                state.setCameraLocation(tx, ty);
             }
-            */
+            //*/
             state.getEntities().forEach(function(entity){
                 entity.componentCall('render');
 
