@@ -369,7 +369,7 @@ function(sge, Factory, Map, Quest){
                 for (var j=0;j<options.height;j++){
                     var tx = 3+options.padding+(6*i);
                     var ty = 7+options.padding+(21*j);
-
+                    room = null;
                     if (this.map.getTile(tx,ty)._mask!=true){
                         var locked = (Math.random() > 0.5 ? true : false);
                         var open =  false; //(Math.random() > 0.5 ? true : false);
@@ -387,6 +387,8 @@ function(sge, Factory, Map, Quest){
                         room = new MegaBlockRoom(this, tx, ty, 5, 5, {open: open, locked: locked, doors: doors, up: up});
                         room.name = 'Room ' + i + '-' + j + ' A';
                         this.rooms.push(room);
+
+
 
                     } else {
                         marketLeft = Math.min(marketLeft, tx*32);
@@ -411,6 +413,21 @@ function(sge, Factory, Map, Quest){
                         marketTop = Math.min(marketTop, ty*32);
                         marketBottom = Math.max(marketBottom, ty*32+32);
 
+                    }
+                    if (room){
+                        computer = this.state.createEntity('computer');
+                        this.state.addEntity(computer);
+                        computer.set('xform.tx', room.get('xform.tx')-64);
+                        computer.set('xform.ty', room.get('xform.ty')-64);
+                        tile = this.state.map.getTile(Math.floor((room.get('xform.tx')-64)/32),Math.floor((room.get('xform.ty')-64)/32));
+                        tile.passable = false;
+
+                        shelf = this.state.createEntity('shelf');
+                        this.state.addEntity(shelf);
+                        shelf.set('xform.tx', room.get('xform.tx')+64);
+                        shelf.set('xform.ty', room.get('xform.ty')-64);
+                        tile = this.state.map.getTile(Math.floor((room.get('xform.tx')+64)/32),Math.floor((room.get('xform.ty')-64)/32));
+                        tile.passable = false;
                     }
                 }
             }
@@ -513,20 +530,6 @@ function(sge, Factory, Map, Quest){
                     }.bind(this), 3000)
                     */
                 }
-                computer = this.state.createEntity('computer');
-                this.state.addEntity(computer);
-                computer.set('xform.tx', room.get('xform.tx')-64);
-                computer.set('xform.ty', room.get('xform.ty')-64);
-                tile = this.state.map.getTile(Math.floor((room.get('xform.tx')-64)/32),Math.floor((room.get('xform.ty')-64)/32));
-                tile.passable = false;
-
-                shelf = this.state.createEntity('shelf');
-                this.state.addEntity(shelf);
-                shelf.set('xform.tx', room.get('xform.tx')+64);
-                shelf.set('xform.ty', room.get('xform.ty')-64);
-                tile = this.state.map.getTile(Math.floor((room.get('xform.tx')+64)/32),Math.floor((room.get('xform.ty')-64)/32));
-                tile.passable = false;
-                
                 room.update();
             }.bind(this));
         },

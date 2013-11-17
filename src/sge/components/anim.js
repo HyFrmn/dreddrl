@@ -4,7 +4,7 @@ define(['sge/component'], function(Component){
 			this._super(entity, data);
 			this._lastUpdate = 0;
 			this.data.play = false;
-			this.data.fps = 15;
+			this.data.fps = data.fps || 15;
 			this.loop=false;
 			this.frame = 0;
 			var keys = Object.keys(data.frames);
@@ -34,6 +34,7 @@ define(['sge/component'], function(Component){
 						} else {
 							this.frame=this.frameLength-1;
 							this.data.play = false;
+							this.entity.fireEvent('anim.complete');
 						}
 					}
 					this.entity.set('sprite.frame', this.currentAnim[this.frame]);
@@ -44,6 +45,9 @@ define(['sge/component'], function(Component){
 			if (value != this.current){
 				this.setAnim(value);
 			}
+		},
+		hasAnim: function(name){
+			return (this.animData[name]!=undefined)
 		},
 		setAnim : function(name){
 			this.current = name;

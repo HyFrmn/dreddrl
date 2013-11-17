@@ -5,7 +5,7 @@ define(['sge', '../config', '../weapon'],function(sge, config, Weapon){
 			this.data.sourceEntity = data.sourceEntity;
 			this.data.damage = data.damage || 0;
 			this.data.damageType = data.damageType || "BALLISTIC";
-			this.data.drawColor = data.drawColor || 'yellow';
+			this.data.drawColor = data.drawColor || 'red';
 			this.data.firedBy = data.firedBy || null;
 		},
 		register: function(state){
@@ -31,13 +31,25 @@ define(['sge', '../config', '../weapon'],function(sge, config, Weapon){
             this._super(state);
         },
 		kill : function(){
+			var impact = this.entity.state.factory('impact', {
+				xform: {
+					tx: this.entity.get('xform.tx'),
+					ty: this.entity.get('xform.ty')
+				}
+			})
+			this.entity.state.addEntity(impact)
+			impact.set('anim.anim', 'hit');
+			impact.set('anim.play', true);
+			impact.addListener('anim.complete', function(){
+				impact.fireEvent('entity.kill');
+			})
 			this.entity.fireEvent('entity.kill');
 		},
 		onContact : function(entity){
 			if (entity!=this.data.firedBy){
 				//TODO: Faction should not be part of ai. Maybe stats?
 				if (entity.get('health') && entity.get('combat')) {
-					if (entity.get('health.alignment')!=0 && entity.get('combat.faction')!=this.data.firedBy.get('combat.faction')){
+					if (entity.get('health.alignment')!=0 && entity.get('stats.faction')!=this.data.firedBy.get('stats.faction')){
 						damageProfile = {
 							damage : this.get('damage'),
 							damageType : this.get('damageType'),

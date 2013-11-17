@@ -275,6 +275,25 @@ define([
                     },
                 }
             }},
+            impact: function(){
+                return {
+                    xform: { container: '_entityContainer'},
+                    sprite: {
+                        src: 'laser_hit',
+                        width: 32,
+                        height: 32,
+                        offsetX: -16,
+                        offsetY: -16,
+                        frame: 0
+                    },
+                    anim: {
+                        frames: {
+                            "hit" : {frames: [0,1,2,3,4,5,6,7], loop: false}
+                        },
+                        fps: 30
+                    }
+                }
+            },
             man: function(){return deepExtend(FACTORYDATA['citizen'](), {
                 sprite : {
                     src : 'assets/sprites/gang_' + sge.random.item([1,2,6]) +'.png',
