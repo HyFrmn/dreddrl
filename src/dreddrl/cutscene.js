@@ -72,6 +72,19 @@ define(['sge'], function(sge){
         }
     }
 
+    var ComputerActions = {
+        message: function(cutscene, msg){
+            var node = {
+                topic: "",
+                dialog: [{
+                    entity: 'Computer',
+                    text: msg
+                }]
+            }
+            cutscene.startDialog(node)
+        }
+    }
+
     var RoomCutsceneActions = {
     	close : function(cutscene, room){
     		room.closeDoors();
@@ -141,7 +154,8 @@ define(['sge'], function(sge){
             this.actions = {
                 entity: EntityCutsceneActions,
                 room: RoomCutsceneActions,
-                camera: CameraCutsceneActions
+                camera: CameraCutsceneActions,
+                computer: ComputerActions
             }
         },
         activateEntities : function(args){
@@ -165,7 +179,7 @@ define(['sge'], function(sge){
         },
         end: function(result){
         	this._playing = false;
-        	if (result){
+        	if (result!==undefined){
         		this.result(result);
         	}
             this.state.endScene();

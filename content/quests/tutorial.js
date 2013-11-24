@@ -4,8 +4,6 @@ var cutsceneState = block.state.game._states['cutscene'];
 var room = block.getRandomRoom();
 room.lockDoors('tutorial');
 
-console.log('Room:', room)
-
 var pc = block.state.pc;
 
 var victim = room.spawn("citizen", {
@@ -57,6 +55,14 @@ var introCutscene = function(){
     return cutscene.play();
 }
 
+var introResult = function(result){
+	if (result){
+		whenEntityEvent(room.doors[0], 'focus.gain').then(interactionCutscene);
+	} else {
+		resetMission();
+	}
+}
+
 var interactionCutscene = function(){
 	var cutscene = new Cutscene(cutsceneState);
 	cutscene.addAction('entity.dialog', {
@@ -66,7 +72,8 @@ var interactionCutscene = function(){
 			text: "So as you may have noticed by now. When an object is highlighted in green, you can interact with it using the arrow keys.\nHowever this door has a red highlight, that's because it's locked. If you have a key you can unlock the door using [X]. Go ahead and open the door."
 		}]
 	});
-	cutscene.addAction('room.lock', room)
+	cutscene.addAction('room.lock', room);
+	whenEntityEvent(room.doors[0],'open').then(meetVictimCutscene);
 	return cutscene.play();
 }
 
@@ -98,6 +105,7 @@ var meetVictimCutscene = function(){
 			text: "Judge let's go to the market to find the perp."
 		}]
 	});
+	whenRegionEnter(pc, block.market).then(arriveMarketCutscene);
 	return cutscene.play();
 }
 
@@ -114,6 +122,7 @@ var arriveMarketCutscene = function(){
 			text: "I've marked the theif in red.\nYou can use your lawgiver to kill him, and recover the stolen goods.\nPress [Space Bar] to fire your sidearm."
 		}]
 	});
+	whenEntityEvent(thief, 'entity.kill').then(recoverCutscene);
 	return cutscene.play();
 }
 
@@ -129,6 +138,7 @@ var recoverCutscene = function(){
 	});
 	cutscene.addAction('entity.set', victim, 'interact.priority', true);
 	cutscene.addAction('entity.set', victim, 'interact.enabled', true);
+	whenEntityEvent(victim, 'interact').then(completeCutscene);
 	return cutscene.play();
 }
 
@@ -152,22 +162,17 @@ var completeCutscene = function(){
 	return cutscene.play();
 }
 
+var resetMission = null;
+
 //First interaction.
 var createMission = function(){
 	var pc = block.state.pc;
 	citizen.set('interact.priority', true);
-	
-	var interaction = whenEntityEvent(citizen, 'interact')().
-						then(introCutscene).
-						then(whenEntityEvent(room.doors[0],'focus.gain')).
-						then(interactionCutscene).
-						then(whenEntityEvent(room.doors[0],'open')).
-						then(meetVictimCutscene).
-						then(whenRegionEnter(pc, block.market)).
-						then(arriveMarketCutscene).
-						then(whenEntityEvent(thief, 'entity.kill')).
-						then(recoverCutscene).
-						then(whenEntityEvent(victim, 'interact')).
-						then(completeCutscene);
+	resetMission = function(){
+		console.log('Reset Mission')
+		var interaction = whenEntityEvent(citizen, 'interact').
+						then(introCutscene).then(introResult);
+	}
+	resetMission()
 }
 createMission();

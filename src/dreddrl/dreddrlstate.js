@@ -78,6 +78,8 @@ define([
 
                 this._activeActions = [];
                 
+                this._winConditions = [];
+
                 this.scene.addChild(this._gamePlayContainer);
                 this.scene.addChild(this._uiContainer);
 
@@ -207,9 +209,9 @@ define([
                 var height = 24;
                 this.physics = new Physics(this);
                 if (this.game.data.megablock==undefined){
-                    console.log('Creating MegaBlock!')
                     this.game.data.megablock = new megablock.MegaBlock();
                 }
+
                 this.level = this.game.data.megablock.getCurrentLevel(this);
                 this.map = this.level.map;
                 
@@ -561,12 +563,14 @@ define([
                 this.physics.resolveCollisions(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Physics Time:', t-debugTime); debugTime=t};
 
+                /*
                 if (!this.game.data._intro){
                     this.game.data._intro = true;
                     //this.startDialog(INTRO);
                     //this.startCutscene();
                 }
-                
+                */
+
                 //Update Interaction System
                 this._interaction_tick(delta);
                 if (this._debugTick){ var t=Date.now(); console.log('Interaction Time:', t-debugTime); debugTime=t};
@@ -585,14 +589,6 @@ define([
                 };
                 if (this._debugTick){ var t=Date.now(); console.log('Component Time:', t-debugTime, updates, '/', _id_length); debugTime=t};
                 
-                //Update Action System
-                /*
-                var actions = this._activeActions.slice();
-                for (var i = actions.length - 1; i >= 0; i--) {
-                    actions[i].tick(delta);
-                };
-                */
-
                 //Prune entities
                 while (this._killList.length>0){
                   var e = this._killList.shift();  
@@ -631,6 +627,15 @@ define([
                     i++;
                     this._entityContainer.setZOrder(data[0].get('xform.container'), i);
                 }.bind(this))
+
+                //Test Win Condition
+                this._winConditions = this._winConditions.filter(function(filter){
+                    return !filter(delta);
+                });
+                if (this._winConditions.length==0){
+                    this.game.fsm.gameWin();
+                }
+
                 if (this._debugTick){ var t=Date.now(); console.log('Render Time:', t-debugTime); debugTime=t};
                 //if (this._debugTick){ var t=Date.now(); console.log('Tick Time:', t-debugTime); debugTime=t};
             },

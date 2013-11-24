@@ -26,14 +26,17 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
         },
 		pickup: function(item){
 			this.entity.fireEvent('state.log', 'Picked up ' + item.name);
-			if (item.actions.pickup){
-					var expr = new Expr(item.actions.pickup);
+            console.log('Item:', item)
+			if (item.instant){
+                if (item.actions.use){
+    				var expr = new Expr(item.actions.use);
                     expr.addContext('self', this.entity);
-					expr.loadContext(item.getContext());
-					expr.run();
-				
-			}
-
+    				expr.loadContext(item.getContext());
+    				expr.run();
+    			}
+            } else {
+                this.addItem(item);
+            }
 		},
 		subtractProperty: function(prop, value){
 			value = value || 1;

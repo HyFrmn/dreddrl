@@ -1,4 +1,4 @@
-define(['sge', './config'], function(sge, config){
+define(['sge', './expr','./config'], function(sge, Expr, config){
 	/*
 	*
 	* Abstract Item Class
@@ -15,7 +15,7 @@ define(['sge', './config'], function(sge, config){
 			this.description = options.description || 'A simple object.'
 			this.spriteFrame = options.spriteFrame || 1;
 			this.spriteImage = options.spriteImage || 'scifi_icons_1.png';
-			this.immediate = options.immediate || false;
+			this.instant = options.instant || false;
 			this.actions = options.actions || {};
 			this.encounter = options.encounter || null;
 		},
@@ -39,6 +39,16 @@ define(['sge', './config'], function(sge, config){
                 }
             })
             return ctx;
+        },
+        use: function(entity){
+        	if (this.actions.use){
+
+				var expr = new Expr(this.actions.use);
+                expr.addContext('self', entity);
+				expr.loadContext(item.getContext());
+				expr.run();
+			}
+
         }
 	});
 

@@ -9,23 +9,25 @@ define(['sge', './cutscene', './expr', './item', './config'], function(sge, Cuts
 
 	var eventId = 0;
 	var whenEntityEvent = function(entity, eventName){
-		var func = function(){
-			
-			var deferred = when.defer();
-			var listener = function(){
+		var deferred = when.defer();
+		var listener = function(){
+			entity.removeListener(eventName, listener);
+			deferred.resolve();
+		}
+		entity.addListener(eventName, listener);
+		return deferred.promise;
+	}
 
-				entity.removeListener(eventName, listener);
-				deferred.resolve();
-			}
-			entity.addListener(eventName, listener);
-			return deferred.promise;
+
+	var whenEntityEventFactory = function(entity, eventName){
+		var func = function(){
+			return whenEntityEvent(entity,eventName);
 		}
 		return func;
 	}
 
 	var whenRegionEnter = function(entity, region){
-		var func = function(){
-			var deferred = when.defer();
+		var deferred = when.defer();
 			var listener = function(r){
 				if (r==region){
 					entity.removeListener('region.enter', listener);
@@ -35,8 +37,6 @@ define(['sge', './cutscene', './expr', './item', './config'], function(sge, Cuts
 			entity.addListener('region.enter', listener);
 			
 			return deferred.promise;
-		}
-		return func;
 	}
 
 	var Quest = sge.Class.extend({

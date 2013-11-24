@@ -1,5 +1,7 @@
-var DOOROPENTILE1 = { srcX : 2, srcY: 4}
-var DOOROPENTILE2 = { srcX : 2, srcY: 5}
+var DOOROPENTILE1 = { srcX : 1, srcY: 4}
+var DOOROPENTILE2 = { srcX : 1, srcY: 5}
+var DOORCAPTILE1 = { srcX : 2, srcY: 4}
+var DOORCAPTILE2 = { srcX : 2, srcY: 5}
 var DOORCLOSEDTILE1 = { srcX : 1, srcY: 4}
 var DOORCLOSEDTILE2 = { srcX : 1, srcY: 5}
 
@@ -70,6 +72,14 @@ define(['sge'], function(sge){
             tile = this.map.getTile(tx,ty-2);
             tile = this.map.getTile(tx,ty-1);
             tile.layers['layer1'] = DOOROPENTILE1;
+            tile.layers['canopy'] = DOORCAPTILE1;
+            tile = this.map.getTile(tx-1,ty-1);
+            if (tile){
+                tile.layers['canopy'] = { srcX : 3, srcY: 4}
+            }
+            tile = this.map.getTile(tx+1,ty-1);
+            tile.layers['canopy'] = { srcX : 3, srcY: 4}
+            
             tile = this.map.getTile(tx,ty);
             tile.layers['layer1'] = DOOROPENTILE2;
         },

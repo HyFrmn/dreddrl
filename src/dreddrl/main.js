@@ -4,19 +4,21 @@ define(
 		'./pausestate',
 		'./mainmenustate',
 		'./cutscenestate',
+		'./menustate',
 		'./config'
 	],
-function(DreddRLState, PauseState, MainMenuState, CutsceneState, config){
+function(DreddRLState, PauseState, MainMenuState, CutsceneState, MenuState, config){
 	return {
 		DreddRLState : DreddRLState,
 		PauseState : PauseState,
 		MainMenuState : MainMenuState,
 		CutsceneState : CutsceneState,
+		MenuState : MenuState,
 		config : config,
 		CreateGame : function(GameClass, width, height, fps){
 			game = new GameClass({
 		        elem: document.getElementById('game'),
-	            pauseState: PauseState,
+	            pauseState: MenuState,
 	            mainMenuState: MainMenuState,
 	            width: parseInt(width || 720),
 	            height: parseInt(height || 240),

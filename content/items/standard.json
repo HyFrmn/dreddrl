@@ -6,9 +6,10 @@
 		"spriteFrame" : 124,
 		"spriteImage" : "scifi_icons_1.png",
 		"actions" : {
-			"pickup" : "self.set('health.life', 5, 'add'); self.fireEvent('emote.msg','Tasty!');"
+			"use" : "self.set('health.life', 5, 'add'); self.fireEvent('emote.msg','Tasty!');"
 		},
-		"consumable" : true
+		"consumable" : true,
+		"instant" : true
 	},
 
 	{ 
@@ -18,7 +19,7 @@
 		"spriteFrame" : 26,
 		"spriteImage" : "scifi_icons_1.png",
 		"actions" : {
-			"pickup" : "self.set('health.life', -3, 'add'); self.fireEvent('emote.msg', 'Never as good as the first time.');"
+			"use" : "self.set('health.life', -3, 'add'); self.fireEvent('emote.msg', 'Never as good as the first time.');"
 		},
 		"consumable" : true
 	},
@@ -30,7 +31,7 @@
 		"spriteFrame" : 37,
 		"spriteImage" : "scifi_icons_1.png",
 		"actions" : {
-			"pickup" : "self.set('health.life', 35, 'add');"
+			"use" : "self.set('health.life', 35, 'add');"
 		},
 		"consumable" : true
 	},
@@ -42,9 +43,10 @@
 		"spriteFrame" : 1,
 		"spriteImage" : "scifi_icons_1.png",
 		"actions" : {
-			"pickup" : "self.set('inventory.ammo', 15, 'add');"
+			"use" : "self.set('inventory.ammo', 15, 'add');"
 		},
-		"consumable" : true
+		"consumable" : true,
+		"instant" : true
 	},
 
 	{
@@ -62,9 +64,10 @@
 		"spriteFrame" : 57,
 		"spriteImage" : "scifi_icons_1.png",
 		"actions" : {
-			"pickup" : "self.set('inventory.keys', 1, 'add');"
+			"use" : "self.set('inventory.keys', 1, 'add');"
 		},
-		"consumable" : true
+		"consumable" : true,
+		"instant" : true
 	},
 
 	{
@@ -111,7 +114,7 @@
 		"id" : "phone",
 		"name" : "Cellphone",
 		"description" : "A clamshell burner phone.",
-		"spriteFrame" : 72,
+		"spriteFrame" : 172,
 		"spriteImage" : "scifi_icons_1.png"
 	}
 ]

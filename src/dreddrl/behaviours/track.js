@@ -59,7 +59,6 @@ define(['sge','../behaviour'],function(sge, Behaviour){
                 if (this._hasSight){
                     this._hasSight = false;
                     this.entity.fireEvent('emote.msg', "Lost him");
-                    console.log('Nav')
                     this.startNavigation();
                     this._timeout = this.state.getTime();
                 }
@@ -84,7 +83,6 @@ define(['sge','../behaviour'],function(sge, Behaviour){
                 var targetOffsetX = Math.abs(this._targetX - targetx);
                 var targetOffsetY = Math.abs(this._targetY - targety);
                 if (targetOffsetX>64||targetOffsetY>16){
-                    console.log('Update Nav')
                     this.startNavigation();
                 }
 

@@ -1,8 +1,8 @@
 define(['sge', './expr', './config'], function(sge, Expr, config){
     var when = sge.vendor.when;
 
-
-    
+    CHOOSE_INSTRUCTIONS = "Press Enter to Choose."
+    DIALOG_INSTRUCTIONS = "Press Enter to Continue."
 
     var CutsceneState = sge.GameState.extend({
         initState: function(){
@@ -48,15 +48,15 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             
             //Instruction to move on.
             this.instructions = new CAAT.TextActor().
-                                        setText('Press Space to Continue').
+                                        setText(DIALOG_INSTRUCTIONS).
                                         setFont('16px sans-serif').
                                         setTextAlign('right').
                                         setLocation(width-32,height-32).
                                         setVisible(false);
+
             this.container.addChild(this.instructions);
             this.container.addChild(this.dialogContainer);
             
-
             //Bind interactions to key presses.
             this.interact = this.interact.bind(this);
             this.input.addListener('keydown:' + config.AButton, this.interact);
@@ -258,6 +258,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this._ctx = ctx || {};
             this.parseNode(node);
             this.setDialogText(this._dialogList.shift());
+
             this._dialogCallback = callback;
         },
         nextNode: function(){
@@ -293,6 +294,8 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
                 actor.setText(choice);
                 this.dialogContainer.addChild(actor);
             };
+            this.instructions.setText(CHOOSE_INSTRUCTIONS);
+            this.backDrop.setVisible(true);
             this.awaitInteraction();
         },
         setDialogText: function(dialog){
@@ -325,6 +328,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
             this.dialogContainer.addChild(actor);
             this.dialogContainer.setLocation(16, this.game.renderer.height - (y+96));
             this.dialogContainer.cacheAsBitmap();
+            this.instructions.setText(DIALOG_INSTRUCTIONS);
             this.backDrop.setVisible(true);
             this.backDrop.setLocation(12, this.game.renderer.height - (y+100));
             this.awaitInteraction();
