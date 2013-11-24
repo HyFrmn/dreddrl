@@ -2,6 +2,7 @@ define([
         'sge',
         './config',
         './loader',
+        './tiledlevel',
         './blocklevelgenerator',
         './physics',
         './factory',
@@ -10,7 +11,7 @@ define([
         './weapon',
         './item'
     ],
-    function(sge, config, Loader, BlockLevelGenerator, Physics, Factory, Map, megablock, Weapon, Item){
+    function(sge, config, Loader, TiledLevel, BlockLevelGenerator, Physics, Factory, Map, megablock, Weapon, Item){
 
         INTRO = "In Mega City One the men and women of the Hall of Justice are the only thing that stand between order and chaos. Jury, judge and executioner these soliders of justice are the physical embodiment of the the law. As a member of this elite group it is your responsiblity to bring justice to Mega City One.";
         INTRO2 = "Rookie you have been assigned to dispense the law in this Mega Block."
@@ -208,11 +209,13 @@ define([
                 var width = 24;
                 var height = 24;
                 this.physics = new Physics(this);
+                /*
                 if (this.game.data.megablock==undefined){
                     this.game.data.megablock = new megablock.MegaBlock();
                 }
-
                 this.level = this.game.data.megablock.getCurrentLevel(this);
+                */
+                this.level = new TiledLevel(this, {level: 'dev'});
                 this.map = this.level.map;
                 
                 this.physics.setMap(this.map);

@@ -251,7 +251,7 @@ define([
                 xform: { container: '_entityContainer'},
                 highlight: {radius: 32},
                 interact : {
-                    targets: [[0,0],[0,-64]]
+                    targets: [[0,32],[0,-32]]
                 },
                 door: {}
             }},

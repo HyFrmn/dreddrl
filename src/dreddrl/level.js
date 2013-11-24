@@ -38,13 +38,18 @@ define(['sge', './map'], function(sge, Map){
              _.each(this.map._tiles, function(t){
                 t._mask=false;
                 t.layers = {
-                    'layerBase' : FLOORTILE
+                    'base' : FLOORTILE
                 }
                 t.fade = 0;
             }.bind(this));
 
             this.buildBorders();
 
+            this.state._winConditions.push(this.checkWin.bind(this));
+
+        },
+        checkWin: function(){
+            return false;
         },
         setup: function(){
             this.map.setup(this.state._entityContainer);

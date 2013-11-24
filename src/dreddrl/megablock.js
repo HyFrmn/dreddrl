@@ -47,7 +47,6 @@ function(sge, Factory, Level, Region, MegaBlockRoom, Quest){
             this._super(state, options);
             this.rooms = [];
             this.block = block;
-            this.state._winConditions.push(this.checkWin.bind(this));
             var marketLeft =this.width*32;
             var marketRight =  0;
             var marketTop = this.height*32;

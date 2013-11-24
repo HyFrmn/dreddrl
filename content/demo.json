@@ -35,5 +35,8 @@
 	"quests" : [
 		"tutorial",
 		"hideout"
+	],
+	"levels" : [
+		"dev"
 	]
 }

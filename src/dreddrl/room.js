@@ -101,7 +101,6 @@ define(['sge','./region'], function(sge, Region){
             if ((this.options.doors=='top')||(this.options.doors=='both')) {
                 this.createDoor(this.data.cx, this.data.cy-halfY-1, this.options.open);
             }
-            console.log('PLOT', CEILTILE)
             if ((this.options.doors=='elevator')){
                 this.createElevator(this.data.cx, this.data.cy+halfY+3, this.options.up);
             }

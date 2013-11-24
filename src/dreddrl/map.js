@@ -71,7 +71,6 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
 
     var Map = Class.extend({
         init: function(width, height, options){
-            console.log('MAP')
             if (options===undefined){
                 options = {
                     src: 'assets/quest/img/2/tilesheet.png'
@@ -101,7 +100,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
 
 
             this._tiles = [];
-            this.layers = ['layerBase','layer0','layer1','canopy'];
+            this.layers = ['base','layer0','layer1','canopy'];
             this.layerContainers = {};
             _.each(this.layers, function(layerName){
                 this.layerContainers[layerName] = new CAAT.ActorContainer().setBounds(0,0,width*32,height*32);;
@@ -114,7 +113,6 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
             var total = this.width * this.height;
             var x = 0;
             var y = 0;
-            console.log('MAP')
             for (var i=0; i<total; i++){
                 var tile = new Tile(x, y);
                 _.each(this.layers, function(layerName){
@@ -122,7 +120,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
                                                     setLocation(x*this.tileSize,y*this.tileSize).
                                                     setFillStyle('#FF0000').
                                                     setSize(30,30);
-                    if (layerName=='layerBase'){
+                    if (layerName=='base'){
                         this.baseContainer.addChild(tile.actors[layerName]);
                     } else if (layerName=='canopy'){
                         this.canopy.addChild(tile.actors[layerName]);
@@ -251,6 +249,7 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
             }.bind(this));
             this.container.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
             this.baseContainer.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
+            this.canopy.cacheAsBitmap(0,CAAT.Foundation.Actor.CACHE_DEEP);
         },
         loadCallback : function(){
             if (this.onready){

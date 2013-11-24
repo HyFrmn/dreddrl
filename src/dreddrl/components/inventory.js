@@ -26,7 +26,6 @@ define(['sge', '../expr', '../item','../action'],function(sge, Expr, Item, Actio
         },
 		pickup: function(item){
 			this.entity.fireEvent('state.log', 'Picked up ' + item.name);
-            console.log('Item:', item)
 			if (item.instant){
                 if (item.actions.use){
     				var expr = new Expr(item.actions.use);
