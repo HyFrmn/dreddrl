@@ -1,7 +1,7 @@
 define(
     ['sge/lib/class',
     'sge/observable',
-    'sge/vendor/hammer'],
+    'sge/gamecontroller'],
 function(Class, Observable, Hammer){
 	var KEYCODES = {
         "backspace" : 8,
@@ -173,23 +173,72 @@ function(Class, Observable, Hammer){
             this._events = [];
             this.joystick = null;
             if ('ontouchstart' in window){
-                console.log('Enable Touch!', this._elem);
-                this.joystick = new VirtualJoystick({
-                    container   : this._elem,
-                    mouseSupport  : true
-                });
-                //*
-                this.joystick.addEventListener('touchStartValidation', function(event){
-                    var touch   = event.changedTouches[0];
-                    console.log(touch.pageX > window.innerWidth/2)
-                    if( touch.pageX > window.innerWidth/2 ){
-                        this.tapCallback()
-                        return false;
+                var options = {
+                    left:{
+                        dpad: {
+                            down: {
+                                touchStart: function(){
+                                    this.keyDownCallback({keyCode: KEYCODES['down']})
+                                }.bind(this),
+                                touchEnd: function(){
+                                    this.keyUpCallback({keyCode: KEYCODES['down']})
+                                }.bind(this)
+                            },
+                            up: {
+                                touchStart: function(){
+                                    this.keyDownCallback({keyCode: KEYCODES['up']})
+                                }.bind(this),
+                                touchEnd: function(){
+                                    this.keyUpCallback({keyCode: KEYCODES['up']})
+                                }.bind(this)
+                            },
+                            left: {
+                                touchStart: function(){
+                                    this.keyDownCallback({keyCode: KEYCODES['left']})
+                                }.bind(this),
+                                touchEnd: function(){
+                                    this.keyUpCallback({keyCode: KEYCODES['left']})
+                                }.bind(this)
+                            },
+                            right: {
+                                touchStart: function(){
+                                    this.keyDownCallback({keyCode: KEYCODES['right']})
+                                }.bind(this),
+                                touchEnd: function(){
+                                    this.keyUpCallback({keyCode: KEYCODES['right']})
+                                }.bind(this)
+                            }
+                        }
+                    },
+                    right: { 
+                                type: 'buttons', 
+                                position: { right: '17%', bottom: '28%' }, 
+                                buttons: [
+                                        { offset: { x: '-13%', y: 0 }, label: 'X', radius: '7%', stroke: 2, backgroundColor: 'blue', fontColor: '#fff', touchStart: function() {
+                                                // Blue is currently mapped to up button
+                                                this.keyDownCallback({keyCode: KEYCODES['z']});
+                                        }.bind(this), touchEnd: function() {
+                                                this.keyUpCallback({keyCode: KEYCODES['z']});      
+                                        }.bind(this) },
+                                        { offset: { x: 0, y: '-11%' }, label: 'Y', radius: '7%', stroke: 2, backgroundColor: 'yellow', fontColor: '#fff', touchStart: function() {
+                                                this.keyDownCallback({keyCode: KEYCODES['x']});
+                                        }.bind(this), touchEnd: function() {
+                                                this.keyUpCallback({keyCode: KEYCODES['x']});                                                
+                                        }.bind(this)  },
+                                        { offset: { x: '13%', y: 0 }, label: 'B', radius: '7%', stroke: 2, backgroundColor: 'red', fontColor: '#fff', touchStart: function() {
+                                                this.keyDownCallback({keyCode: KEYCODES['enter']});
+                                        }.bind(this), touchEnd: function() {
+                                                this.keyUpCallback({keyCode: KEYCODES['enter']});                                              
+                                        }.bind(this) },
+                                        { offset: { x: 0, y: '11%' }, label: 'A', radius: '7%', stroke: 2, backgroundColor: 'green', fontColor: '#fff', touchStart: function() {
+                                                this.keyDownCallback({keyCode: KEYCODES['space']});
+                                        }.bind(this), touchEnd: function() {
+                                                this.keyUpCallback({keyCode: KEYCODES['space']});       
+                                        }.bind(this)  }
+                                ],
                     }
-                    return true
-                }.bind(this));
-                //*/
-                //Hammer(this._elem).on('tap', this.tapCallback.bind(this));
+                };
+                GameController.init( options );
             } 
             if ('onkeydown' in window) {
                 window.onkeydown = this.keyDownCallback.bind(this);
@@ -198,7 +247,6 @@ function(Class, Observable, Hammer){
             //
         },
         tapCallback : function(e){
-            console.log('tap');
             this._events.push('tap');
         },
         keyDownCallback : function(e){
