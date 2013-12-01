@@ -1,0 +1,12 @@
+{
+	"dialog" : {
+		"librarian.idle" : {
+			"topic" : "",
+			"dialog" : [{
+				"entity" : "librarian",
+				"text" : "Leave me alone I'm busy."
+				}]
+		}
+	},
+	"events" : {}
+}

@@ -14,7 +14,7 @@ define(['sge', './config'], function(sge, config){
             this.scene.addChild(credits);
             this.scene.addChild(instruct);
             this.itemActors = [start, settings, credits];
-            this.itemCallbacks = [this.startGame.bind(this),]
+            this.itemCallbacks = [this.startGame.bind(this), this.showSettings.bind(this)]
             this.startState();
 
             this.input.addListener('keydown:enter', this.select.bind(this));
@@ -51,7 +51,9 @@ define(['sge', './config'], function(sge, config){
             this.game.fsm.startLoad();
             this.game._states['game'] = new this.game._gameState(this.game, 'Game');
         },
-
+        showSettings : function(){
+            this.game.fsm.startSettings();
+        }
 	});
 
 	return MainMenuState;

@@ -12,5 +12,7 @@ define(function(){
 		itemDataUrl : '/assets/items/standard.json',
 		weaponDataUrl : '/assets/items/weapons.json',
 		encounterDataUrl : '/assets/encounters/standard.json',
+
+		buildDate: '$$BUILD_DATE'
 	}
 })

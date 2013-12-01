@@ -54,5 +54,14 @@ function   (sge, dreddrl) {
     CAAT.DEBUG=Boolean(getURLParameter('caat-debug'));
 
     game = dreddrl.CreateGame(sge.Game, idealWidth, idealHeight, idealFPS);
+
+    map = getURLParameter('map');
+    if (map){
+        map = map.match(/\/?([a-z]+)(\.json)?/);
+        game.data.startMap = map[1];
+        console.log('Map:', map)
+    }
+
+
     game.start();
 });

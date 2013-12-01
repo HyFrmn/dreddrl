@@ -96,10 +96,10 @@ define(['sge','./region'], function(sge, Region){
             }
 
             if ((this.options.doors=='bottom')||(this.options.doors=='both')){
-                this.createDoor(this.data.cx, this.data.cy+halfY+3, this.options.open);
+                this.createDoor(this.data.cx, this.data.cy+halfY+2, this.options.open);
             } 
             if ((this.options.doors=='top')||(this.options.doors=='both')) {
-                this.createDoor(this.data.cx, this.data.cy-halfY-1, this.options.open);
+                this.createDoor(this.data.cx, this.data.cy-halfY-2, this.options.open);
             }
             if ((this.options.doors=='elevator')){
                 this.createElevator(this.data.cx, this.data.cy+halfY+3, this.options.up);

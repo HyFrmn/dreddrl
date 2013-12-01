@@ -25,7 +25,9 @@ define(['sge'], function(sge){
             } else {
                 this.set('open', !this.get('open'));
                 this.entity.fireEvent('open');
-                this.room.update();
+                if (this.room){
+                    this.room.update();
+                }
                 this.updateTiles();
             }
         },
@@ -61,7 +63,7 @@ define(['sge'], function(sge){
         createTiles : function(){
             var tx = Math.floor(this.entity.get('xform.tx') / 32);
             var ty = Math.floor(this.entity.get('xform.ty') / 32);
-            this.tileA = new CAAT.Actor().setLocation(tx*32,(ty-1)*32);
+            this.tileA = new CAAT.Actor().setLocation(tx*32,(ty)*32);
             var frame = DOORCLOSEDTILE2.srcY * 8 + DOORCLOSEDTILE2.srcX;
             this.tileA.setBackgroundImage(sge.Renderer.SPRITESHEETS['door']).setSpriteIndex(0);
             this.map.dynamicContainer.addChild(this.tileA);

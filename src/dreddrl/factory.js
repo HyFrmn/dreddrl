@@ -16,11 +16,11 @@ define([
     './components/stats',
     './components/health',
     './components/ai',
-    './components/enemyai',
     './components/emote',
     './components/judgecontrols',
     './components/computer',
     './components/container',
+    './components/tilecache',
 
     './actions/dialog',
     './actions/if',
@@ -186,6 +186,16 @@ define([
                     faction : 'spacer'
                 }
             })},
+            'object' : function(){return {
+                xform: { container: '_entityContainer'},
+                tilecache: {}
+            }},
+            trigger : function(){ return{
+                xform: { container: '_entityContainer'},
+                physics: {
+                    type: 2 //Static
+                }
+            }},
             freeitem : function(){ return {
                 xform: { container: '_entityContainer'},
                 physics: {},
@@ -237,6 +247,9 @@ define([
                 },
                 highlight: {
                     radius: 18
+                },
+                physics: {
+                    type: 2 //static
                 },
                 sprite: {
                     src: 'shelves',

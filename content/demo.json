@@ -37,6 +37,9 @@
 		"hideout"
 	],
 	"levels" : [
-		"dev"
+		"dev",
+		"dorm",
+		"library",
+		"station"
 	]
 }

@@ -57,12 +57,12 @@ function(sge, Factory, Level, Region, MegaBlockRoom, Quest){
                 if ((t.x>(this.width/3)&&t.x<(this.width*2/3))&&(t.y>(this.height/3)&&t.y<(this.height*2/3))) {
                     t._mask=true;
                     t.layers = {
-                        'layerBase' : FLOORTILE
+                        'base' : FLOORTILE
                     }
                 } else {
                     t._mask = false;
                     t.layers = {
-                        'layerBase' : FLOORTILE
+                        'base' : FLOORTILE
                     }
                 }
                 t.fade = 0;
@@ -161,7 +161,7 @@ function(sge, Factory, Level, Region, MegaBlockRoom, Quest){
             this.market.name = 'Market';
             this.market.getTiles().forEach(function(t){
                 t.layers = {
-                    'layerBase' : FLOORTILE2
+                    'base' : FLOORTILE2
                 }
             })
     

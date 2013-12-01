@@ -11,7 +11,15 @@ module.exports = function(grunt) {
 	    // that no files linger from previous builds.
 	    clean: [".tmp/"],
 
-	    concat: {"lib/dreddrl.js" : ["assets/js/require.js",".tmp.js"]},
+	    concat: {
+	    	"lib/dreddrl.js" : ["assets/js/require.js",".tmp.js"],
+	    	"options" : {
+	    		process : function(content, srcpath){
+    				content = content.replace(/\$\$BUILD_DATE/, grunt.template.today('yyyy-mm-dd'))
+	    			return content;
+	    		}
+	    	}
+	    },
 
 	    // This task uses James Burke's excellent r.js AMD build tool.  In the
 	    // future other builders may be contributed as drop-in alternatives.

@@ -209,13 +209,14 @@ define([
                 var width = 24;
                 var height = 24;
                 this.physics = new Physics(this);
-                /*
-                if (this.game.data.megablock==undefined){
-                    this.game.data.megablock = new megablock.MegaBlock();
+                if (this.game.data.startMap){
+                    this.level = new TiledLevel(this, {level: this.game.data.startMap});
+                } else {
+                    if (this.game.data.megablock==undefined){
+                        this.game.data.megablock = new megablock.MegaBlock();
+                    }
+                    this.level = this.game.data.megablock.getCurrentLevel(this);
                 }
-                this.level = this.game.data.megablock.getCurrentLevel(this);
-                */
-                this.level = new TiledLevel(this, {level: 'dev'});
                 this.map = this.level.map;
                 
                 this.physics.setMap(this.map);
@@ -236,6 +237,7 @@ define([
                 var pc = null;
                 if (this.game.data.pc!==undefined){
                     pc = this.game.data.pc;
+                    pc.set('xform.t', this.level.startLocation.tx, this.level.startLocation.ty)
                 } else {
                     var pc = Factory('pc', {
                         xform : {
@@ -274,20 +276,8 @@ define([
                 this.log('You are the Law.');
             },
 
-            nextLevel : function(up){
-                if (up){
-                    if (this.game.data.megablock.level>=this.game.data.megablock.levels.length-1){
-                        return false;
-                    } else {
-                       this.game.data.megablock.level=this.game.data.megablock.level+1; 
-                    }
-                } else {
-                    if (this.game.data.megablock.level==0){
-                        return false;
-                    } else {
-                       this.game.data.megablock.level=this.game.data.megablock.level-1; 
-                    }
-                }
+            loadLevel : function(level){
+                this.game.data.startMap = level;
                 this.game.fsm.startLoad();
                 this.game.data.pc = this.pc;
                 this.removeEntity(this.pc);

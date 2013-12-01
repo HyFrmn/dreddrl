@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="21" height="15" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" source="../tiles/MegaBlock.tsx"/>
+ <tileset firstgid="65" name="Terrain" tilewidth="32" tileheight="32">
+  <image source="../../../dreddrl-art/png/terrain_tiles.png" width="32" height="32"/>
+ </tileset>
+ <tileset firstgid="66" name="entities" tilewidth="32" tileheight="32">
+  <properties>
+   <property name="xtype" value="spawn.pc"/>
+  </properties>
+  <image source="../../../dreddrl-art/png/entities.png" trans="00ff00" width="160" height="32"/>
+ </tileset>
+ <layer name="base" width="21" height="15">
+  <data encoding="base64" compression="zlib">
+   eJxjZGBgYBzBmBMLJlUcWR6EBbFgXOKcOMSR9eEzU5IMTMhMSjC9zMQXD+TGEbl4qJlJTpohlJaGAgYAtK0LHA==
+  </data>
+ </layer>
+ <layer name="layer0" width="21" height="15">
+  <data encoding="base64" compression="zlib">
+   eJztkzEOwCAMAzO3nZouPCH//2CJ1CFCDhYgtlq6xShebExEbANH5Www4PV85wqZd0UbDHj63SLfeUImUuZr4se70UwmllkAmR/fs0zUGyN2hIR6Y7COZvVn9rcxSvbXV/A9zWyG7ekFX1sRkg==
+  </data>
+ </layer>
+ <layer name="canopy" width="21" height="15">
+  <data encoding="base64" compression="zlib">
+   eJxTZGBgUKQBxgZIFUeWJ1UvNw3MJAQGwu/UjiNuMjE+M8kFo2bSxkxqY3LTDD5MCwAACAoMYQ==
+  </data>
+ </layer>
+ <layer name="terrain" width="21" height="15" visible="0">
+  <data encoding="base64" compression="zlib">
+   eJxjYKA+cBxCGJf7SRFH9zc5eqlpJqXupEV4UttMcsGombQxcyhgAMB9Iso=
+  </data>
+ </layer>
+ <objectgroup name="entities" width="21" height="15">
+  <object name="door_a" type="door" gid="67" x="288" y="224">
+   <properties>
+    <property name="door.open" value=""/>
+   </properties>
+  </object>
+  <object name="cpu_a" type="computer" gid="68" x="608" y="128"/>
+  <object name="cpu_b" type="computer" gid="68" x="544" y="128"/>
+  <object name="guard_a" type="lawbreaker" gid="70" x="256" y="128"/>
+  <object name="guard_b" type="lawbreaker" gid="70" x="320" y="128"/>
+  <object name="door_b" type="door" gid="67" x="96" y="64">
+   <properties>
+    <property name="door.open" value=""/>
+   </properties>
+  </object>
+  <object name="pc" type="pc" gid="66" x="288" y="320"/>
+  <object name="guard_door" type="lawbreaker" gid="69" x="96" y="128"/>
+ </objectgroup>
+ <objectgroup name="regions" width="21" height="15">
+  <object name="room.entry" x="224" y="96" width="160" height="96"/>
+  <object name="room.computer" x="416" y="96" width="224" height="96"/>
+ </objectgroup>
+</map>

@@ -2,7 +2,7 @@ define(['sge/component', 'sge/spritesheet', 'sge/config', 'sge/renderer'], funct
     var SpriteComponent = Component.extend({
         init : function(entity, data){
             this._super(entity, data)
-            this.data.frame = data.frame || 0;
+            this.data.frame = parseInt(data.frame || 0);
             this.data.scale = data.scale || 1;
             this.data.mirror = true;
             this.data.offsetX = data.offsetX || 0;

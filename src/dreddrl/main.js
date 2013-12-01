@@ -5,9 +5,10 @@ define(
 		'./mainmenustate',
 		'./cutscenestate',
 		'./menustate',
+		'./settingsstate',
 		'./config'
 	],
-function(DreddRLState, PauseState, MainMenuState, CutsceneState, MenuState, config){
+function(DreddRLState, PauseState, MainMenuState, CutsceneState, MenuState, SettingsState, config){
 	return {
 		DreddRLState : DreddRLState,
 		PauseState : PauseState,
@@ -32,6 +33,10 @@ function(DreddRLState, PauseState, MainMenuState, CutsceneState, MenuState, conf
 		    game.fsm.addEvent({name:'startCutscene', from:'game',to:'cutscene'});
 		    game.fsm.addEvent({name:'endCutscene', from:'cutscene',to:'game'});
 
+
+		    game._states.settings = new SettingsState(game, 'Settings');
+		    game.fsm.addEvent({name:'startSettings', from:'mainmenu', to:'settings'});
+		    game.fsm.addEvent({name:'endSettings', from:'settings', to:'mainmenu'});
 		    return game;
 		}
 	}
