@@ -172,8 +172,10 @@ function(Class, Observable, Hammer){
             this._proxies = [];
             this._events = [];
             this.joystick = null;
+            var cvs = document.getElementById('game');
             if ('ontouchstart' in window){
                 var options = {
+                    canvas: 'game',
                     left:{
                         dpad: {
                             down: {
@@ -238,7 +240,12 @@ function(Class, Observable, Hammer){
                                 ],
                     }
                 };
-                GameController.init( options );
+
+                
+                setTimeout(function(){
+                    GameController.init( options );
+                    console.log('Controller', GameController.canvas.width,  GameController.canvas.height)
+                }, 3000);
             } 
             if ('onkeydown' in window) {
                 window.onkeydown = this.keyDownCallback.bind(this);

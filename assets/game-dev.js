@@ -42,10 +42,14 @@ function   (sge, dreddrl) {
             pixelHeight = innerHeight;
             pixelWidth = Math.round(innerHeight * 1.7777);
         }
+
+        canvasElem.width = pixelWidth;
+        canvasElem.height = pixelHeight;
         canvasElem.style.width = pixelWidth + 'px';
         canvasElem.style.height = pixelHeight + 'px';
         canvasElem.style['margin-left'] = (innerWidth - pixelWidth)/2 + 'px';
         canvasElem.style['margin-top'] = (innerHeight - pixelHeight)/2 + 'px';
+        console.log(canvasElem.width, canvasElem.height)
     }
     window.onresize = resizeCallback;
     resizeCallback();

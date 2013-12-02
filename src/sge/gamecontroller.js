@@ -245,7 +245,8 @@
 			}
 			
 			this.options.ctx = this.options.canvas.getContext( '2d' );
-			
+			console.log('Window Size:', window.innerWidth, window.innerHeight);
+			console.log('Canvas Size:', this.options.canvas.width, this.options.canvas.height);
 			// Create a canvas that goes directly on top of the game canvas
 			this.createOverlayCanvas();
 		},
@@ -326,8 +327,8 @@
 		pixelRatio: 1,
 		resize: function( firstTime ) {
 			// Scale to same size as original canvas
-			this.canvas.width = this.options.canvas.width;
-			this.canvas.height = this.options.canvas.height;
+			this.canvas.width = 1024;//this.options.canvas.width;
+			this.canvas.height = 600;//this.options.canvas.height;
 			
 			this.offsetX = GameController.options.canvas.offsetLeft + document.body.scrollLeft;
 			this.offsetY = GameController.options.canvas.offsetTop + document.body.scrollTop;
