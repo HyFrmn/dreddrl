@@ -185,8 +185,8 @@ function(Class, Observable, Hammer){
                     var joystickIndex = -1;
 
                     canvas.addEventListener('touchstart', function(evt){
-                        for (var i = 0; i < event.touches.length; i++) {
-                            var touch = event.touches[i];
+                        for (var i = 0; i < evt.touches.length; i++) {
+                            var touch = evt.touches[i];
                             if (touch.pageX < (window.innerWidth/2)){
                                 joystickIndex = touch.identifier;
                                 joystickStartX = touch.pageX;
@@ -198,7 +198,7 @@ function(Class, Observable, Hammer){
                     }.bind(this))
 
                     canvas.addEventListener('touchmove', function(evt){
-                        for (var i = 0; i < event.touches.length; i++) {
+                        for (var i = 0; i < evt.touches.length; i++) {
                             var touch = event.touches[i];
                             if (touch.identifier==joystickIndex){
                                 var deltaX = joystickStartX - touch.pageX;
@@ -259,7 +259,7 @@ function(Class, Observable, Hammer){
                     }.bind(this))
 
                     canvas.addEventListener('touchend', function(evt){
-                        var ids = new Array(event.touches).map(function(touch){return touch.identifier;});
+                        var ids = new Array(evt.touches).map(function(touch){return touch.identifier;});
                         if (ids.indexOf(joystickIndex)<0){
 
                                 if (isUp){
