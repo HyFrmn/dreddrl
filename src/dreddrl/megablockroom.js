@@ -19,6 +19,7 @@ define(['sge','./room'], function(sge, Room){
             var right = (cx*32)+(realWidth/2) + 16;
 
             this._super(level.state, name, left, right, top, bottom, options);
+            this.cover.setBounds(left, top, right-left, bottom-top-64)
             this.data.cx = cx;
             this.data.cy = cy;
             this.level = level;
