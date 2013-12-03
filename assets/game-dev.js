@@ -63,7 +63,6 @@ function   (sge, dreddrl) {
     if (map){
         map = map.match(/\/?([a-z]+)(\.json)?/);
         game.data.startMap = map[1];
-        console.log('Map:', map)
     }
 
 

@@ -1,10 +1,11 @@
 define([
     'sge',
     './level',
+    './quest',
     './region',
     './expr'
 ],
-function(sge, Level, Region, Expr){
+function(sge, Level, Quest, Region, Expr){
 	var TiledLoader = function(){
 
 	}
@@ -41,6 +42,37 @@ function(sge, Level, Region, Expr){
 				}
 			}.bind(this));
 			
+			layer = layerData.regions;
+			if (layer!==undefined){
+				for (var q = layer.objects.length - 1; q >= 0; q--) {
+					var region = layer.objects[q];
+					var tx = region.x + 16;
+					var ty = region.y - 16;
+					new Region(this.state, region.name, region.x, region.x+region.width,region.y, region.y+region.height);
+				}
+			}
+			
+			layer = layerData.dynamic
+			if (layer){
+				for (var q=0; q<=layer.objects.length-1;q++){
+					var obj = layer.objects[q];
+					var tileWidth = obj.width/32;
+					var tileHeight = obj.height/32;
+
+					var startX = (obj.x/32);
+					var startY = (obj.y/32);
+					var tiles = []
+					for (var y_=0; y_<tileHeight; y_++){
+						for (var x_=0; x_<tileWidth; x_++){
+							//tiles.push(state.map.getTile(x_ + startX,y_ + startY).layer.dynamic)
+						}
+					}
+					var e = this.state.createEntity('object',{ xform: {tx: obj.x + (obj.width/2), offsetX:0, ty: obj.y + (obj.height/2), offsetY: 0}, tilecache: { tiles: [startX, startY, tileWidth, tileHeight]}});
+					this.state.addEntity(e);
+
+				}
+			}
+
 			var layer = layerData['entities']
 			if (layer){
 				for (var i = layer.objects.length - 1; i >= 0; i--) {
@@ -57,7 +89,6 @@ function(sge, Level, Region, Expr){
 							if (key.indexOf(':')>=0){
 								var cmd = key.match(/([a-z]+):/);
 								if (cmd[1]=='on'){
-									console.log('Deserialize Event:', key);
 									var serialEvt = key.slice(cmd.length+1);
 									var parts = serialEvt.split('::');
 									var eventName = parts.shift();
@@ -75,7 +106,6 @@ function(sge, Level, Region, Expr){
 										var modData = mod.match(/([a-z]+)\(([a-z\.=]+)\)/);
 										var modName = modData[1];
 										var modArg  = modData[2];
-										console.log('Decorate', modName, modArg);
 										callback = function(cb){
 											return function(e){
 												if (e.name==modArg){
@@ -94,13 +124,25 @@ function(sge, Level, Region, Expr){
 
 								var subpaths = key.split('.');
 								var pointer = eData;
+								var val = obj.properties[key];
+								var match = val.match(/\$\(([A-Za-z._0-9\:\-]+)\)/);
+								if (match){
+									var name = match[1];
+									if (name.match(/region:/)){
+										val = this.state.getRegion(name.match(/region:(.+)/)[1]);
+									} else {
+										val = this.state.getEntityWithTag(name);
+									}
+									console.log(name, val);
+								}
+
 								while (subpaths.length){
 									var sp = subpaths.shift();
 									if (pointer[sp]==undefined){
 										pointer[sp]={}
 									}
 									if (subpaths.length==0){
-										pointer[sp] = obj.properties[key];
+										pointer[sp] = val;
 									} else {
 										pointer = pointer[sp];
 									}
@@ -108,9 +150,8 @@ function(sge, Level, Region, Expr){
 							}
 						}.bind(this));
 						eData = sge.util.deepExtend(eData, {xform:  {tx: tx, ty: ty}});
-						console.log('E DATA:', obj.name, obj.type, eData);
 						var e = this.state.createEntity(obj.type, eData);
-						
+						e.tags.push(obj.name);
 						this.state.addEntity(e);
 						for (var j = decorators.length - 1; j >= 0; j--) {
 							var func = decorators[j];
@@ -119,43 +160,13 @@ function(sge, Level, Region, Expr){
 					}
 				}
 			}
-			/*
-			layer = layerData.regions;
-			if (layer){
-				for (var i = layer.objects.length - 1; i >= 0; i--) {
-					var obj = layer.objects[i];
-					var tx = obj.x + 16;
-					var ty = obj.y - 16;
-					if (obj.name=='pc'){
-						this.startLocation = {tx: tx, ty: ty};
-					} else {
-						var e = this.state.createEntity(obj.type, {xform:  {tx: tx, ty: ty}});
-						this.state.addEntity(e);
-					}
-				}
-			}
-			*/
-			layer = layerData.dynamic
-			if (layer){
-				for (var q=0; q<=layer.objects.length-1;q++){
-					var obj = layer.objects[q];
-					console.log(obj);
-					var tileWidth = obj.width/32;
-					var tileHeight = obj.height/32;
 
-					var startX = (obj.x/32);
-					var startY = (obj.y/32);
-					var tiles = []
-					for (var y_=0; y_<tileHeight; y_++){
-						for (var x_=0; x_<tileWidth; x_++){
-							console.log('Tile:',x_ + startX,y_ + startY);
-							//tiles.push(state.map.getTile(x_ + startX,y_ + startY).layer.dynamic)
-						}
-					}
-					var e = this.state.createEntity('object',{ xform: {tx: obj.x + (obj.width/2), offsetX:0, ty: obj.y + (obj.height/2), offsetY: 0}, tilecache: { tiles: [startX, startY, tileWidth, tileHeight]}});
-					this.state.addEntity(e);
+			if (levelData.properties.quests){
+				var questNames = levelData.properties.quests.split(' ');
+				for (var q = questNames.length - 1; q >= 0; q--) {
+					Quest.Load(this, questNames[q]);
 
-				}
+				};
 			}
 		}
 	})

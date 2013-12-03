@@ -215,19 +215,17 @@ define(['sge', './cutscene', './expr', './item', './config'], function(sge, Cuts
 		});
 	};
 
-	var QUESTLIST = [];
-	Quest.Add = function(text){
-		QUESTLIST.push(text);
+	var QUESTSRCS = {};
+	Quest.Add = function(name, src){
+		QUESTSRCS[name] = src;
 	}
 
-	Quest.Load = function(megablock){
-		var block = megablock;
-		var cutsceneState = block.state.game._states.cutscene;
-		var pc = block.pc;
-		while (QUESTLIST.length){
-			var text = QUESTLIST.shift();
-			eval(text);
-		};
+	Quest.Load = function(level_, name){
+		var level = level_;
+		var cutsceneState = level.state.game._states.cutscene;
+		var gameState = level.state;
+		var pc = level.state.pc;
+		eval(QUESTSRCS[name]);
 	}
 
 	Quest._Load = function(megablock){

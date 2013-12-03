@@ -67,7 +67,6 @@
          "y":0
         }, 
         {
-         "draworder":"topdown",
          "height":21,
          "name":"entities",
          "objects":[
@@ -80,12 +79,11 @@
                      "container.emptyFrame":"1",
                      "container.fullFrame":"1"
                     },
-                 "rotation":0,
                  "type":"pc",
                  "visible":true,
                  "width":0,
                  "x":416,
-                 "y":416
+                 "y":448
                 }, 
                 {
                  "gid":67,
@@ -95,7 +93,6 @@
                     {
 
                     },
-                 "rotation":0,
                  "type":"door",
                  "visible":true,
                  "width":0,
@@ -108,9 +105,8 @@
                  "name":"door",
                  "properties":
                     {
-
+                     "door.room":"$(region:office.sgt)"
                     },
-                 "rotation":0,
                  "type":"door",
                  "visible":true,
                  "width":0,
@@ -125,7 +121,6 @@
                     {
 
                     },
-                 "rotation":0,
                  "type":"door",
                  "visible":true,
                  "width":0,
@@ -140,7 +135,6 @@
                     {
 
                     },
-                 "rotation":0,
                  "type":"door",
                  "visible":true,
                  "width":0,
@@ -155,7 +149,6 @@
                     {
                      "on:contact.start::filter(pc)":"state.loadLevel('library')"
                     },
-                 "rotation":0,
                  "type":"trigger",
                  "visible":true,
                  "width":0,
@@ -171,7 +164,6 @@
                      "container.emptyFrame":"1",
                      "container.fullFrame":"1"
                     },
-                 "rotation":0,
                  "type":"shelf",
                  "visible":true,
                  "width":0,
@@ -187,7 +179,6 @@
                      "container.emptyFrame":"1",
                      "container.fullFrame":"1"
                     },
-                 "rotation":0,
                  "type":"shelf",
                  "visible":true,
                  "width":0,
@@ -202,7 +193,6 @@
                     {
                      "container.fullFrame":"1"
                     },
-                 "rotation":0,
                  "type":"shelf",
                  "visible":true,
                  "width":0,
@@ -218,7 +208,6 @@
                      "container.emptyFrame":"1",
                      "container.fullFrame":"1"
                     },
-                 "rotation":0,
                  "type":"shelf",
                  "visible":true,
                  "width":0,
@@ -234,7 +223,6 @@
                      "container.emptyFrame":"1",
                      "container.fullFrame":"1"
                     },
-                 "rotation":0,
                  "type":"shelf",
                  "visible":true,
                  "width":0,
@@ -249,12 +237,25 @@
                     {
                      "on:contact.start::filter(pc)":"state.loadLevel('dorm')"
                     },
-                 "rotation":0,
                  "type":"trigger",
                  "visible":true,
                  "width":0,
                  "x":832,
                  "y":544
+                }, 
+                {
+                 "gid":69,
+                 "height":0,
+                 "name":"sgt",
+                 "properties":
+                    {
+
+                    },
+                 "type":"citizen",
+                 "visible":true,
+                 "width":0,
+                 "x":416,
+                 "y":320
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -264,19 +265,30 @@
          "y":0
         }, 
         {
-         "draworder":"topdown",
          "height":21,
          "name":"regions",
-         "objects":[],
+         "objects":[
+                {
+                 "height":160,
+                 "name":"office.sgt",
+                 "properties":
+                    {
+
+                    },
+                 "type":"room",
+                 "visible":true,
+                 "width":288,
+                 "x":288,
+                 "y":32
+                }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "width":27,
          "x":0,
          "y":0
         }, 
         {
-         "draworder":"topdown",
          "height":21,
          "name":"dynamic",
          "objects":[
@@ -287,7 +299,6 @@
                     {
 
                     },
-                 "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":160,
@@ -301,7 +312,6 @@
                     {
 
                     },
-                 "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":224,
@@ -315,7 +325,6 @@
                     {
 
                     },
-                 "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":160,
@@ -332,7 +341,7 @@
  "orientation":"orthogonal",
  "properties":
     {
-
+     "quests":"welcome"
     },
  "tileheight":32,
  "tilesets":[

@@ -215,7 +215,6 @@ function(sge, Factory, Level, Region, MegaBlockRoom, Quest){
             
         },
         setup: function(){
-            Quest.Load(this);
             this.populateRooms();
             this._super();
         },

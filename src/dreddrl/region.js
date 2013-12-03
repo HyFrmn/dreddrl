@@ -14,8 +14,9 @@ define(['sge'], function(sge){
     };
     
     var Region = sge.Class.extend({
-        init: function(state, left, right, top, bottom, options){
+        init: function(state, name, left, right, top, bottom, options){
             this.state = state;
+            this.name = name;
             this.data = {};
             this.entities = [];
             this._setSize(left, right, top, bottom);

@@ -32,9 +32,7 @@ define(['sge'], function(sge){
                     return;
                 }
             } else {
-                entity.set('movement.v', dx / dist, dy / dist)
-                console.log(entity.get('xform.vx'), entity.get('xform.vy'))
-                console.log('Tick', dx / dist, dy / dist);
+                entity.set('movement.v', dx / dist, dy / dist);
             }
         }
         cutscene.activateEntities(entity)

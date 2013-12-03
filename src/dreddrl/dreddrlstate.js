@@ -135,8 +135,9 @@ define([
                 this._spatialHashRegions = {};
                 this._spatialHashRegionsReverse = {};
 
-                this._regionEntityHash = new HashTable();
 
+                this._regionEntityHash = new HashTable();
+                this._regionHashNames = {};
                 
                 
 
@@ -235,9 +236,15 @@ define([
                 //Add PC
 
                 var pc = null;
-                if (this.game.data.pc!==undefined){
-                    pc = this.game.data.pc;
-                    pc.set('xform.t', this.level.startLocation.tx, this.level.startLocation.ty)
+                gameData = this.game.data;
+
+                if (gameData.pc!==undefined){
+                    pc = gameData.pc;
+                    if (gameData.startLocation!==undefined){
+                        null;
+                    } else {
+                        pc.set('xform.t', this.level.startLocation.tx, this.level.startLocation.ty);
+                    }
                 } else {
                     var pc = Factory('pc', {
                         xform : {
@@ -276,8 +283,12 @@ define([
                 this.log('You are the Law.');
             },
 
-            loadLevel : function(level){
+            loadLevel : function(level, opts){
+                opts = opts || {};
                 this.game.data.startMap = level;
+                if (opts.target){
+                    this.game.data.startLocation = opts.target;
+                }
                 this.game.fsm.startLoad();
                 this.game.data.pc = this.pc;
                 this.removeEntity(this.pc);
@@ -425,6 +436,7 @@ define([
             
             _addRegion : function(region){
                 this._spatialHashRegions[region] = [];
+                this._regionHashNames[region.name] = region;
                 for (var j = region.data.top; j <= region.data.bottom+this._spatialHashHeight; j+=this._spatialHashHeight){
                     if (j>region.data.bottom){
                         j = region.data.bottom;
@@ -451,6 +463,10 @@ define([
                         break;
                     }
                 }
+            },
+
+            getRegion : function(name){
+                return this._regionHashNames[name];
             },
 
             findEntities : function(tx, ty, radius){

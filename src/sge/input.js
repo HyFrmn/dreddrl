@@ -174,78 +174,114 @@ function(Class, Observable, Hammer){
             this.joystick = null;
             var cvs = document.getElementById('game');
             if ('ontouchstart' in window){
-                var options = {
-                    canvas: 'game',
-                    left:{
-                        dpad: {
-                            down: {
-                                touchStart: function(){
-                                    this.keyDownCallback({keyCode: KEYCODES['down']})
-                                }.bind(this),
-                                touchEnd: function(){
-                                    this.keyUpCallback({keyCode: KEYCODES['down']})
-                                }.bind(this)
-                            },
-                            up: {
-                                touchStart: function(){
-                                    this.keyDownCallback({keyCode: KEYCODES['up']})
-                                }.bind(this),
-                                touchEnd: function(){
-                                    this.keyUpCallback({keyCode: KEYCODES['up']})
-                                }.bind(this)
-                            },
-                            left: {
-                                touchStart: function(){
-                                    this.keyDownCallback({keyCode: KEYCODES['left']})
-                                }.bind(this),
-                                touchEnd: function(){
-                                    this.keyUpCallback({keyCode: KEYCODES['left']})
-                                }.bind(this)
-                            },
-                            right: {
-                                touchStart: function(){
-                                    this.keyDownCallback({keyCode: KEYCODES['right']})
-                                }.bind(this),
-                                touchEnd: function(){
-                                    this.keyUpCallback({keyCode: KEYCODES['right']})
-                                }.bind(this)
+                var canvas = document.getElementById('game');
+                    
+                    var isUp = false;
+                    var isDown = false;
+                    var isLeft = false;
+                    var isRight = false;
+
+                    var joystickStartX, joystickStartY;
+                    var joystickIndex = -1;
+
+                    canvas.addEventListener('touchstart', function(evt){
+                        for (var i = 0; i < event.touches.length; i++) {
+                            var touch = event.touches[i];
+                            if (touch.pageX < (window.innerWidth/2)){
+                                joystickIndex = touch.identifier;
+                                joystickStartX = touch.pageX;
+                                joystickStartY = touch.pageY;
+                            } else {
+                                this.tapCallback()
                             }
                         }
-                    },
-                    right: { 
-                                type: 'buttons', 
-                                position: { right: '17%', bottom: '28%' }, 
-                                buttons: [
-                                        { offset: { x: '-13%', y: 0 }, label: 'X', radius: '7%', stroke: 2, backgroundColor: 'blue', fontColor: '#fff', touchStart: function() {
-                                                // Blue is currently mapped to up button
-                                                this.keyDownCallback({keyCode: KEYCODES['z']});
-                                        }.bind(this), touchEnd: function() {
-                                                this.keyUpCallback({keyCode: KEYCODES['z']});      
-                                        }.bind(this) },
-                                        { offset: { x: 0, y: '-11%' }, label: 'Y', radius: '7%', stroke: 2, backgroundColor: 'yellow', fontColor: '#fff', touchStart: function() {
-                                                this.keyDownCallback({keyCode: KEYCODES['x']});
-                                        }.bind(this), touchEnd: function() {
-                                                this.keyUpCallback({keyCode: KEYCODES['x']});                                                
-                                        }.bind(this)  },
-                                        { offset: { x: '13%', y: 0 }, label: 'B', radius: '7%', stroke: 2, backgroundColor: 'red', fontColor: '#fff', touchStart: function() {
-                                                this.keyDownCallback({keyCode: KEYCODES['enter']});
-                                        }.bind(this), touchEnd: function() {
-                                                this.keyUpCallback({keyCode: KEYCODES['enter']});                                              
-                                        }.bind(this) },
-                                        { offset: { x: 0, y: '11%' }, label: 'A', radius: '7%', stroke: 2, backgroundColor: 'green', fontColor: '#fff', touchStart: function() {
-                                                this.keyDownCallback({keyCode: KEYCODES['space']});
-                                        }.bind(this), touchEnd: function() {
-                                                this.keyUpCallback({keyCode: KEYCODES['space']});       
-                                        }.bind(this)  }
-                                ],
-                    }
-                };
+                    }.bind(this))
 
-                
-                setTimeout(function(){
-                    GameController.init( options );
-                    console.log('Controller', GameController.canvas.width,  GameController.canvas.height)
-                }, 3000);
+                    canvas.addEventListener('touchmove', function(evt){
+                        for (var i = 0; i < event.touches.length; i++) {
+                            var touch = event.touches[i];
+                            if (touch.identifier==joystickIndex){
+                                var deltaX = joystickStartX - touch.pageX;
+                                var deltaY = joystickStartY - touch.pageY;
+                                if (deltaY>12){
+                                    if (!isUp){
+                                        this.keyDownCallback({keyCode: KEYCODES['up']});
+                                        isUp = true;
+                                    }
+                                } else {
+                                    if (isUp){
+                                        isUp = false;
+                                        this.keyUpCallback({keyCode: KEYCODES['up']});
+                                    }
+                                    
+                                }
+
+                                if (deltaY<-12){
+                                    if (!isDown){
+                                        this.keyDownCallback({keyCode: KEYCODES['down']});
+                                        isDown = true;
+                                    }
+                                } else {
+                                    if (isDown){
+                                        isDown = false;
+                                        this.keyUpCallback({keyCode: KEYCODES['down']});
+                                    }
+                                    
+                                }
+
+                                if (deltaX<-12){
+                                    if (!isRight){
+                                        this.keyDownCallback({keyCode: KEYCODES['right']});
+                                        isRight = true;
+                                    }
+                                } else {
+                                    if (isRight){
+                                        isRight = false;
+                                        this.keyUpCallback({keyCode: KEYCODES['right']});
+                                    }
+                                    
+                                }
+
+                                if (deltaX>12){
+                                    if (!isLeft){
+                                        this.keyDownCallback({keyCode: KEYCODES['left']});
+                                        isLeft = true;
+                                    }
+                                } else {
+                                    if (isLeft){
+                                        isLeft = false;
+                                        this.keyUpCallback({keyCode: KEYCODES['left']});
+                                    }
+                                    
+                                }
+                            }
+                        }
+                    }.bind(this))
+
+                    canvas.addEventListener('touchend', function(evt){
+                        var ids = new Array(event.touches).map(function(touch){return touch.identifier;});
+                        if (ids.indexOf(joystickIndex)<0){
+
+                                if (isUp){
+                                    isUp=false;
+                                    this.keyUpCallback({keyCode: KEYCODES['up']});
+                                }
+                                if (isDown){
+                                    isDown=false;
+                                    this.keyUpCallback({keyCode: KEYCODES['down']});
+                                }
+                                if (isRight){
+                                    isRight=false;
+                                    this.keyUpCallback({keyCode: KEYCODES['right']});
+                                }
+                                if (isLeft){
+                                    isLeft=false;
+                                    this.keyUpCallback({keyCode: KEYCODES['left']});
+                                }
+                                joystickIndex=-1;
+                            
+                        }
+                    }.bind(this))
             } 
             if ('onkeydown' in window) {
                 window.onkeydown = this.keyDownCallback.bind(this);

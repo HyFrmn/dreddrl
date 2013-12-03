@@ -57,10 +57,10 @@ define(['sge', './item', './weapon', './quest'], function(sge, Item, Weapon, Que
 			}
 			this.game.data.levels[name + 'Events'] = data
 		},
-		loadQuest: function(url){
+		loadQuest: function(quest, url){
 			var deferred = new when.defer();
-			sge.util.ajax(url, function(raw){
-				Quest.Add(raw);
+			sge.util.ajax(url, function(src){
+				Quest.Add(quest, src);
 				deferred.resolve(data);
 			})
 			return deferred.promise;
@@ -103,7 +103,7 @@ define(['sge', './item', './weapon', './quest'], function(sge, Item, Weapon, Que
 
 			config.quests.forEach(function(quest){
 				var url = '/content/quests/' + quest + '.js';
-				deferreds.push(this.loadQuest(url).then(this.updateProgress.bind(this)));
+				deferreds.push(this.loadQuest(quest, url).then(this.updateProgress.bind(this)));
 			}.bind(this));
 
 			config.levels.forEach(function(level){

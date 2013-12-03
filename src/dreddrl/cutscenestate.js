@@ -41,7 +41,8 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
                                     setShape(CAAT.ShapeActor.SHAPE_RECT).
                                     setSize(width-24, (height/2) - 24).
                                     setFillStyle('black').
-                                    setAlpha(0.75)
+                                    setAlpha(0.75).
+                                    setVisible(false);
                                     
             this.container.addChild(this.backDrop);
             //this.container.addChild(new CAAT.Actor().setSize(width,height).setFillStyle('black').setAlpha(0.5));
@@ -105,7 +106,10 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         startState : function(){
             //this.interact();
             var state = this.game._states['game'];
+
+            //Disable Controls
             state.pc.set('judge_controls.active', false);
+            
             //Disable HUD
             state._uiContainer.setVisible(false);
             
@@ -119,7 +123,7 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
         },
 
         endDialog : function(){
-            this.game._states['game'].pc.set('judge_controls.active',true)
+            
             this._clearScreen();
             if (this._dialogCallback){
                 this._dialogCallback(this._choiceIndex);
@@ -131,6 +135,10 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
 
         endState : function(){
             var state = this.game._states['game'];
+
+
+            //Enable Controls
+            this.game._states['game'].pc.set('judge_controls.active',true);
 
             //Enable HUD
             state._uiContainer.setVisible(true);
