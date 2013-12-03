@@ -187,7 +187,8 @@ function(Class, Observable, Hammer){
                     canvas.addEventListener('touchstart', function(evt){
                         for (var i = 0; i < evt.touches.length; i++) {
                             var touch = evt.touches[i];
-                            if (touch.pageX < (window.innerWidth/2)){
+                            console.log(touch.pageX, window.innerWidth/4);
+                            if (touch.pageX < (window.innerWidth/4)){
                                 joystickIndex = touch.identifier;
                                 joystickStartX = touch.pageX;
                                 joystickStartY = touch.pageY;
