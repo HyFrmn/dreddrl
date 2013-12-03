@@ -199,7 +199,7 @@ function(Class, Observable, Hammer){
 
                     canvas.addEventListener('touchmove', function(evt){
                         for (var i = 0; i < evt.touches.length; i++) {
-                            var touch = event.touches[i];
+                            var touch = evt.touches[i];
                             if (touch.identifier==joystickIndex){
                                 var deltaX = joystickStartX - touch.pageX;
                                 var deltaY = joystickStartY - touch.pageY;
