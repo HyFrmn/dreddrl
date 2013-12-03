@@ -9,11 +9,14 @@ define(['sge'], function(sge){
             this.entity.addListener('focus.lose', this.close.bind(this));
         },
         interact: function(){
-            if (this.state.nextLevel(this.get('up'))){
+            this.state.loadLevel("station");
+            /*
+            if (this.state.loadLevel(this.get('up'))){
 
             } else {
 
             }
+            */
         },
         open: function(){
             this.entity.set('anim.anim', 'open');
