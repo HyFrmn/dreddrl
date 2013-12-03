@@ -14,13 +14,16 @@ define(['sge/component'], function(Component){
         _set_v : function(vx, vy){
             this.data.vx = vx;
             this.data.vy = vy;
+            this.tick(-1);
             return [vx, vy];
         },
         tick: function(delta){
-            var vx = this.get('vx') * this.get('speed');
-            var vy = this.get('vy') * this.get('speed');
-            this.entity.set('xform.vx', vx);
-            this.entity.set('xform.vy', vy);
+            var vx = this.get('vx');
+            var vy = this.get('vy');
+            var dx = vx * this.get('speed');
+            var dy = vy * this.get('speed');
+            this.entity.set('xform.vx', dx);
+            this.entity.set('xform.vy', dy);
             if ((Math.abs(vx) > 0) || (Math.abs(vy) > 0)){
                 this.entity.set('anim.play', true)
                 if (!this.get('strafe')){

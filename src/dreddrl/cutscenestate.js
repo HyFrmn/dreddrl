@@ -241,6 +241,8 @@ define(['sge', './expr', './config'], function(sge, Expr, config){
                 //*
                 var movement = entity.get('movement');
                 movement.tick(delta);
+                var anim = entity.get('anim');
+                anim.tick(delta);
                 //*/
                 //entity.tick(delta);
             })

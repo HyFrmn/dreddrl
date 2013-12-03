@@ -98,6 +98,9 @@ define(['sge/lib/class', 'sge/vendor/caat','sge/renderer', 'sge/config', 'sge/li
             this.canopy = new CAAT.ActorContainer();
             this.canopy.setBounds(0,0,width*32+16,height*32+16);
 
+            this.canopyDynamic = new CAAT.ActorContainer();
+            this.canopyDynamic.setBounds(0,0,width*32+16,height*32+16);
+
 
             this._tiles = [];
             this.layers = ['base','layer0','layer1','canopy'];

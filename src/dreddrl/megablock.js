@@ -3,7 +3,7 @@ define([
     './factory',
     './level',
     './region',
-    './room',
+    './megablockroom',
     './quest'
 ],
 function(sge, Factory, Level, Region, MegaBlockRoom, Quest){
@@ -90,8 +90,7 @@ function(sge, Factory, Level, Region, MegaBlockRoom, Quest){
                                 up = false;
                             }
                         }
-                        room = new MegaBlockRoom(this, tx, ty, 5, 5, {open: open, locked: locked, doors: doors, up: up});
-                        room.name = 'Room ' + i + '-' + j + ' A';
+                        room = new MegaBlockRoom(this, 'Room ' + i + '-' + j + ' A', tx, ty, 5, 5, {open: open, locked: locked, doors: doors, up: up});
                         this.rooms.push(room);
 
                         if (room){
@@ -124,8 +123,7 @@ function(sge, Factory, Level, Region, MegaBlockRoom, Quest){
                         if (!open){
                             locked = (Math.random() > 0.75 ? true : false)
                         }
-                        room = new MegaBlockRoom(this, tx, ty, 5, 5, {doors: 'top', open: open, locked: locked});
-                        room.name = 'Room ' + i + '-' + j + ' B';
+                        room = new MegaBlockRoom(this, 'Room ' + i + '-' + j + ' B', tx, ty, 5, 5, {doors: 'top', open: open, locked: locked});
                         this.rooms.push(room);
 
                         if (room){
@@ -157,8 +155,7 @@ function(sge, Factory, Level, Region, MegaBlockRoom, Quest){
 
             this.buildBorders();
 
-            this.market = new Region(this.state, marketLeft, marketRight, marketTop, marketBottom);
-            this.market.name = 'Market';
+            this.market = new Region(this.state, 'market', marketLeft, marketRight, marketTop, marketBottom);
             this.market.getTiles().forEach(function(t){
                 t.layers = {
                     'base' : FLOORTILE2

@@ -17,6 +17,7 @@ define(['sge'], function(sge){
             this.entity.addListener('interact', this.interact);
             this.interactSecondary = this.interactSecondary.bind(this);
             this.entity.addListener('interact.secondary', this.interactSecondary);
+            this.entity.tags.push('door');
         },
         interact: function(e){
             if (this.get('locked')){
@@ -111,7 +112,9 @@ define(['sge'], function(sge){
             this.updateMapTiles();
             this.createTiles();
             this.updateTiles();
-            
+            if (this.room){
+                this.room.doors.push(this.entity);
+            }
         },
         
         _set_locked: function(value, arg0, arg1, arg2){

@@ -7,28 +7,17 @@ define(['sge','./region'], function(sge, Region){
     var DOORCLOSEDTILE1 = { srcX : 1, srcY: 4}
     var DOORCLOSEDTILE2 = { srcX : 1, srcY: 5}
     
-    var MegaBlockRoom = Region.extend({
-        init: function(level, cx, cy, width, height, options){
-            var realWidth = width * 32;
-            var realHeight = height * 32;
-            this._tileWidth = width;
-            this._tileHeight = height;
-            var top = (cy*32) - (realHeight/2) - 48;
-            var bottom = (cy*32) + (realHeight/2) + 80;
-            var left = (cx*32)-(realWidth/2) + 16;
-            var right = (cx*32)+(realWidth/2) + 16;
-
-            this._super(level.state, left, right, top, bottom, options);
-            this.data.cx = cx;
-            this.data.cy = cy;
-            this.level = level;
-            this._populated = false;
-
-            this.options = _.extend({doors:'bottom', open: false, locked: false}, this.options);
-
+    var Room = Region.extend({
+        init: function(state, name, left, right, top, bottom, options){
+            this._super(state, name, left, right, top, bottom, options);
+            this.options = _.extend({open: false, locked: false}, this.options);
             this.doors = [];
-            this.plot();
-
+            this.cover = new CAAT.Actor().
+                            setFillStyle('black').
+                            setAlpha(0.65).
+                            setBounds(left, top, right-left, bottom-top).
+                            setVisible(false);
+            this.state.map.canopyDynamic.addChild(this.cover);
         },
         isLocked : function(){
             var locked = false;
@@ -64,90 +53,6 @@ define(['sge','./region'], function(sge, Region){
             });
             this.update();
         },
-        plot : function(){
-
-            var halfX = Math.floor((this._tileWidth-1)/2);
-            var halfY = Math.floor((this._tileHeight-1)/2);
-            
-            var tile = null;
-           
-            this.level.buildWall((this.data.cx-halfX),(this.data.cy-halfY)-2,this._tileWidth);
-            this.level.buildWall((this.data.cx-halfX)-1,(this.data.cy+halfY)+2,this._tileWidth+2);
-            
-            for (x=(this.data.cx-halfX-1);x<=(this.data.cx+halfX+1);x++){
-                tile = this.level.map.getTile(x,(this.data.cy+halfY)+1);
-                tile.layers['canopy'] = CEILTILE;
-                tile.passable = false;
-                tile.transparent = false;
-                tile = this.level.map.getTile(x,(this.data.cy-halfY)-3);
-                tile.layers['canopy'] = CEILTILE;
-                tile.passable = false;
-                tile.transparent = false;
-            }
-            for (y=(this.data.cy-halfY-2);y<=(this.data.cy+halfY+1);y++){
-                tile = this.level.map.getTile((this.data.cx+halfX)+1,y);
-                tile.layers['canopy'] = CEILTILE;
-                tile.passable = false;
-                tile.transparent = false;
-                tile = this.level.map.getTile((this.data.cx-halfX)-1,y);
-                tile.layers['canopy'] = CEILTILE;
-                tile.passable = false;
-                tile.transparent = false;
-            }
-
-            if ((this.options.doors=='bottom')||(this.options.doors=='both')){
-                this.createDoor(this.data.cx, this.data.cy+halfY+2, this.options.open);
-            } 
-            if ((this.options.doors=='top')||(this.options.doors=='both')) {
-                this.createDoor(this.data.cx, this.data.cy-halfY-2, this.options.open);
-            }
-            if ((this.options.doors=='elevator')){
-                this.createElevator(this.data.cx, this.data.cy+halfY+3, this.options.up);
-            }
-            this.cover = new CAAT.Actor().
-                                setFillStyle('black').
-                                setAlpha(0.65).
-                                setSize(this._tileWidth*32,
-                                        (2+this._tileHeight)*32).
-                                setLocation((this.data.cx-(this._tileWidth-1)/2)*32,
-                                            (this.data.cy-(this._tileHeight+3)/2)*32);
-            this.state.map.canopy.addChild(this.cover);
-        },
-
-        createDoor : function(cx, cy, open){
-            var door = this.state.createEntity('door', {
-                xform:{
-                    tx: ((cx + 0.5) * 32),
-                    ty: ((cy + 0.5) * 32),
-                }, door: {
-                    open: open,
-                    room: this,
-                    locked: this.options.locked
-                }
-            });
-            this.doors.push(door);
-            door.tags.push('door');
-            this.state.addEntity(door);
-            return door;
-        },
-
-        createElevator : function(cx, cy, up){
-            this._populated = true;
-            var door = this.state.createEntity('elevator', {xform:{
-                tx: ((cx + 0.5) * 32),
-                ty: ((cy + 0.5) * 32),
-            }, 
-            highlight: {
-                focusColor: (up ? 'orange' : 'blue'),
-            },
-            elevator: {
-                up: Boolean(up)
-            }});
-            this.state.addEntity(door);
-            return door;
-        },
-        
-        
         update: function(){
             if (this.doors.length){
                 if (this.doors[0].get('door.open')){
@@ -168,39 +73,6 @@ define(['sge','./region'], function(sge, Region){
             } else { 
                 this.cover.setVisible(true);
             }
-        },
-
-        onRegionEnter: function(entity){
-            this._updateHighlight();
-        },
-
-        onRegionExit: function(entity){
-            this._updateHighlight();
-        },
-
-        highlight: function(highlight){
-            if (highlight){
-                this._highlight = true;
-            } else {
-                this._highlight = false;
-            }
-            this._updateHighlight();
-        },
-
-        _updateHighlight: function(){
-            var evt = null;
-            if (this._highlight){
-                if (this.level.state.pc._regions.indexOf(this)>=0){
-                    evt = 'highlight.off';
-                } else {
-                    evt = 'highlight.on';
-                }
-            } else {
-                evt = 'highlight.off';
-            }
-            if (evt){
-                this.doors.forEach(function(d){d.fireEvent(evt)});
-            }
         }
     })
 
@@ -213,5 +85,5 @@ define(['sge','./region'], function(sge, Region){
             Full Cooridor Width: 6
     */
 
-    return MegaBlockRoom;
+    return Room;
 })

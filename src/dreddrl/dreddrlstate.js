@@ -277,6 +277,7 @@ define([
                 this._gamePlayContainer.addChild(this.map.dynamicContainer);
                 this._gamePlayContainer.addChild(this._entityContainer);
                 this._gamePlayContainer.addChild(this.map.canopy);
+                this._gamePlayContainer.addChild(this.map.canopyDynamic);
                 this.level.setup();
                 this.map.render();
                 this._updateUI();

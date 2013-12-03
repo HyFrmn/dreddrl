@@ -49,7 +49,6 @@ function   (sge, dreddrl) {
         canvasElem.style.height = pixelHeight + 'px';
         canvasElem.style['margin-left'] = (innerWidth - pixelWidth)/2 + 'px';
         canvasElem.style['margin-top'] = (innerHeight - pixelHeight)/2 + 'px';
-        console.log(canvasElem.width, canvasElem.height)
     }
     window.onresize = resizeCallback;
     resizeCallback();

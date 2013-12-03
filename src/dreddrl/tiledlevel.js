@@ -3,9 +3,10 @@ define([
     './level',
     './quest',
     './region',
+    './room',
     './expr'
 ],
-function(sge, Level, Quest, Region, Expr){
+function(sge, Level, Quest, Region, Room, Expr){
 	var TiledLoader = function(){
 
 	}
@@ -43,12 +44,18 @@ function(sge, Level, Quest, Region, Expr){
 			}.bind(this));
 			
 			layer = layerData.regions;
+			regions = [];
 			if (layer!==undefined){
 				for (var q = layer.objects.length - 1; q >= 0; q--) {
 					var region = layer.objects[q];
 					var tx = region.x + 16;
 					var ty = region.y - 16;
-					new Region(this.state, region.name, region.x, region.x+region.width,region.y, region.y+region.height);
+					var klass = Region
+					if (region.type=='room'){
+						console.log('ROOM!!!')
+						klass = Room;
+					} 
+					regions.push(new klass(this.state, region.name, region.x, region.x+region.width,region.y, region.y+region.height));
 				}
 			}
 			
@@ -77,6 +84,7 @@ function(sge, Level, Quest, Region, Expr){
 			if (layer){
 				for (var i = layer.objects.length - 1; i >= 0; i--) {
 					var obj = layer.objects[i];
+					console.log(obj.name);
 					var tx = obj.x + 16;
 					var ty = obj.y - 16;
 					if (obj.name=='pc'){
@@ -153,21 +161,26 @@ function(sge, Level, Quest, Region, Expr){
 						var e = this.state.createEntity(obj.type, eData);
 						e.tags.push(obj.name);
 						this.state.addEntity(e);
+						
+						console.log(obj.name, obj.type);
 						for (var j = decorators.length - 1; j >= 0; j--) {
 							var func = decorators[j];
 							func(e)
 						};
+
 					}
 				}
 			}
 
 			if (levelData.properties.quests){
 				var questNames = levelData.properties.quests.split(' ');
+				console.log(questNames)
 				for (var q = questNames.length - 1; q >= 0; q--) {
 					Quest.Load(this, questNames[q]);
 
 				};
 			}
+			regions.forEach(function(r){r.update()});
 		}
 	})
 
